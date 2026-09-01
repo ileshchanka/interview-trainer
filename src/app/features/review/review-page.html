@@ -1,0 +1,76 @@
+<header class="head">
+  <a mat-button routerLink="/decks">
+    <span class="material-symbols-outlined">arrow_back</span>
+    Колоды
+  </a>
+  <span class="title">{{ topicTitle() }}</span>
+  <span class="progress-text">{{ answered() }} / {{ planned() }}</span>
+</header>
+
+<mat-progress-bar mode="determinate" [value]="percent()" />
+
+@if (current(); as card) {
+  <mat-card appearance="outlined" class="card">
+    <mat-card-content>
+      <div class="subtopic">{{ card.subtopic }}</div>
+      <div class="question md" [innerHTML]="card.question | md"></div>
+
+      @if (revealed()) {
+        <hr />
+        <div class="answer md" [innerHTML]="card.answer | md"></div>
+        @if (card.explanation) {
+          <details class="details">
+            <summary>Подробный разбор</summary>
+            <div class="md" [innerHTML]="card.explanation | md"></div>
+          </details>
+        }
+      }
+    </mat-card-content>
+  </mat-card>
+
+  <div class="controls">
+    @if (!revealed()) {
+      <button mat-flat-button class="reveal" type="button" (click)="reveal()">
+        Показать ответ
+        <span class="hotkey">пробел</span>
+      </button>
+    } @else {
+      <div class="grades">
+        @for (button of buttons(); track button.grade) {
+          <button
+            mat-stroked-button
+            type="button"
+            class="grade"
+            [class]="'grade-' + button.grade"
+            (click)="grade(button.grade)"
+          >
+            <!-- Кнопка Material сама по себе inline-flex по горизонтали,
+                 поэтому колонку задаёт внутренняя обёртка, а не сама кнопка. -->
+            <span class="grade-inner">
+              <span class="grade-label">{{ button.label }}</span>
+              <span class="grade-hint">{{ button.hint }}</span>
+              <span class="hotkey">{{ button.hotkey }}</span>
+            </span>
+          </button>
+        }
+      </div>
+    }
+  </div>
+} @else {
+  <mat-card appearance="outlined" class="card done">
+    <mat-card-content>
+      <h2>На сегодня всё</h2>
+      @if (planned() > 0) {
+        <p class="muted">Пройдено карточек: {{ answered() }}. Следующие вернутся по расписанию.</p>
+      } @else {
+        <p class="muted">
+          В этой колоде сейчас нечего повторять — все карточки отложены на будущее.
+        </p>
+      }
+    </mat-card-content>
+    <mat-card-actions align="end">
+      <a mat-button routerLink="/code">К кодовым задачам</a>
+      <a mat-flat-button routerLink="/decks">К колодам</a>
+    </mat-card-actions>
+  </mat-card>
+}

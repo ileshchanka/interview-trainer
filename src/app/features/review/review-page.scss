@@ -1,0 +1,138 @@
+.head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.title {
+  font-weight: 600;
+}
+
+.progress-text {
+  margin-left: auto;
+  color: var(--mat-sys-on-surface-variant);
+  font-variant-numeric: tabular-nums;
+}
+
+.card {
+  margin-top: 16px;
+  min-height: 220px;
+}
+
+.subtopic {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--mat-sys-primary);
+  margin-bottom: 10px;
+}
+
+.question {
+  font-size: 1.15rem;
+}
+
+hr {
+  border: none;
+  border-top: 1px solid var(--mat-sys-outline-variant);
+  margin: 18px 0;
+}
+
+.answer {
+  font-size: 1rem;
+}
+
+.details {
+  margin-top: 16px;
+
+  summary {
+    cursor: pointer;
+    color: var(--mat-sys-primary);
+    margin-bottom: 10px;
+  }
+}
+
+.controls {
+  margin-top: 20px;
+}
+
+.reveal {
+  width: 100%;
+  height: 52px;
+}
+
+.grades {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.grade {
+  height: auto;
+  padding: 10px 4px;
+  line-height: 1.25;
+}
+
+.grade-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  width: 100%;
+}
+
+.grade-label {
+  font-weight: 600;
+}
+
+.grade-hint {
+  font-size: 0.78rem;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.grade-again {
+  --mat-outlined-button-label-text-color: var(--mat-sys-error);
+}
+
+.grade-easy {
+  --mat-outlined-button-label-text-color: var(--mat-sys-tertiary);
+}
+
+.hotkey {
+  font-size: 0.68rem;
+  color: var(--mat-sys-on-surface-variant);
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: 4px;
+  padding: 0 4px;
+  margin-left: 6px;
+}
+
+.grade .hotkey {
+  margin-left: 0;
+}
+
+/* На заливке тёмная рамка подсказки не читается — берём цвет самой кнопки. */
+.reveal .hotkey {
+  color: inherit;
+  border-color: currentColor;
+  opacity: 0.75;
+}
+
+.done h2 {
+  margin: 0 0 8px;
+}
+
+.muted {
+  color: var(--mat-sys-on-surface-variant);
+  margin: 0;
+}
+
+@media (max-width: 600px) {
+  .grades {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .grade .hotkey {
+    display: none;
+  }
+}

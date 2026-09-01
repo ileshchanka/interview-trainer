@@ -1,59 +1,64 @@
-# InterviewTrainer
+# Interview Trainer
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 22.1.6.
+Тренажёр для подготовки к собеседованию по **JavaScript**, **TypeScript** и **Angular**.
+Два режима в одном приложении:
 
-## Development server
+- **Карточки с интервальным повторением** (алгоритм SM-2) — 148 вопросов с ответами
+  и разборами. Чем увереннее ответ, тем дольше карточка не вернётся.
+- **Кодовая песочница** — 28 задач формата «что выведет этот код». Код действительно
+  выполняется в браузере, а предсказанный вывод сверяется с фактическим построчно.
 
-To start a local development server, run:
+Прогресс хранится локально в IndexedDB, бэкенда нет.
 
-```bash
-ng serve
-```
-
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
-
-## Code scaffolding
-
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+## Запуск
 
 ```bash
-ng generate component component-name
+npm install
+npm start           # http://localhost:4200
 ```
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+## Проверки
 
 ```bash
-ng generate --help
+npm run check           # всё сразу: контент, тесты, сборка
+npm run verify:content  # структура корпуса + фактический вывод всех задач
+npm test                # юнит-тесты
+npm run build
 ```
 
-## Building
+`verify:content` — не формальность: он **исполняет** каждую кодовую задачу и сверяет
+результат с записанным в JSON. Три задачи из первых двадцати восьми были записаны
+неверно и найдены именно так.
 
-To build the project run:
+## Устройство
 
-```bash
-ng build
+```
+src/app/
+  domain/     чистый TypeScript без Angular: SM-2, отбор сессии, сравнение вывода
+  core/       хранилище прогресса (IndexedDB за интерфейсом) и загрузка контента
+  features/   экраны: колоды, повторение, задачи, статистика
+  shared/     обёртка Monaco, Markdown, тема
+public/content/  корпус вопросов и задач в JSON
 ```
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
+Ключевое решение: **вся логика повторений и проверки ответов живёт в `domain/` —
+чистых модулях без Angular, DOM и сети**. Они полностью покрыты юнит-тестами на
+синтетических данных, а Angular-слой только рисует их результат.
 
-## Running unit tests
+Стек: Angular 22 (standalone, signals, zoneless change detection, lazy-роутинг),
+Angular Material, Monaco, TypeScript в строгом режиме, Vitest.
 
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
+### Как исполняется код задач
 
-```bash
-ng test
-```
+Решение выполняется в **Web Worker** с таймаутом в 3 секунды: `while (true) {}` —
+типичная ошибка в задачах про event loop, и на главном потоке она вешала бы вкладку.
+Воркер главный поток не блокирует, а по таймауту его убивает `terminate()`.
 
-## Running end-to-end tests
+TypeScript транспилируется **самим Monaco** — компилятор приезжает вместе с редактором,
+и тащить в проект второй экземпляр `typescript` ради стирания типов незачем.
 
-For end-to-end (e2e) testing, run:
+## Пополнение корпуса
 
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+Вопросы и задачи — статические JSON в `public/content`. Добавили карточку — запустите
+`npm run verify:content`. Идентификаторы стабильны и не должны меняться:
+по ним привязан накопленный прогресс.

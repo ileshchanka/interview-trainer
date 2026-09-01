@@ -1,0 +1,87 @@
+<h1>Прогресс</h1>
+
+<div class="tiles">
+  <mat-card appearance="outlined" class="tile">
+    <mat-card-content>
+      <div class="value">{{ streak() }}</div>
+      <div class="label">дней подряд</div>
+    </mat-card-content>
+  </mat-card>
+  <mat-card appearance="outlined" class="tile">
+    <mat-card-content>
+      <div class="value">{{ totals().mastered }}</div>
+      <div class="label">карточек выучено</div>
+    </mat-card-content>
+  </mat-card>
+  <mat-card appearance="outlined" class="tile">
+    <mat-card-content>
+      <div class="value">{{ totals().due }}</div>
+      <div class="label">ждут повторения</div>
+    </mat-card-content>
+  </mat-card>
+  <mat-card appearance="outlined" class="tile">
+    <mat-card-content>
+      <div class="value">
+        {{ tasks().solved }}<span class="of">/{{ tasks().total }}</span>
+      </div>
+      <div class="label">задач решено</div>
+    </mat-card-content>
+  </mat-card>
+</div>
+
+<mat-card appearance="outlined" class="block">
+  <mat-card-content>
+    <h2>По темам</h2>
+    @for (row of progressByTopic(); track row.topic) {
+      <div class="topic">
+        <div class="topic-head">
+          <span class="topic-name">{{ titles[row.topic] }}</span>
+          <span class="muted small">
+            пройдено {{ row.seen }} из {{ row.total }}, выучено {{ row.mastered }}
+          </span>
+        </div>
+        <mat-progress-bar mode="determinate" [value]="percent(row.seen, row.total)" />
+      </div>
+    }
+  </mat-card-content>
+</mat-card>
+
+<mat-card appearance="outlined" class="block">
+  <mat-card-content>
+    <h2>Слабые места</h2>
+    @if (weak().length === 0) {
+      <p class="muted">
+        Пока пусто: подтема попадает сюда, когда на её карточках срабатывает «Не помню».
+      </p>
+    } @else {
+      <p class="muted small">Подтемы, которые чаще всего забываются.</p>
+      <ul class="weak">
+        @for (spot of weak(); track spot.topic + spot.subtopic) {
+          <li>
+            <span class="weak-name">{{ spot.subtopic }}</span>
+            <span class="muted small">{{ titles[spot.topic] }}</span>
+            <span class="weak-count">{{ spot.lapses }}</span>
+          </li>
+        }
+      </ul>
+    }
+  </mat-card-content>
+</mat-card>
+
+<mat-card appearance="outlined" class="block">
+  <mat-card-content>
+    <h2>Кодовые задачи</h2>
+    @if (tasks().accuracy === null) {
+      <p class="muted">Ни одной попытки — самое время начать.</p>
+    } @else {
+      <p class="muted">Попыток: {{ tasks().attempts }}, из них верных — {{ tasks().accuracy }}%.</p>
+    }
+  </mat-card-content>
+  <mat-card-actions align="end">
+    <a mat-button routerLink="/code">К задачам</a>
+  </mat-card-actions>
+</mat-card>
+
+<div class="danger">
+  <button mat-stroked-button type="button" (click)="reset()">Сбросить весь прогресс</button>
+</div>

@@ -1,24 +1,22 @@
+import { provideZonelessChangeDetection } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
+import { describe, expect, it } from 'vitest';
 import { App } from './app';
 
 describe('App', () => {
-  beforeEach(async () => {
-    await TestBed.configureTestingModule({
+  it('рисует навигацию по всем разделам', async () => {
+    TestBed.configureTestingModule({
       imports: [App],
-    })
-      .compileComponents();
-  });
+      providers: [provideZonelessChangeDetection(), provideRouter([])],
+    });
 
-  it('should create the app', () => {
-    const fixture = TestBed.createComponent(App);
-    const app = fixture.componentInstance;
-    expect(app).toBeTruthy();
-  });
-
-  it('should render title', async () => {
     const fixture = TestBed.createComponent(App);
     await fixture.whenStable();
-    const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('h1')?.textContent).toContain('Hello, interview-trainer');
+
+    const links = [...fixture.nativeElement.querySelectorAll('nav a')].map((a: Element) =>
+      a.textContent?.trim(),
+    );
+    expect(links).toEqual(['Колоды', 'Задачи', 'Прогресс']);
   });
 });

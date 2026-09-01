@@ -1,0 +1,89 @@
+.head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+
+  h1 {
+    margin: 0 0 6px;
+    font-size: 1.6rem;
+  }
+}
+
+.muted {
+  color: var(--mat-sys-on-surface-variant);
+  margin: 0;
+}
+
+.small {
+  font-size: 0.85rem;
+}
+
+.streak {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--mat-sys-tertiary);
+  font-weight: 600;
+  font-size: 1.2rem;
+  white-space: nowrap;
+}
+
+.start-all {
+  display: block;
+  width: 100%;
+  margin-bottom: 20px;
+}
+
+.decks {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+.deck mat-card-content {
+  padding-top: 8px;
+}
+
+.counters {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 12px;
+  font-size: 0.95rem;
+
+  b {
+    font-size: 1.3rem;
+    margin-right: 4px;
+  }
+}
+
+.counter.due b {
+  color: var(--mat-sys-primary);
+}
+
+.counter.fresh b {
+  color: var(--mat-sys-tertiary);
+}
+
+.counter.zero {
+  color: var(--mat-sys-on-surface-variant);
+
+  b {
+    color: inherit;
+  }
+}
+
+.tasks-card {
+  margin-top: 24px;
+
+  h2 {
+    margin: 0 0 8px;
+    font-size: 1.2rem;
+  }
+
+  code {
+    font-family: 'JetBrains Mono', Menlo, monospace;
+    font-size: 0.9em;
+  }
+}

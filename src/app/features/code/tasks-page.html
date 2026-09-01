@@ -1,0 +1,44 @@
+<header class="head">
+  <h1>Кодовые задачи</h1>
+  <p class="muted">
+    Прочитайте код и предскажите вывод. Затем запустите — результат сверится построчно.
+  </p>
+</header>
+
+<mat-chip-listbox
+  class="filters"
+  [value]="filter()"
+  (change)="setFilter($any($event).value ?? 'all')"
+>
+  <mat-chip-option value="all" [selected]="filter() === 'all'">Все</mat-chip-option>
+  @for (topic of topics; track topic) {
+    <mat-chip-option [value]="topic" [selected]="filter() === topic">{{
+      titles[topic]
+    }}</mat-chip-option>
+  }
+</mat-chip-listbox>
+
+<p class="muted small">Решено {{ solvedCount() }} из {{ tasks().length }}</p>
+
+<div class="tasks">
+  @for (task of tasks(); track task.id) {
+    <a class="task-link" [routerLink]="['/code', task.id]">
+      <mat-card appearance="outlined" class="task" [class.solved]="solved().has(task.id)">
+        <mat-card-content>
+          <div class="row">
+            <span class="material-symbols-outlined status">
+              {{ solved().has(task.id) ? 'check_circle' : 'radio_button_unchecked' }}
+            </span>
+            <div class="text">
+              <div class="title">{{ task.title }}</div>
+              <div class="meta">{{ titles[task.topic] }} · {{ task.subtopic }}</div>
+            </div>
+            <span class="lang">{{ task.language === 'ts' ? 'TS' : 'JS' }}</span>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </a>
+  } @empty {
+    <p class="muted">Задач по этой теме пока нет.</p>
+  }
+</div>

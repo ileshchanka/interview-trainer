@@ -1,0 +1,72 @@
+<header class="head">
+  <div>
+    <h1>Что повторяем сегодня</h1>
+    <p class="muted">
+      Карточки показываются по интервальному алгоритму: чем увереннее ответ, тем дольше карточка не
+      вернётся.
+    </p>
+  </div>
+  @if (streak() > 0) {
+    <div class="streak" [title]="'Дней подряд с занятиями'">
+      <span class="material-symbols-outlined">local_fire_department</span>
+      <span class="streak-value">{{ streak() }}</span>
+    </div>
+  }
+</header>
+
+@if (totalToDo() > 0) {
+  <a mat-flat-button class="start-all" routerLink="/review">
+    Повторять всё — {{ totalToDo() }} карточек
+  </a>
+}
+
+<div class="decks">
+  @for (deck of decks(); track deck.topic) {
+    <mat-card appearance="outlined" class="deck">
+      <mat-card-header>
+        <mat-card-title>{{ deck.title }}</mat-card-title>
+        <mat-card-subtitle>{{ deck.total }} карточек</mat-card-subtitle>
+      </mat-card-header>
+
+      <mat-card-content>
+        <div class="counters">
+          <span class="counter due" [class.zero]="deck.due === 0">
+            <b>{{ deck.due }}</b> к повторению
+          </span>
+          <span class="counter fresh" [class.zero]="deck.fresh === 0">
+            <b>{{ deck.fresh }}</b> новых
+          </span>
+        </div>
+
+        <mat-progress-bar mode="determinate" [value]="deck.percent" />
+        <p class="muted small">
+          Выучено {{ deck.mastered }} из {{ deck.total }} — {{ deck.percent }}%
+        </p>
+      </mat-card-content>
+
+      <mat-card-actions align="end">
+        <a
+          mat-button
+          [routerLink]="['/review', deck.topic]"
+          [disabled]="deck.due === 0 && deck.fresh === 0"
+        >
+          Заниматься
+        </a>
+      </mat-card-actions>
+    </mat-card>
+  }
+</div>
+
+<mat-card appearance="outlined" class="tasks-card">
+  <mat-card-content>
+    <h2>Кодовые задачи</h2>
+    <p class="muted">
+      «Что выведет этот код» — event loop, <code>this</code>, замыкания, приведение типов и
+      дженерики. Код запускается прямо в браузере, вывод сверяется с ожидаемым.
+    </p>
+    <p class="muted small">Нерешённых задач: {{ tasksLeft() }}</p>
+  </mat-card-content>
+  <mat-card-actions align="end">
+    <a mat-button routerLink="/code">К задачам</a>
+  </mat-card-actions>
+</mat-card>

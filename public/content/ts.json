@@ -1,0 +1,330 @@
+[
+ {
+  "id": "ts-structural-typing",
+  "topic": "ts",
+  "subtopic": "система типов",
+  "question": "Типизация в TypeScript структурная или номинальная?",
+  "answer": "Структурная: совместимость определяется формой типа, а не его именем. Объект подходит под интерфейс, если у него есть все нужные поля подходящих типов.",
+  "explanation": "Отсюда следствие: два одинаковых по составу интерфейса взаимозаменяемы, даже если названы по-разному. Номинальность приходится эмулировать «брендированием»:\n\n```ts\ntype UserId = string & { readonly __brand: 'UserId' };\n```"
+ },
+ {
+  "id": "ts-any-unknown-never",
+  "topic": "ts",
+  "subtopic": "система типов",
+  "question": "Чем различаются `any`, `unknown` и `never`?",
+  "answer": "`any` отключает проверку. `unknown` — тоже «что угодно», но перед использованием требует сузить тип. `never` — тип, у которого нет значений: результат функции, которая никогда не возвращается нормально.",
+  "explanation": "`unknown` — правильный тип для внешних данных (ответ API, `JSON.parse`). `never` всплывает в проверках полноты `switch` и в невозможных пересечениях типов."
+ },
+ {
+  "id": "ts-exhaustiveness",
+  "topic": "ts",
+  "subtopic": "система типов",
+  "question": "Как заставить компилятор проверять полноту разбора union?",
+  "answer": "В ветке `default` присвоить значение переменной типа `never`: если появится необработанный вариант, компилятор укажет на ошибку.",
+  "explanation": "```ts\nfunction assertNever(x: never): never {\n  throw new Error('Unexpected: ' + x);\n}\n```\nЭто главный приём, ради которого union-типы и заводят: добавили новый вариант — компилятор сам показал все места, где его забыли."
+ },
+ {
+  "id": "ts-union-intersection",
+  "topic": "ts",
+  "subtopic": "система типов",
+  "question": "Чем `A | B` отличается от `A & B`?",
+  "answer": "Union — «либо то, либо другое»: доступны только общие члены. Intersection — «и то, и другое сразу»: доступны все члены обоих типов.",
+  "explanation": "Контринтуитивно: union расширяет множество значений, но сужает набор доступных операций; intersection наоборот."
+ },
+ {
+  "id": "ts-narrowing",
+  "topic": "ts",
+  "subtopic": "сужение типов",
+  "question": "Какие конструкции сужают тип?",
+  "answer": "`typeof`, `instanceof`, `in`, проверка на `null`/`undefined`, литеральное сравнение, дискриминирующее поле, а также пользовательские type guards.",
+  "explanation": "Сужение живёт до ближайшего «загрязнения» — например, вызова функции, после которого компилятор больше не уверен, что поле не изменилось (для полей объекта, объявленных как изменяемые)."
+ },
+ {
+  "id": "ts-type-guard",
+  "topic": "ts",
+  "subtopic": "сужение типов",
+  "question": "Как написать пользовательский type guard?",
+  "answer": "Функция, возвращающая `arg is Type`: компилятор поверит ей и сузит тип в ветке `if`.",
+  "explanation": "```ts\nfunction isString(v: unknown): v is string {\n  return typeof v === 'string';\n}\n```\nВажно: тело такой функции компилятор не проверяет — если предикат врёт, TypeScript будет врать вместе с ним."
+ },
+ {
+  "id": "ts-assertion-function",
+  "topic": "ts",
+  "subtopic": "сужение типов",
+  "question": "Что такое assertion-функция и чем она отличается от type guard?",
+  "answer": "Функция с сигнатурой `asserts arg is Type`: она не возвращает булево, а бросает исключение, если проверка не прошла. После её вызова тип сужен до конца области видимости.",
+  "explanation": "Assertion-функцию нельзя объявить как стрелку в `const` без явной аннотации типа переменной — компилятору нужен объявленный тип."
+ },
+ {
+  "id": "ts-discriminated-union",
+  "topic": "ts",
+  "subtopic": "система типов",
+  "question": "Что такое дискриминированное объединение?",
+  "answer": "Union объектов с общим полем-литералом (`kind`, `type`, `status`), по которому компилятор однозначно определяет вариант.",
+  "explanation": "```ts\ntype State =\n  | { status: 'loading' }\n  | { status: 'ready'; data: string }\n  | { status: 'error'; error: Error };\n```\nЭто основной способ моделировать состояние: невозможно оказаться в `ready` без `data`."
+ },
+ {
+  "id": "ts-literal-types",
+  "topic": "ts",
+  "subtopic": "система типов",
+  "question": "Что такое литеральный тип и когда он выводится?",
+  "answer": "Тип, состоящий из одного конкретного значения: `'ready'`, `42`, `true`. Для `const` литерал выводится сразу, для `let` тип расширяется до `string`/`number`.",
+  "explanation": "`as const` фиксирует литеральные типы во всём объекте или массиве и делает поля `readonly`."
+ },
+ {
+  "id": "ts-as-const",
+  "topic": "ts",
+  "subtopic": "система типов",
+  "question": "Что делает `as const`?",
+  "answer": "Замораживает вывод типа: строки становятся литеральными типами, объекты и массивы — `readonly`, массив превращается в кортеж.",
+  "explanation": "Практика: массив вариантов + `typeof arr[number]` даёт union строк без дублирования списка."
+ },
+ {
+  "id": "ts-generics-why",
+  "topic": "ts",
+  "subtopic": "дженерики",
+  "question": "Зачем нужны дженерики, если есть `any`?",
+  "answer": "Дженерик сохраняет связь между входом и выходом: `identity<T>(x: T): T` гарантирует, что вернётся тот же тип. `any` эту связь рвёт и отключает проверки.",
+  "explanation": "Дженерик — это параметр, значение которого выводится из вызова; писать его явно нужно редко."
+ },
+ {
+  "id": "ts-generic-constraints",
+  "topic": "ts",
+  "subtopic": "дженерики",
+  "question": "Что означает `T extends { id: string }`?",
+  "answer": "Ограничение: подставить можно только тип, совместимый с указанным. Внутри функции становятся доступны свойства ограничения.",
+  "explanation": "Частая пара: `K extends keyof T` для типобезопасного доступа к полю:\n\n```ts\nfunction get<T, K extends keyof T>(obj: T, key: K): T[K] {\n  return obj[key];\n}\n```"
+ },
+ {
+  "id": "ts-generic-default",
+  "topic": "ts",
+  "subtopic": "дженерики",
+  "question": "Можно ли задать дженерику значение по умолчанию?",
+  "answer": "Да: `interface Box<T = string>`. Тогда `Box` эквивалентен `Box<string>`.",
+  "explanation": "Умолчание не отменяет вывод типа: если параметр выводится из аргументов, победит выведенный."
+ },
+ {
+  "id": "ts-conditional-types",
+  "topic": "ts",
+  "subtopic": "условные типы",
+  "question": "Как читается `T extends U ? X : Y`?",
+  "answer": "Если тип `T` присваиваем к `U`, результат — `X`, иначе `Y`. Проверка идёт на уровне типов, во время компиляции.",
+  "explanation": "Над union такой тип **дистрибутивен**: `(A | B) extends U ? X : Y` вычисляется для каждого члена отдельно. Отключается обёрткой в кортеж: `[T] extends [U] ? ...`."
+ },
+ {
+  "id": "ts-infer",
+  "topic": "ts",
+  "subtopic": "условные типы",
+  "question": "Что делает `infer`?",
+  "answer": "Объявляет переменную типа прямо внутри условного типа и позволяет «вытащить» часть типа при сопоставлении.",
+  "explanation": "```ts\ntype ElementOf<T> = T extends (infer U)[] ? U : never;\n```\nНа `infer` построены `ReturnType`, `Parameters`, `Awaited`."
+ },
+ {
+  "id": "ts-mapped-types",
+  "topic": "ts",
+  "subtopic": "mapped types",
+  "question": "Как устроен mapped type?",
+  "answer": "`{ [K in keyof T]: ... }` — проход по ключам исходного типа с построением нового. Модификаторы `readonly` и `?` можно добавлять (`+`) и снимать (`-`).",
+  "explanation": "```ts\ntype Mutable<T> = { -readonly [K in T as K]: T[K] };\ntype Required<T> = { [K in keyof T]-?: T[K] };\n```"
+ },
+ {
+  "id": "ts-key-remapping",
+  "topic": "ts",
+  "subtopic": "mapped types",
+  "question": "Что даёт `as` внутри mapped type?",
+  "answer": "Переименование ключей на лету и их фильтрацию: вернув `never`, ключ можно выбросить.",
+  "explanation": "```ts\ntype Getters<T> = {\n  [K in keyof T as `get${Capitalize<string & K>}`]: () => T[K];\n};\n```"
+ },
+ {
+  "id": "ts-template-literal-types",
+  "topic": "ts",
+  "subtopic": "система типов",
+  "question": "Что такое шаблонные литеральные типы?",
+  "answer": "Типы, собираемые из строк как шаблонные строки: `` type Route = `/users/${string}` ``. Вместе с union они порождают комбинации автоматически.",
+  "explanation": "Плюс встроенные `Uppercase`, `Lowercase`, `Capitalize`, `Uncapitalize`."
+ },
+ {
+  "id": "ts-utility-types",
+  "topic": "ts",
+  "subtopic": "утилитные типы",
+  "question": "Что делают `Partial`, `Required`, `Readonly`, `Pick`, `Omit`, `Record`?",
+  "answer": "`Partial<T>` делает все поля необязательными, `Required` — обязательными, `Readonly` — только для чтения. `Pick<T, K>` оставляет перечисленные ключи, `Omit<T, K>` — убирает. `Record<K, V>` строит объект с ключами `K` и значениями `V`.",
+  "explanation": "Все они — обычные mapped и условные типы из `lib.es5.d.ts`, их можно написать самому за пару строк."
+ },
+ {
+  "id": "ts-returntype-parameters",
+  "topic": "ts",
+  "subtopic": "утилитные типы",
+  "question": "Что делают `ReturnType`, `Parameters` и `Awaited`?",
+  "answer": "`ReturnType<F>` — тип возвращаемого значения функции, `Parameters<F>` — кортеж её аргументов, `Awaited<T>` — тип, к которому разворачивается промис (рекурсивно).",
+  "explanation": "Все три реализованы через `infer`. `typeof` перед именем функции даёт её тип: `ReturnType<typeof makeUser>`."
+ },
+ {
+  "id": "ts-omit-vs-exclude",
+  "topic": "ts",
+  "subtopic": "утилитные типы",
+  "question": "Чем `Omit` отличается от `Exclude`?",
+  "answer": "`Exclude<T, U>` работает с union и убирает из него члены. `Omit<T, K>` работает с объектным типом и убирает из него свойства.",
+  "explanation": "Ловушка `Omit`: он не проверяет, что ключ действительно существует, — опечатка пройдёт молча."
+ },
+ {
+  "id": "ts-partial-danger",
+  "topic": "ts",
+  "subtopic": "утилитные типы",
+  "question": "Чем опасен `Partial` в аргументах функции?",
+  "answer": "Он позволяет передать пустой объект и снимает контроль обязательности: ошибка «забыли поле» перестаёт ловиться компилятором.",
+  "explanation": "Для обновлений точнее `Partial<T> & Pick<T, 'id'>` — обязателен хотя бы идентификатор."
+ },
+ {
+  "id": "ts-interface-vs-type",
+  "topic": "ts",
+  "subtopic": "интерфейсы",
+  "question": "Чем `interface` отличается от `type`?",
+  "answer": "`interface` можно объявить повторно, и объявления сольются (declaration merging), и он предназначен для объектных форм. `type` — это псевдоним любого типа: union, кортеж, условный, примитив.",
+  "explanation": "Практика: для публичного API библиотеки — `interface` (расширяемость), для union и вычисляемых типов — `type`. Разницы в производительности проверки почти нет."
+ },
+ {
+  "id": "ts-optional-vs-undefined",
+  "topic": "ts",
+  "subtopic": "интерфейсы",
+  "question": "Чем `a?: string` отличается от `a: string | undefined`?",
+  "answer": "Необязательное поле можно вообще не указывать. Поле с `| undefined` указать обязательно, пусть даже значением `undefined`.",
+  "explanation": "Флаг `exactOptionalPropertyTypes` ужесточает первое: тогда `a?: string` нельзя присвоить явный `undefined`."
+ },
+ {
+  "id": "ts-index-signature",
+  "topic": "ts",
+  "subtopic": "интерфейсы",
+  "question": "Что такое индексная сигнатура и чем она рискованна?",
+  "answer": "`[key: string]: T` разрешает любые строковые ключи. Риск в том, что компилятор считает существующим любое обращение — опечатки не ловятся, а тип значения по факту может быть `undefined`.",
+  "explanation": "Флаг `noUncheckedIndexedAccess` добавляет `| undefined` к результату и возвращает проверкам смысл."
+ },
+ {
+  "id": "ts-readonly",
+  "topic": "ts",
+  "subtopic": "интерфейсы",
+  "question": "Что на самом деле гарантирует `readonly`?",
+  "answer": "Только запрет присваивания на уровне компиляции и только через эту ссылку. Во время выполнения объект остаётся изменяемым, и через другую, неизменяемую ссылку его можно поменять.",
+  "explanation": "`ReadonlyArray<T>` убирает мутирующие методы, но не запрещает мутацию через обычный `T[]`, указывающий на тот же массив."
+ },
+ {
+  "id": "ts-function-overloads",
+  "topic": "ts",
+  "subtopic": "функции",
+  "question": "Как работают перегрузки функций в TypeScript?",
+  "answer": "Объявляется несколько сигнатур и одна реализация. Сигнатура реализации не участвует в разрешении вызова — снаружи её не видно.",
+  "explanation": "Компилятор выбирает первую подходящую сигнатуру сверху вниз. Часто перегрузку лучше заменить дженериком или union — читается проще."
+ },
+ {
+  "id": "ts-this-parameter",
+  "topic": "ts",
+  "subtopic": "функции",
+  "question": "Как типизировать `this` в функции?",
+  "answer": "Первым «фиктивным» параметром: `function handler(this: HTMLElement, e: Event) {}`. В скомпилированный код он не попадает.",
+  "explanation": "Флаг `noImplicitThis` заставляет это делать там, где `this` иначе был бы `any`."
+ },
+ {
+  "id": "ts-enum-problems",
+  "topic": "ts",
+  "subtopic": "enum",
+  "question": "Почему `enum` в TypeScript спорен и что вместо него?",
+  "answer": "Числовой `enum` порождает обратное отображение и допускает присваивание любого числа; `const enum` не работает с `isolatedModules` и сборщиками, полагающимися на потранзитную компиляцию. Обе формы генерируют рантайм-код, чего от «только типов» не ждут.",
+  "explanation": "Замена — union литералов плюс `as const`-объект, если нужны значения:\n\n```ts\nconst Status = { Ready: 'ready', Error: 'error' } as const;\ntype Status = (typeof Status)[keyof typeof Status];\n```"
+ },
+ {
+  "id": "ts-isolated-modules",
+  "topic": "ts",
+  "subtopic": "компиляция",
+  "question": "Что означает флаг `isolatedModules`?",
+  "answer": "Каждый файл должен компилироваться независимо от остальных. Это требование сборщиков вроде esbuild и SWC, которые не строят полную программу.",
+  "explanation": "Отсюда обязательный `export type` / `import type` для реэкспорта типов и запрет `const enum`."
+ },
+ {
+  "id": "ts-import-type",
+  "topic": "ts",
+  "subtopic": "компиляция",
+  "question": "Зачем нужен `import type`?",
+  "answer": "Он явно говорит, что импорт нужен только для типов, и компилятор гарантированно вырежет его из вывода — без риска затащить модуль в рантайм и без циклических зависимостей.",
+  "explanation": "`verbatimModuleSyntax` делает это правило строгим: обычный `import` всегда остаётся в выводе."
+ },
+ {
+  "id": "ts-declaration-files",
+  "topic": "ts",
+  "subtopic": "компиляция",
+  "question": "Что такое `.d.ts` и откуда берутся типы для чужих библиотек?",
+  "answer": "Файлы деклараций — только типы, без реализации. Либо поставляются самой библиотекой (`types` в package.json), либо ставятся отдельно из `@types/*` (DefinitelyTyped).",
+  "explanation": "Своя декларация для нетипизированного модуля пишется через `declare module 'name'`."
+ },
+ {
+  "id": "ts-strict-flags",
+  "topic": "ts",
+  "subtopic": "строгость",
+  "question": "Что включает флаг `strict`?",
+  "answer": "`strictNullChecks`, `noImplicitAny`, `strictFunctionTypes`, `strictBindCallApply`, `strictPropertyInitialization`, `noImplicitThis`, `useUnknownInCatchVariables`, `alwaysStrict`.",
+  "explanation": "Самый ценный — `strictNullChecks`: без него `null` и `undefined` входят в любой тип, и проверки на пустоту компилятор не требует вовсе."
+ },
+ {
+  "id": "ts-strict-null-checks",
+  "topic": "ts",
+  "subtopic": "строгость",
+  "question": "Что меняет `strictNullChecks`?",
+  "answer": "`null` и `undefined` перестают быть членами всех типов: их нужно объявлять явно (`string | null`) и сужать перед использованием.",
+  "explanation": "Это единственный флаг, который реально ловит целый класс продакшен-ошибок «cannot read property of undefined»."
+ },
+ {
+  "id": "ts-non-null-assertion",
+  "topic": "ts",
+  "subtopic": "строгость",
+  "question": "Что делает оператор `!` после выражения и чем он опасен?",
+  "answer": "Утверждает компилятору, что значение не `null` и не `undefined`. Никакой проверки во время выполнения не добавляется — если утверждение ложно, будет обычная ошибка в рантайме.",
+  "explanation": "Каждое `!` — это обещание, за которое отвечает автор, а не компилятор. В большинстве мест честнее проверка или `?.`."
+ },
+ {
+  "id": "ts-as-vs-satisfies",
+  "topic": "ts",
+  "subtopic": "строгость",
+  "question": "Чем `satisfies` отличается от `as`?",
+  "answer": "`as` подменяет тип и глушит проверку. `satisfies` проверяет, что выражение соответствует типу, но **сохраняет** более точный выведенный тип.",
+  "explanation": "```ts\nconst config = { port: 3000 } satisfies Config;\n// config.port имеет тип 3000, а не number, и опечатка в ключе всё равно поймана\n```"
+ },
+ {
+  "id": "ts-variance",
+  "topic": "ts",
+  "subtopic": "система типов",
+  "question": "Что такое ковариантность и контравариантность на примере функций?",
+  "answer": "Возвращаемое значение ковариантно (можно вернуть более узкий тип), параметры контравариантны (функция, принимающая более широкий тип, подходит там, где ждут более узкий).",
+  "explanation": "При `strictFunctionTypes` параметры функций проверяются контравариантно — но только для сигнатур в форме `(a: T) => void`, не для методов: методы оставлены бивариантными ради совместимости с массивами и DOM."
+ },
+ {
+  "id": "ts-unknown-in-catch",
+  "topic": "ts",
+  "subtopic": "строгость",
+  "question": "Какой тип у переменной в `catch`?",
+  "answer": "`unknown` при `useUnknownInCatchVariables` (входит в `strict`), иначе `any`. Бросить в JS можно что угодно, не только `Error`.",
+  "explanation": "Отсюда обязательная проверка: `if (e instanceof Error) { e.message }`."
+ },
+ {
+  "id": "ts-type-inference-widening",
+  "topic": "ts",
+  "subtopic": "система типов",
+  "question": "Почему `let x = 'a'` имеет тип `string`, а `const x = 'a'` — тип `'a'`?",
+  "answer": "Для изменяемой привязки компилятор расширяет литеральный тип до базового: иначе в неё нельзя было бы ничего записать. `const` переприсваивать нельзя, и литерал сохраняется.",
+  "explanation": "Внутри объектного литерала поля тоже расширяются — это чинится через `as const`."
+ },
+ {
+  "id": "ts-generic-vs-overload",
+  "topic": "ts",
+  "subtopic": "функции",
+  "question": "Когда дженерик лучше перегрузки?",
+  "answer": "Когда типы входа и выхода связаны правилом, а не конечным списком вариантов. Перегрузка уместна, когда вариантов немного и они принципиально разные.",
+  "explanation": "Дженерики читаются в подсказках IDE лучше и не требуют поддерживать список сигнатур."
+ },
+ {
+  "id": "ts-tsconfig-paths",
+  "topic": "ts",
+  "subtopic": "компиляция",
+  "question": "Что делают `paths` и `baseUrl` в tsconfig?",
+  "answer": "Задают псевдонимы путей для импортов (`@app/*` вместо `../../../`). Это только про разрешение типов — сборщик нужно настроить отдельно.",
+  "explanation": "В Angular CLI сборщик читает tsconfig, поэтому достаточно одной настройки."
+ }
+]

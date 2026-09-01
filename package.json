@@ -6,17 +6,24 @@
     "start": "ng serve",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test"
+    "test": "ng test",
+    "verify:content": "node scripts/verify-content.mjs",
+    "check": "npm run verify:content && ng test --watch=false && ng build"
   },
   "private": true,
   "packageManager": "npm@11.16.0",
   "dependencies": {
+    "@angular/cdk": "^22.1.4",
     "@angular/common": "^22.1.0",
     "@angular/compiler": "^22.1.0",
     "@angular/core": "^22.1.0",
     "@angular/forms": "^22.1.0",
+    "@angular/material": "^22.1.4",
     "@angular/platform-browser": "^22.1.0",
     "@angular/router": "^22.1.0",
+    "idb": "^8.0.3",
+    "marked": "^18.0.11",
+    "monaco-editor": "^0.56.0",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0"
   },

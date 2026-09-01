@@ -1,0 +1,435 @@
+[
+ {
+  "id": "task-event-loop-basic",
+  "topic": "js",
+  "subtopic": "event loop",
+  "title": "Порядок: таймер, промис, синхронный код",
+  "language": "js",
+  "prompt": "Классика первого вопроса про event loop.",
+  "code": "console.log('start');\n\nsetTimeout(() => console.log('timeout'), 0);\n\nPromise.resolve().then(() => console.log('promise'));\n\nconsole.log('end');",
+  "expectedOutput": [
+   "start",
+   "end",
+   "promise",
+   "timeout"
+  ],
+  "explanation": "Синхронный код выполняется целиком: `start`, `end`. Затем движок опустошает очередь микрозадач — там колбэк `then`, отсюда `promise`. Макрозадача `setTimeout` доходит до выполнения последней, даже с нулевой задержкой."
+ },
+ {
+  "id": "task-event-loop-nested",
+  "topic": "js",
+  "subtopic": "event loop",
+  "title": "Микрозадачи внутри макрозадачи",
+  "language": "js",
+  "prompt": "Здесь важно, что очередь микрозадач опустошается **между** макрозадачами.",
+  "code": "setTimeout(() => {\n  console.log('t1');\n  Promise.resolve().then(() => console.log('p1'));\n}, 0);\n\nsetTimeout(() => console.log('t2'), 0);\n\nPromise.resolve().then(() => console.log('p0'));",
+  "expectedOutput": [
+   "p0",
+   "t1",
+   "p1",
+   "t2"
+  ],
+  "explanation": "Сначала микрозадача `p0`. Затем первая макрозадача печатает `t1` и добавляет микрозадачу. Перед переходом ко второй макрозадаче движок обязан опустошить очередь микрозадач — поэтому `p1` идёт раньше `t2`."
+ },
+ {
+  "id": "task-async-await-order",
+  "topic": "js",
+  "subtopic": "event loop",
+  "title": "async/await и порядок выполнения",
+  "language": "js",
+  "prompt": "`await` разрезает функцию: всё после него становится микрозадачей.",
+  "code": "async function f() {\n  console.log('1');\n  await null;\n  console.log('2');\n}\n\nf();\nconsole.log('3');\nPromise.resolve().then(() => console.log('4'));",
+  "expectedOutput": [
+   "1",
+   "3",
+   "2",
+   "4"
+  ],
+  "explanation": "Тело `async`-функции до первого `await` выполняется синхронно — отсюда `1`. Дальше функция приостанавливается, управление возвращается наружу, печатается `3`. Продолжение после `await null` встало в очередь микрозадач раньше, чем `then`, поэтому `2` опережает `4`."
+ },
+ {
+  "id": "task-this-method-arrow",
+  "topic": "js",
+  "subtopic": "this",
+  "title": "this в методе и в стрелке",
+  "language": "js",
+  "prompt": "У стрелочной функции нет собственного `this`.",
+  "code": "const obj = {\n  name: 'obj',\n  regular() {\n    return this?.name;\n  },\n  scoped() {\n    const arrow = () => this?.name;\n    const plain = function () {\n      return this?.name;\n    };\n    return arrow() + ' / ' + plain();\n  },\n};\n\nconsole.log(obj.regular());\nconsole.log(obj.scoped());\n\nconst detached = obj.regular;\nconsole.log(detached());",
+  "expectedOutput": [
+   "obj",
+   "obj / undefined",
+   "undefined"
+  ],
+  "explanation": "`obj.regular()` вызван как метод — `this` это `obj`. Внутри `scoped` стрелка берёт `this` из окружающего метода и тоже видит `obj`, а обычная функция вызвана без получателя: в строгом режиме её `this` — `undefined`. Вырванный из объекта `detached()` теряет получателя по той же причине."
+ },
+ {
+  "id": "task-closure-var-loop",
+  "topic": "js",
+  "subtopic": "замыкания",
+  "title": "Замыкание в цикле",
+  "language": "js",
+  "prompt": "Разница между `var` и `let` в одной строке.",
+  "code": "for (var i = 0; i < 3; i++) {\n  setTimeout(() => console.log('var:', i), 0);\n}\n\nfor (let j = 0; j < 3; j++) {\n  setTimeout(() => console.log('let:', j), 0);\n}",
+  "expectedOutput": [
+   "var: 3",
+   "var: 3",
+   "var: 3",
+   "let: 0",
+   "let: 1",
+   "let: 2"
+  ],
+  "explanation": "`var i` — одна переменная на всю область видимости функции: все три колбэка замкнулись на неё, а к моменту их выполнения цикл довёл `i` до 3. `let j` создаёт новую привязку на каждой итерации, и каждый колбэк видит своё значение."
+ },
+ {
+  "id": "task-hoisting",
+  "topic": "js",
+  "subtopic": "области видимости",
+  "title": "Всплытие объявлений",
+  "language": "js",
+  "prompt": "Что всплывает целиком, а что только именем.",
+  "code": "console.log(typeof fn);\nconsole.log(typeof value);\n\nfunction fn() {}\nvar value = 1;\n\ntry {\n  console.log(later);\n} catch (e) {\n  console.log(e.constructor.name);\n}\nlet later = 2;",
+  "expectedOutput": [
+   "function",
+   "undefined",
+   "ReferenceError"
+  ],
+  "explanation": "Объявление функции всплывает целиком, поэтому `typeof fn` уже `function`. `var value` всплывает без значения — `undefined`. `let later` тоже всплывает, но находится во временной мёртвой зоне: обращение до объявления бросает `ReferenceError`."
+ },
+ {
+  "id": "task-coercion",
+  "topic": "js",
+  "subtopic": "типы",
+  "title": "Приведение типов в сравнениях",
+  "language": "js",
+  "prompt": "Каждая строка — отдельная ловушка `==`.",
+  "code": "console.log([] == false);\nconsole.log([] == ![]);\nconsole.log('0' == false);\nconsole.log(null == undefined);\nconsole.log(null == 0);\nconsole.log(NaN == NaN);",
+  "expectedOutput": [
+   "true",
+   "true",
+   "true",
+   "true",
+   "false",
+   "false"
+  ],
+  "explanation": "`[]` приводится к пустой строке, та — к `0`, `false` — тоже к `0`. `![]` это `false`, дальше то же самое. `'0'` приводится к числу `0`. `null == undefined` — специальное правило языка; с любым другим значением, включая `0`, `null` не равен ничему. `NaN` не равен ничему, включая себя."
+ },
+ {
+  "id": "task-promise-all-reject",
+  "topic": "js",
+  "subtopic": "промисы",
+  "title": "Promise.all против allSettled",
+  "language": "js",
+  "prompt": "Что происходит с остальными промисами, когда один упал.",
+  "code": "const ok = Promise.resolve('ok');\nconst fail = Promise.reject(new Error('boom'));\n\nPromise.all([ok, fail])\n  .then((r) => console.log('all:', r))\n  .catch((e) => console.log('all catch:', e.message));\n\nPromise.allSettled([ok, fail]).then((r) => {\n  console.log('settled:', r.map((x) => x.status).join(','));\n});",
+  "expectedOutput": [
+   "settled: fulfilled,rejected",
+   "all catch: boom"
+  ],
+  "explanation": "`Promise.all` отклоняется на первой же ошибке — остальные промисы при этом не отменяются, просто их результат никому не нужен. `allSettled` дожидается всех и никогда не отклоняется: он отдаёт список объектов со `status` и `value`/`reason`.\n\nПорядок вывода здесь неочевиден: `allSettled` успевает первым, потому что обе цепочки состоят из микрозадач, и у `all` перед вызовом `catch` оказывается на один шаг больше."
+ },
+ {
+  "id": "task-promise-chain-values",
+  "topic": "js",
+  "subtopic": "промисы",
+  "title": "Что течёт по цепочке then",
+  "language": "js",
+  "prompt": "Возвращаемое значение каждого обработчика становится входом следующего.",
+  "code": "Promise.resolve(1)\n  .then((v) => { console.log('a', v); })\n  .then((v) => { console.log('b', v); return 2; })\n  .then((v) => { console.log('c', v); throw new Error('x'); })\n  .catch((e) => { console.log('d', e.message); return 3; })\n  .finally(() => { console.log('e'); return 99; })\n  .then((v) => console.log('f', v));",
+  "expectedOutput": [
+   "a 1",
+   "b undefined",
+   "c 2",
+   "d x",
+   "e",
+   "f 3"
+  ],
+  "explanation": "Обработчик без `return` отдаёт `undefined` — отсюда `b undefined`. Брошенная ошибка уводит цепочку в ближайший `catch`, который её гасит и возвращает `3`. `finally` получает результат «как есть» и своё возвращаемое значение игнорирует — до `f` доходит `3`, а не `99`."
+ },
+ {
+  "id": "task-sort-default",
+  "topic": "js",
+  "subtopic": "массивы",
+  "title": "sort без компаратора",
+  "language": "js",
+  "prompt": "Почему числа сортируются не так, как ожидается.",
+  "code": "const nums = [10, 9, 1, 100];\nconsole.log(nums.sort());\nconsole.log([10, 9, 1, 100].sort((a, b) => a - b));\nconsole.log(nums === nums.sort());",
+  "expectedOutput": [
+   "[ 1, 10, 100, 9 ]",
+   "[ 1, 9, 10, 100 ]",
+   "true"
+  ],
+  "explanation": "Без компаратора `sort` приводит элементы к строкам: `'10' < '9'` лексикографически. С компаратором `a - b` получается числовой порядок. Третья строка напоминает, что `sort` изменяет исходный массив и возвращает его же — ссылка та же самая."
+ },
+ {
+  "id": "task-shallow-copy",
+  "topic": "js",
+  "subtopic": "объекты",
+  "title": "Поверхностное копирование",
+  "language": "js",
+  "prompt": "Что именно копирует spread.",
+  "code": "const source = { a: 1, nested: { b: 2 } };\nconst copy = { ...source };\n\ncopy.a = 99;\ncopy.nested.b = 99;\n\nconsole.log(source.a);\nconsole.log(source.nested.b);\nconsole.log(source.nested === copy.nested);",
+  "expectedOutput": [
+   "1",
+   "99",
+   "true"
+  ],
+  "explanation": "Spread копирует только верхний уровень: `a` стал независимым, а `nested` остался общей ссылкой — изменение через копию видно в оригинале. Для независимой копии нужен `structuredClone`."
+ },
+ {
+  "id": "task-object-key-order",
+  "topic": "js",
+  "subtopic": "объекты",
+  "title": "Порядок ключей объекта",
+  "language": "js",
+  "prompt": "Целочисленные ключи ведут себя иначе, чем остальные.",
+  "code": "const obj = { b: 1, 2: 2, a: 3, 1: 4 };\nconsole.log(Object.keys(obj));\n\nconst map = new Map([['b', 1], [2, 2], ['a', 3]]);\nconsole.log([...map.keys()]);",
+  "expectedOutput": [
+   "[ '1', '2', 'b', 'a' ]",
+   "[ 'b', 2, 'a' ]"
+  ],
+  "explanation": "У объекта целочисленные ключи идут первыми по возрастанию, остальные строковые — в порядке добавления. Ключи объекта всегда строки, поэтому `2` превратился в `'2'`. `Map` сохраняет и порядок вставки, и типы ключей."
+ },
+ {
+  "id": "task-reduce-no-initial",
+  "topic": "js",
+  "subtopic": "массивы",
+  "title": "reduce без начального значения",
+  "language": "js",
+  "prompt": "Начальное значение — не формальность.",
+  "code": "console.log([1, 2, 3].reduce((a, b) => a + b));\nconsole.log(['a', 'b'].reduce((a, b) => a + b, ''));\n\ntry {\n  console.log([].reduce((a, b) => a + b));\n} catch (e) {\n  console.log(e.constructor.name);\n}",
+  "expectedOutput": [
+   "6",
+   "ab",
+   "TypeError"
+  ],
+  "explanation": "Без начального значения первым аккумулятором становится нулевой элемент, а перебор начинается со второго. На пустом массиве брать нечего — `reduce` бросает `TypeError`."
+ },
+ {
+  "id": "task-destructuring-default",
+  "topic": "js",
+  "subtopic": "объекты",
+  "title": "Значение по умолчанию при деструктуризации",
+  "language": "js",
+  "prompt": "Умолчание срабатывает не для всякой «пустоты».",
+  "code": "const { a = 'def' } = { a: undefined };\nconst { b = 'def' } = { b: null };\nconst { c = 'def' } = { c: 0 };\nconst { d = 'def' } = {};\n\nconsole.log(a, b, c, d);",
+  "expectedOutput": [
+   "def null 0 def"
+  ],
+  "explanation": "Значение по умолчанию подставляется строго при `undefined`. `null`, `0` и пустая строка проходят как есть — это то же различие, что между `||` и `??`."
+ },
+ {
+  "id": "task-generator",
+  "topic": "js",
+  "subtopic": "генераторы",
+  "title": "Значения генератора",
+  "language": "js",
+  "prompt": "`next(value)` умеет передавать значение внутрь.",
+  "code": "function* gen() {\n  const x = yield 1;\n  console.log('получено:', x);\n  yield x * 2;\n  return 'конец';\n}\n\nconst it = gen();\nconsole.log(it.next());\nconsole.log(it.next(10));\nconsole.log(it.next());\nconsole.log(it.next());",
+  "expectedOutput": [
+   "{ value: 1, done: false }",
+   "получено: 10",
+   "{ value: 20, done: false }",
+   "{ value: 'конец', done: true }",
+   "{ value: undefined, done: true }"
+  ],
+  "explanation": "Первый `next()` доводит выполнение до первого `yield` и отдаёт `1`; аргумент этого вызова теряется — принимать его некому. `next(10)` подставляет `10` как результат выражения `yield 1`. После `return` генератор завершён, и дальнейшие вызовы дают `undefined` с `done: true`."
+ },
+ {
+  "id": "task-class-field-order",
+  "topic": "js",
+  "subtopic": "прототипы",
+  "title": "Порядок инициализации полей класса",
+  "language": "js",
+  "prompt": "Базовый конструктор выполняется до полей наследника.",
+  "code": "class Base {\n  constructor() {\n    this.describe();\n  }\n  describe() {\n    console.log('Base');\n  }\n}\n\nclass Child extends Base {\n  label = 'child';\n  describe() {\n    console.log('Child', this.label);\n  }\n}\n\nnew Child();",
+  "expectedOutput": [
+   "Child undefined"
+  ],
+  "explanation": "Метод разрешается динамически, поэтому вызывается переопределённый `describe` наследника. Но поля наследника инициализируются **после** возврата из `super()`, и на момент вызова `label` ещё не присвоен. Это одна из самых частых ловушек наследования."
+ },
+ {
+  "id": "task-closure-counter",
+  "topic": "js",
+  "subtopic": "замыкания",
+  "title": "Независимые замыкания",
+  "language": "js",
+  "prompt": "Каждый вызов фабрики создаёт своё окружение.",
+  "code": "function makeCounter() {\n  let count = 0;\n  return () => ++count;\n}\n\nconst a = makeCounter();\nconst b = makeCounter();\n\nconsole.log(a(), a(), a());\nconsole.log(b());\nconsole.log(typeof count);",
+  "expectedOutput": [
+   "1 2 3",
+   "1",
+   "undefined"
+  ],
+  "explanation": "Каждый вызов `makeCounter` создаёт новую переменную `count` и новое замыкание, поэтому счётчики независимы. Снаружи `count` недоступен — `typeof` на необъявленной переменной единственный не бросает `ReferenceError`, а возвращает `'undefined'`."
+ },
+ {
+  "id": "task-try-finally",
+  "topic": "js",
+  "subtopic": "ошибки",
+  "title": "return внутри finally",
+  "language": "js",
+  "prompt": "`finally` умеет перебивать результат.",
+  "code": "function f() {\n  try {\n    return 'try';\n  } finally {\n    console.log('finally');\n  }\n}\n\nfunction g() {\n  try {\n    return 'try';\n  } finally {\n    return 'finally';\n  }\n}\n\nconsole.log(f());\nconsole.log(g());",
+  "expectedOutput": [
+   "finally",
+   "try",
+   "finally"
+  ],
+  "explanation": "`finally` выполняется всегда, но своё значение подставляет только при явном `return` в нём. В `g` возвращённое из `try` значение теряется — это надёжный способ случайно проглотить и исключение тоже, поэтому `return` в `finally` считается антипаттерном."
+ },
+ {
+  "id": "task-timeout-try-catch",
+  "topic": "js",
+  "subtopic": "ошибки",
+  "title": "try/catch и асинхронность",
+  "language": "js",
+  "prompt": "Почему обёртка не ловит ошибку колбэка.",
+  "code": "function safe() {\n  try {\n    setTimeout(() => {\n      try {\n        throw new Error('из таймера');\n      } catch (e) {\n        console.log('поймано внутри колбэка:', e.message);\n      }\n    }, 0);\n  } catch (e) {\n    console.log('поймано снаружи');\n  }\n  console.log('вышли из try');\n}\n\nsafe();\n\nsetTimeout(() => console.log('следующая макрозадача'), 10);",
+  "expectedOutput": [
+   "вышли из try",
+   "поймано внутри колбэка: из таймера",
+   "следующая макрозадача"
+  ],
+  "explanation": "Внешний `catch` не срабатывает никогда: `setTimeout` только ставит колбэк в очередь и возвращается, а к моменту его выполнения стек с `try` уже размотан. Поймать ошибку можно лишь внутри самого колбэка — или, если её не поймать, она уйдёт в глобальный обработчик, не тронув окружающий код."
+ },
+ {
+  "id": "task-map-set-dedup",
+  "topic": "js",
+  "subtopic": "объекты",
+  "title": "Set, NaN и объекты",
+  "language": "js",
+  "prompt": "Set сравнивает по SameValueZero.",
+  "code": "const set = new Set([1, '1', 1, NaN, NaN, {}, {}]);\nconsole.log(set.size);\nconsole.log(set.has(NaN));\nconsole.log(set.has({}));",
+  "expectedOutput": [
+   "5",
+   "true",
+   "false"
+  ],
+  "explanation": "Числовая `1` и строковая `'1'` — разные значения, дубликат `1` отброшен. Два `NaN` считаются одним и тем же (SameValueZero), поэтому `has(NaN)` истинно. Два пустых объектных литерала — разные ссылки, и третий `{}` в `has` тоже новая ссылка."
+ },
+ {
+  "id": "task-getter-spread",
+  "topic": "js",
+  "subtopic": "объекты",
+  "title": "Геттеры и spread",
+  "language": "js",
+  "prompt": "Spread вычисляет геттеры.",
+  "code": "let calls = 0;\nconst source = {\n  get value() {\n    calls++;\n    return 42;\n  },\n};\n\nconst copy = { ...source };\nconsole.log(calls);\nconsole.log(copy.value, copy.value);\nconsole.log(calls);",
+  "expectedOutput": [
+   "1",
+   "42 42",
+   "1"
+  ],
+  "explanation": "Spread копирует **результат** геттера, а не сам геттер: он вызывается ровно один раз, и в копии остаётся обычное свойство со значением. Чтобы сохранить аксессор, нужен `Object.defineProperties` с `Object.getOwnPropertyDescriptors`."
+ },
+ {
+  "id": "task-array-holes",
+  "topic": "js",
+  "subtopic": "массивы",
+  "title": "Разрежённые массивы",
+  "language": "js",
+  "prompt": "Дырки в массиве ведут себя не как `undefined`.",
+  "code": "const arr = [1, , 3];\nconsole.log(arr.length);\nconsole.log(arr.map((x) => x * 2));\nconsole.log(1 in arr);\nconsole.log(Object.keys(arr));",
+  "expectedOutput": [
+   "3",
+   "[ 2, , 6 ]",
+   "false",
+   "[ '0', '2' ]"
+  ],
+  "explanation": "Пропущенный элемент — не `undefined`, а отсутствующий индекс. `map` сохраняет дырку и не вызывает для неё колбэк (поэтому в выводе на её месте пусто), `in` возвращает `false`, а `Object.keys` пропускает индекс. Именно поэтому `Array(3).map(...)` ничего не заполняет — нужен `Array.from({ length: 3 })`."
+ },
+ {
+  "id": "task-ts-enum-reverse",
+  "topic": "ts",
+  "subtopic": "enum",
+  "title": "Обратное отображение enum",
+  "language": "ts",
+  "prompt": "Числовой `enum` порождает рантайм-объект с двумя видами ключей.",
+  "code": "enum Direction {\n  Up,\n  Down,\n}\n\nenum Level {\n  Low = 'low',\n  High = 'high',\n}\n\nconsole.log(Direction.Up);\nconsole.log(Direction[0]);\nconsole.log(Object.keys(Direction));\nconsole.log(Object.keys(Level));",
+  "expectedOutput": [
+   "0",
+   "Up",
+   "[ '0', '1', 'Up', 'Down' ]",
+   "[ 'Low', 'High' ]"
+  ],
+  "explanation": "Числовой enum компилируется в объект с прямым и обратным отображением — отсюда четыре ключа вместо двух. Строковый enum обратного отображения не имеет. Это одна из причин, по которым вместо `enum` часто берут union литералов с `as const`."
+ },
+ {
+  "id": "task-ts-param-properties",
+  "topic": "ts",
+  "subtopic": "классы",
+  "title": "Параметры-свойства и инициализация полей",
+  "language": "ts",
+  "prompt": "Сокращённая запись `constructor(private label)` присваивает поле не там, где кажется.",
+  "code": "class Service {\n  private readonly created = this.label?.toUpperCase();\n\n  constructor(private readonly label: string) {}\n\n  describe(): string {\n    return `${this.label} / ${this.created}`;\n  }\n}\n\nconsole.log(new Service('api').describe());",
+  "expectedOutput": [
+   "api / undefined"
+  ],
+  "explanation": "При современном таргете (`useDefineForClassFields`, ES2022 и новее) инициализаторы полей выполняются **до** тела конструктора, а параметр-свойство присваивается именно в теле. На момент вычисления `created` поле `label` ещё пустое.\n\nКомпилятор выдаёт такой код:\n\n```js\nclass Service {\n  label;\n  created = this.label?.toUpperCase();\n  constructor(label) {\n    this.label = label;\n  }\n}\n```\n\nНа старом таргете (ES2015) оба присваивания попадали в конструктор в обратном порядке, и тот же исходник печатал `api / API`. Отсюда правило: не вычисляйте поля из параметров-свойств — переносите вычисление в тело конструктора или в геттер."
+ },
+ {
+  "id": "task-ts-satisfies",
+  "topic": "ts",
+  "subtopic": "система типов",
+  "title": "as const и satisfies в рантайме",
+  "language": "ts",
+  "prompt": "Проверка того, что типовые конструкции ничего не добавляют в вывод.",
+  "code": "const config = { port: 3000, host: 'localhost' } as const;\n\ntype Config = { port: number; host: string };\nconst checked = { port: 8080, host: 'example.com' } satisfies Config;\n\nconsole.log(typeof config.port, config.port);\nconsole.log(Object.isFrozen(config));\nconsole.log(checked.host.toUpperCase());",
+  "expectedOutput": [
+   "number 3000",
+   "false",
+   "EXAMPLE.COM"
+  ],
+  "explanation": "`as const` — конструкция уровня типов: она делает поля `readonly` для компилятора, но `Object.freeze` не вызывает, поэтому объект не заморожен. `satisfies` проверяет соответствие типу и полностью исчезает при компиляции. Ни одна из них не порождает кода."
+ },
+ {
+  "id": "task-ts-generic-erasure",
+  "topic": "ts",
+  "subtopic": "дженерики",
+  "title": "Стирание типов",
+  "language": "ts",
+  "prompt": "Дженерики существуют только во время компиляции.",
+  "code": "function firstOf<T>(items: T[]): T | undefined {\n  return items[0];\n}\n\nclass Box<T> {\n  constructor(public value: T) {}\n}\n\nconst box = new Box<string>('a');\n\nconsole.log(firstOf([1, 2]));\nconsole.log(firstOf<string>([]));\nconsole.log(box.constructor.name);\nconsole.log(typeof box.value);",
+  "expectedOutput": [
+   "1",
+   "undefined",
+   "Box",
+   "string"
+  ],
+  "explanation": "После компиляции от `T` не остаётся ничего: проверить тип-параметр в рантайме невозможно, `box.constructor.name` даёт просто `Box`. Отсюда и `firstOf<string>([])`, возвращающий `undefined` вопреки сигнатуре `T | undefined` — компилятор о пустом массиве не знает."
+ },
+ {
+  "id": "task-ts-optional-nullish",
+  "topic": "ts",
+  "subtopic": "сужение типов",
+  "title": "Опциональная цепочка и ??",
+  "language": "ts",
+  "prompt": "Ноль и пустая строка — валидные значения.",
+  "code": "interface User {\n  name?: string;\n  score?: number;\n  address?: { city?: string };\n}\n\nconst user: User = { name: '', score: 0 };\n\nconsole.log(user.name || 'аноним');\nconsole.log(user.name ?? 'аноним');\nconsole.log(user.score || -1);\nconsole.log(user.score ?? -1);\nconsole.log(user.address?.city);\nconsole.log(user.address?.city ?? 'не указан');",
+  "expectedOutput": [
+   "аноним",
+   "",
+   "-1",
+   "0",
+   "undefined",
+   "не указан"
+  ],
+  "explanation": "`||` подставляет запасное значение для любого falsy, поэтому пустая строка и ноль теряются. `??` реагирует только на `null` и `undefined`. Опциональная цепочка на отсутствующем `address` даёт `undefined`, не бросая ошибку."
+ },
+ {
+  "id": "task-ts-private-runtime",
+  "topic": "ts",
+  "subtopic": "классы",
+  "title": "private в TypeScript и #поле",
+  "language": "ts",
+  "prompt": "Одно ограничение существует только для компилятора, другое — по-настоящему.",
+  "code": "class Account {\n  private secret = 'ts-private';\n  #hidden = 'real-private';\n\n  reveal(): string {\n    return this.#hidden;\n  }\n}\n\nconst account = new Account();\n\nconsole.log(Object.keys(account));\nconsole.log((account as any).secret);\nconsole.log(account.reveal());\nconsole.log(JSON.stringify(account));",
+  "expectedOutput": [
+   "[ 'secret' ]",
+   "ts-private",
+   "real-private",
+   "{\"secret\":\"ts-private\"}"
+  ],
+  "explanation": "`private` в TypeScript — договорённость уровня компиляции: в рантайме это обычное перечисляемое свойство, доступное через приведение к `any` и попадающее в `JSON.stringify`. Поле с `#` — настоящее приватное поле языка: его нет ни в `Object.keys`, ни в сериализации."
+ }
+]

@@ -1,0 +1,104 @@
+@if (task(); as task) {
+  <header class="head">
+    <a mat-button routerLink="/code">
+      <span class="material-symbols-outlined">arrow_back</span>
+      Задачи
+    </a>
+    <span class="meta">{{ titles[task.topic] }} · {{ task.subtopic }}</span>
+  </header>
+
+  <h1>{{ task.title }}</h1>
+  <div class="prompt md" [innerHTML]="task.prompt | md"></div>
+
+  <app-code-editor
+    class="editor"
+    [code]="task.code"
+    [language]="editorLanguage()"
+    (codeChange)="onCodeChange($event)"
+  />
+
+  <mat-form-field appearance="outline" class="prediction">
+    <mat-label>Что выведет? По строке на каждый вывод</mat-label>
+    <textarea
+      matInput
+      rows="5"
+      spellcheck="false"
+      [ngModel]="prediction()"
+      (ngModelChange)="prediction.set($event)"
+    ></textarea>
+    <mat-hint>Кавычки и лишние пробелы не важны — сверяется содержимое строк</mat-hint>
+  </mat-form-field>
+
+  <div class="actions">
+    <button mat-flat-button type="button" (click)="check()" [disabled]="running()">
+      @if (running()) {
+        <mat-spinner diameter="18" />
+      }
+      Проверить
+    </button>
+    <!-- «Ещё раз» нужна и после сорвавшегося запуска: именно ею предлагается
+         вернуть исходный код, и прятать её в этот момент нельзя. -->
+    @if (revealed() || runError()) {
+      <button mat-stroked-button type="button" (click)="retry()">Ещё раз</button>
+    }
+    @if (revealed()) {
+      <button mat-button type="button" (click)="goNext()">Следующая задача</button>
+    }
+  </div>
+
+  @if (runError() && !verdict()) {
+    <mat-card appearance="outlined" class="verdict">
+      <mat-card-content>
+        <div class="verdict-head">
+          <span class="material-symbols-outlined">error</span>
+          <b>Код не выполнился</b>
+        </div>
+        <p class="run-error">{{ runError() }}</p>
+        <p class="muted">
+          Вердикт не выносится: сверять ответ не с чем. Поправьте код или верните исходный кнопкой
+          «Ещё раз».
+        </p>
+      </mat-card-content>
+    </mat-card>
+  }
+
+  @if (verdict(); as verdict) {
+    <mat-card appearance="outlined" class="verdict" [class.passed]="verdict.passed">
+      <mat-card-content>
+        <div class="verdict-head">
+          <span class="material-symbols-outlined">
+            {{ verdict.passed ? 'check_circle' : 'cancel' }}
+          </span>
+          <b>{{ verdict.passed ? 'Верно' : 'Не сходится' }}</b>
+          @if (!verdict.passed && verdict.firstMismatch !== null) {
+            <span class="muted">расхождение со строки {{ verdict.firstMismatch + 1 }}</span>
+          }
+        </div>
+
+        @if (runError()) {
+          <p class="run-error">{{ runError() }}</p>
+        }
+
+        <div class="columns">
+          <div>
+            <h3>Ваш ответ</h3>
+            <pre class="output">{{ verdict.actual.join('\n') || '—' }}</pre>
+          </div>
+          <div>
+            <h3>Фактический вывод</h3>
+            <pre class="output">{{ verdict.expected.join('\n') || '—' }}</pre>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card appearance="outlined" class="explanation">
+      <mat-card-content>
+        <h3>Разбор</h3>
+        <div class="md" [innerHTML]="task.explanation | md"></div>
+      </mat-card-content>
+    </mat-card>
+  }
+} @else {
+  <p class="muted">Задача не найдена. <a routerLink="/code">К списку задач</a></p>
+}

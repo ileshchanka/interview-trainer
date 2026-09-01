@@ -1,0 +1,75 @@
+.head h1 {
+  margin: 0 0 6px;
+  font-size: 1.6rem;
+}
+
+.muted {
+  color: var(--mat-sys-on-surface-variant);
+  margin: 0;
+}
+
+.small {
+  font-size: 0.85rem;
+  margin: 12px 0;
+}
+
+.filters {
+  margin-top: 16px;
+  display: block;
+}
+
+.tasks {
+  display: grid;
+  gap: 10px;
+}
+
+.task-link {
+  text-decoration: none;
+  color: inherit;
+}
+
+.task {
+  transition: border-color 120ms ease;
+
+  &:hover {
+    border-color: var(--mat-sys-primary);
+  }
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.status {
+  color: var(--mat-sys-outline);
+}
+
+.task.solved .status {
+  color: var(--mat-sys-tertiary);
+}
+
+.text {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.title {
+  font-weight: 500;
+}
+
+.meta {
+  font-size: 0.82rem;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.lang {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--mat-sys-on-surface-variant);
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: 4px;
+  padding: 2px 6px;
+}
