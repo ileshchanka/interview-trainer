@@ -1,6 +1,6 @@
 <header class="head">
   <a mat-button routerLink="/decks">
-    <span class="material-symbols-outlined">arrow_back</span>
+    <mat-icon>arrow_back</mat-icon>
     Колоды
   </a>
   <span class="title">{{ title() }}</span>
@@ -45,7 +45,7 @@
 
   <nav class="nav">
     <button mat-stroked-button type="button" (click)="previous()" [disabled]="!hasPrevious()">
-      <span class="material-symbols-outlined">chevron_left</span>
+      <mat-icon>chevron_left</mat-icon>
       Назад
     </button>
 
@@ -54,7 +54,7 @@
     @if (hasNext()) {
       <button mat-flat-button type="button" (click)="next()">
         Далее
-        <span class="material-symbols-outlined">chevron_right</span>
+        <mat-icon iconPositionEnd>chevron_right</mat-icon>
       </button>
     } @else {
       <a mat-flat-button routerLink="/decks">Колода пройдена</a>

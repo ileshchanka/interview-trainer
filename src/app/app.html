@@ -1,6 +1,6 @@
 <mat-toolbar class="topbar">
   <a routerLink="/decks" class="brand">
-    <span class="material-symbols-outlined">school</span>
+    <mat-icon>school</mat-icon>
     <span class="brand-text">Interview&nbsp;Trainer</span>
   </a>
 
@@ -12,7 +12,7 @@
     aria-label="Направление подготовки"
   >
     {{ trackTitles[track()] }}
-    <span class="material-symbols-outlined">expand_more</span>
+    <mat-icon iconPositionEnd>expand_more</mat-icon>
   </button>
 
   <mat-menu #trackMenu="matMenu">
@@ -22,7 +22,7 @@
           <span class="track-title">
             {{ trackTitles[item] }}
             @if (item === track()) {
-              <span class="material-symbols-outlined selected">check</span>
+              <mat-icon class="selected">check</mat-icon>
             }
           </span>
           <span class="track-subtitle">{{ trackSubtitles[item] }}</span>
@@ -46,7 +46,7 @@
     [attr.aria-label]="'Тема: ' + themeLabel()"
     [title]="'Тема: ' + themeLabel()"
   >
-    <span class="material-symbols-outlined">{{ themeIcon() }}</span>
+    <mat-icon>{{ themeIcon() }}</mat-icon>
   </button>
 </mat-toolbar>
 

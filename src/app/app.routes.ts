@@ -1,4 +1,5 @@
 import { Routes } from '@angular/router';
+import { syncTrackForTaskGuard, syncTrackGuard } from './shared/track.guard';
 
 /**
  * Каждый экран грузится отдельным чанком: lazy-loading здесь не для галочки —
@@ -19,12 +20,14 @@ export const routes: Routes = [
   {
     path: 'review/:topic',
     title: 'Повторение — Interview Trainer',
+    canActivate: [syncTrackGuard],
     loadComponent: () => import('./features/review/review-page').then((m) => m.ReviewPage),
   },
   {
     // Просмотр колоды подряд, без оценок и расписания.
     path: 'browse/:topic',
     title: 'Все вопросы — Interview Trainer',
+    canActivate: [syncTrackGuard],
     loadComponent: () => import('./features/browse/browse-page').then((m) => m.BrowsePage),
   },
   {
@@ -35,6 +38,7 @@ export const routes: Routes = [
   {
     path: 'code/:id',
     title: 'Задача — Interview Trainer',
+    canActivate: [syncTrackForTaskGuard],
     loadComponent: () => import('./features/code/task-page').then((m) => m.TaskPage),
   },
   {

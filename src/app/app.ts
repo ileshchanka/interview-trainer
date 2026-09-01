@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
+import { MatIconModule, MatIconRegistry } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
@@ -29,6 +29,12 @@ export class App {
   private readonly tracks = inject(TrackService);
   private readonly router = inject(Router);
   protected readonly content = inject(ContentService);
+
+  constructor() {
+    // Мы подключаем Material Symbols, а `mat-icon` по умолчанию ждёт
+    // Material Icons. Без этой строки лигатуры остаются словами на экране.
+    inject(MatIconRegistry).setDefaultFontSetClass('material-symbols-outlined');
+  }
 
   protected readonly allTracks = TRACKS;
   protected readonly trackTitles = TRACK_TITLES;

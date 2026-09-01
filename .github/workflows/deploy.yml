@@ -40,7 +40,10 @@ jobs:
       - run: npx ng test --watch=false
       # base-href нужен для GitHub Pages: сайт живёт в подкаталоге репозитория,
       # и без него все ленивые чанки и запросы за контентом уйдут в корень домена.
-      - run: npx ng build --base-href /interview-trainer/
+      # Именно `npm run build`, а не `npx ng build`: иначе не отработает
+      # postbuild, кладущий рядом 404.html — без него обновление страницы
+      # на любом маршруте, кроме корневого, даёт «File not found».
+      - run: npm run build -- --base-href /interview-trainer/
       - uses: actions/upload-pages-artifact@v5
         if: github.ref == 'refs/heads/main'
         with:

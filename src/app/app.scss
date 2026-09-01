@@ -24,11 +24,6 @@
 .track-button {
   margin-right: 12px;
   white-space: nowrap;
-
-  .material-symbols-outlined {
-    font-size: 20px;
-    margin-left: 2px;
-  }
 }
 
 .track-item {
@@ -45,7 +40,6 @@
   font-weight: 500;
 
   .selected {
-    font-size: 18px;
     color: var(--mat-sys-primary);
   }
 }

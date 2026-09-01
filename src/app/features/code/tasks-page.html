@@ -24,9 +24,9 @@
       <mat-card appearance="outlined" class="task" [class.solved]="solved().has(task.id)">
         <mat-card-content>
           <div class="row">
-            <span class="material-symbols-outlined status">
+            <mat-icon class="status">
               {{ solved().has(task.id) ? 'check_circle' : 'radio_button_unchecked' }}
-            </span>
+            </mat-icon>
             <div class="text">
               <div class="title">{{ task.title }}</div>
               <div class="meta">{{ titles[task.topic] }} · {{ task.subtopic }}</div>

@@ -39,6 +39,13 @@ body {
   font-family: Roboto, 'Helvetica Neue', system-ui, sans-serif;
 }
 
+/* Иконка в строке текста (не в кнопке) должна стоять по центру строки:
+   у mat-icon фиксированная коробка 24×24, и по базовой линии она уезжает вниз. */
+.icon-inline mat-icon,
+mat-icon.icon-inline {
+  vertical-align: middle;
+}
+
 /* Разметка Markdown из корпуса вопросов: рендерится через [innerHTML],
    поэтому стили должны быть глобальными — инкапсуляция их не достанет. */
 .md {

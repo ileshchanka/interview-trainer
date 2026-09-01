@@ -10,6 +10,7 @@ import {
 } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
+import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { RouterLink } from '@angular/router';
 import { ContentService } from '../../core/content/content.service';
@@ -35,7 +36,14 @@ interface GradeButton {
 
 @Component({
   selector: 'app-review-page',
-  imports: [RouterLink, MatCardModule, MatButtonModule, MatProgressBarModule, MarkdownPipe],
+  imports: [
+    MatIconModule,
+    RouterLink,
+    MatCardModule,
+    MatButtonModule,
+    MatProgressBarModule,
+    MarkdownPipe,
+  ],
   templateUrl: './review-page.html',
   styleUrl: './review-page.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

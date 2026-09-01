@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
+import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { RouterLink } from '@angular/router';
 import { ContentService } from '../../core/content/content.service';
@@ -24,7 +25,7 @@ interface DeckView {
 
 @Component({
   selector: 'app-decks-page',
-  imports: [RouterLink, MatCardModule, MatButtonModule, MatProgressBarModule],
+  imports: [MatIconModule, RouterLink, MatCardModule, MatButtonModule, MatProgressBarModule],
   templateUrl: './decks-page.html',
   styleUrl: './decks-page.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

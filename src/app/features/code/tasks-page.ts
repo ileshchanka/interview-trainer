@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
+import { MatIconModule } from '@angular/material/icon';
 import { MatChipsModule } from '@angular/material/chips';
 import { RouterLink } from '@angular/router';
 import { ContentService } from '../../core/content/content.service';
@@ -11,7 +12,7 @@ import { TrackService } from '../../shared/track.service';
 
 @Component({
   selector: 'app-tasks-page',
-  imports: [RouterLink, MatCardModule, MatButtonModule, MatChipsModule],
+  imports: [MatIconModule, RouterLink, MatCardModule, MatButtonModule, MatChipsModule],
   templateUrl: './tasks-page.html',
   styleUrl: './tasks-page.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

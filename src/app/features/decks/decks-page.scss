@@ -37,7 +37,8 @@
 }
 
 .start-all {
-  display: block;
+  /* Только ширина: `display: block` ломает внутренний flex кнопки Material,
+     и подпись прижимается к левому верхнему углу вместо центра. */
   width: 100%;
   margin-bottom: 20px;
 }

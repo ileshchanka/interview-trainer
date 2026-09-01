@@ -33,8 +33,7 @@ h1 {
   font-size: 0.85rem;
   color: var(--mat-sys-on-surface-variant);
 
-  .material-symbols-outlined {
-    font-size: 18px;
+  mat-icon {
     flex: none;
   }
 }
@@ -75,12 +74,12 @@ h1 {
   gap: 8px;
   margin-bottom: 12px;
 
-  .material-symbols-outlined {
+  mat-icon {
     color: var(--mat-sys-error);
   }
 }
 
-.verdict.passed .verdict-head .material-symbols-outlined {
+.verdict.passed .verdict-head mat-icon {
   color: var(--mat-sys-tertiary);
 }
 

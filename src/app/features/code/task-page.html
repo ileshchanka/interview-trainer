@@ -1,7 +1,7 @@
 @if (task(); as task) {
   <header class="head">
     <a mat-button routerLink="/code">
-      <span class="material-symbols-outlined">arrow_back</span>
+      <mat-icon>arrow_back</mat-icon>
       Задачи
     </a>
     <span class="meta">{{ titles[task.topic] }} · {{ task.subtopic }}</span>
@@ -20,7 +20,7 @@
 
   @if (!runnable()) {
     <p class="not-runnable">
-      <span class="material-symbols-outlined">info</span>
+      <mat-icon>info</mat-icon>
       Kotlin в браузере не выполняется: ответ сверяется с записанным в задаче — он проверен на
       настоящем компиляторе при сборке. Редактор только для чтения.
     </p>
@@ -59,7 +59,7 @@
     <mat-card appearance="outlined" class="verdict">
       <mat-card-content>
         <div class="verdict-head">
-          <span class="material-symbols-outlined">error</span>
+          <mat-icon>error</mat-icon>
           <b>Код не выполнился</b>
         </div>
         <p class="run-error">{{ runError() }}</p>
@@ -75,9 +75,9 @@
     <mat-card appearance="outlined" class="verdict" [class.passed]="verdict.passed">
       <mat-card-content>
         <div class="verdict-head">
-          <span class="material-symbols-outlined">
+          <mat-icon>
             {{ verdict.passed ? 'check_circle' : 'cancel' }}
-          </span>
+          </mat-icon>
           <b>{{ verdict.passed ? 'Верно' : 'Не сходится' }}</b>
           @if (!verdict.passed && verdict.firstMismatch !== null) {
             <span class="muted">расхождение со строки {{ verdict.firstMismatch + 1 }}</span>
