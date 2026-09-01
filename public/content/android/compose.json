@@ -5,6 +5,7 @@
   "subtopic": "основы",
   "question": "Чем декларативный UI отличается от императивного?",
   "answer": "В императивном вы меняете существующие View (`textView.text = …`). В декларативном вы описываете, как экран выглядит **для данного состояния**, а фреймворк сам приводит UI к этому описанию.",
+  "example": "```kotlin\n// Императивно: меняем существующую View\ntextView.text = user.name\navatarView.isVisible = user.hasAvatar\n\n// Декларативно: описываем, как выглядит экран для этого состояния\n@Composable\nfun Profile(user: User) {\n    Text(user.name)\n    if (user.hasAvatar) Avatar(user.avatarUrl)\n}\n```",
   "explanation": "Отсюда следствие: рассинхрона между состоянием и экраном не бывает по построению — самый частый класс багов в View-системе исчезает."
  },
  {
@@ -13,6 +14,7 @@
   "subtopic": "основы",
   "question": "Что делает аннотация `@Composable` и какие у такой функции ограничения?",
   "answer": "Помечает функцию, которая описывает часть UI и может вызываться только из другой composable-функции. Она не возвращает View, а вносит изменения в текущую композицию.",
+  "example": "```kotlin\n@Composable\nfun Greeting(name: String) {\n    Text(\"Привет, $name\")\n}\n\n// Вызывать можно только из другой composable-функции:\n// fun plain() { Greeting(\"Аня\") }   // ошибка компиляции\n```",
   "explanation": "Composable-функции должны быть идемпотентными и без побочных эффектов: они выполняются часто, в любом порядке и могут быть пропущены или выполнены параллельно."
  },
  {
@@ -21,6 +23,7 @@
   "subtopic": "рекомпозиция",
   "question": "Что такое рекомпозиция и когда она запускается?",
   "answer": "Повторный вызов composable-функций при изменении прочитанного ими состояния. Compose перевыполняет только те функции, чьи входные данные изменились, а остальные пропускает.",
+  "example": "```kotlin\n@Composable\nfun Counter() {\n    var count by remember { mutableStateOf(0) }\n\n    Column {\n        Text(\"Нажатий: $count\")          // перерисуется при изменении count\n        Button(onClick = { count++ }) { Text(\"Нажать\") }\n        Text(\"Статичный текст\")          // будет пропущен\n    }\n}\n```",
   "explanation": "Рекомпозиция может быть отменена и запущена заново, поэтому побочные эффекты в теле composable недопустимы: они выполнятся непредсказуемое число раз."
  },
  {
@@ -29,6 +32,7 @@
   "subtopic": "состояние",
   "question": "Как объявить состояние и чем `remember` отличается от `mutableStateOf`?",
   "answer": "`mutableStateOf` создаёт наблюдаемый контейнер, `remember` сохраняет значение между рекомпозициями. Нужны оба: без `remember` состояние создавалось бы заново на каждой рекомпозиции.",
+  "example": "```kotlin\nvar query by remember { mutableStateOf(\"\") }   // делегат: обращаемся к значению\n\n// Без remember значение сбрасывалось бы на каждой рекомпозиции:\n// var query by mutableStateOf(\"\")\n\nTextField(value = query, onValueChange = { query = it })\n```",
   "explanation": "Синтаксис `var x by remember { mutableStateOf(0) }` использует делегат свойства — обращения идут к значению, а не к объекту `State`."
  },
  {
@@ -37,6 +41,7 @@
   "subtopic": "состояние",
   "question": "Чем `rememberSaveable` отличается от `remember`?",
   "answer": "`remember` переживает рекомпозицию, но не пересоздание Activity. `rememberSaveable` дополнительно сохраняет значение в Bundle и переживает поворот и смерть процесса.",
+  "example": "```kotlin\nvar tab by rememberSaveable { mutableStateOf(0) }   // переживёт поворот и смерть процесса\nvar hovered by remember { mutableStateOf(false) }   // только рекомпозицию\n\n// Для своего типа нужен Saver\nval state = rememberSaveable(saver = Filter.Saver) { Filter() }\n```",
   "explanation": "Тип должен быть сохраняемым: примитивы, `Parcelable`, либо свой `Saver`. Лимит Bundle тот же — около 1 МБ на транзакцию."
  },
  {
@@ -45,6 +50,7 @@
   "subtopic": "состояние",
   "question": "Что такое подъём состояния (state hoisting)?",
   "answer": "Вынесение состояния вверх по дереву: composable принимает значение и колбэк изменения (`value` + `onValueChange`) вместо того, чтобы хранить состояние внутри.",
+  "example": "```kotlin\n@Composable\nfun SearchField(value: String, onValueChange: (String) -> Unit) {   // stateless\n    TextField(value = value, onValueChange = onValueChange)\n}\n\n@Composable\nfun Screen() {\n    var query by rememberSaveable { mutableStateOf(\"\") }\n    SearchField(query) { query = it }        // состояние поднято сюда\n}\n```",
   "explanation": "Делает компонент stateless — его легко переиспользовать, превьюить и тестировать. Это тот же принцип, что «состояние поднимают к общему предку» в React."
  },
  {
@@ -53,6 +59,7 @@
   "subtopic": "состояние",
   "question": "Что делают ключи в `remember(key)`?",
   "answer": "При изменении ключа значение вычисляется заново. Без ключа `remember` держит первое вычисленное значение всё время жизни composable в этом месте дерева.",
+  "example": "```kotlin\n@Composable\nfun Details(userId: Long) {\n    // Без ключа останется результат для первого userId\n    val formatter = remember(userId) { Formatter(userId) }\n    Text(formatter.title)\n}\n```",
   "explanation": "Классический баг: `remember` без ключа хранит данные предыдущего элемента списка после смены аргумента."
  },
  {
@@ -61,6 +68,7 @@
   "subtopic": "состояние",
   "question": "Когда нужен `derivedStateOf`?",
   "answer": "Когда из часто меняющегося состояния получается редко меняющееся: например, `scrollState.firstVisibleItemIndex > 0`. Он гасит лишние рекомпозиции.",
+  "example": "```kotlin\nval listState = rememberLazyListState()\n\n// Пересчитывается на каждый пиксель прокрутки:\n// val showButton = listState.firstVisibleItemIndex > 0\n\nval showButton by remember {\n    derivedStateOf { listState.firstVisibleItemIndex > 0 }   // меняется редко\n}\n```",
   "explanation": "Для простого преобразования одного состояния в другое он не нужен — обычное выражение дешевле. Неоправданный `derivedStateOf` — частое переусложнение."
  },
  {
@@ -69,6 +77,7 @@
   "subtopic": "эффекты",
   "question": "Зачем нужен `LaunchedEffect` и когда он перезапускается?",
   "answer": "Запускает корутину, привязанную к жизни composable: при входе в композицию стартует, при выходе отменяется. Перезапускается при изменении ключей.",
+  "example": "```kotlin\n@Composable\nfun Details(id: Long, viewModel: DetailsViewModel) {\n    LaunchedEffect(id) {                 // перезапустится при смене id\n        viewModel.load(id)\n    }\n\n    LaunchedEffect(Unit) { }             // один раз за время жизни\n}\n```",
   "explanation": "`LaunchedEffect(Unit)` выполняется один раз за время жизни. В теле composable корутину запускать нельзя — рекомпозиция породила бы их десятками."
  },
  {
@@ -77,6 +86,7 @@
   "subtopic": "эффекты",
   "question": "Для чего нужен `DisposableEffect`?",
   "answer": "Для эффекта, требующего освобождения: регистрация слушателя, подписка на системное событие. Обязательный блок `onDispose` вызывается при выходе или смене ключа.",
+  "example": "```kotlin\nDisposableEffect(lifecycleOwner) {\n    val observer = LifecycleEventObserver { _, event -> handle(event) }\n    lifecycleOwner.lifecycle.addObserver(observer)\n\n    onDispose {                          // блок обязателен\n        lifecycleOwner.lifecycle.removeObserver(observer)\n    }\n}\n```",
   "explanation": "Типичный пример — подписка на `LifecycleObserver` с отпиской в `onDispose`."
  },
  {
@@ -85,6 +95,7 @@
   "subtopic": "эффекты",
   "question": "Чем `SideEffect` отличается от `rememberCoroutineScope`?",
   "answer": "`SideEffect` выполняется после каждой успешной композиции — им синхронизируют состояние Compose с не-Compose объектами. `rememberCoroutineScope` даёт скоуп для запуска корутин **из колбэков** (нажатие кнопки).",
+  "example": "```kotlin\nval scope = rememberCoroutineScope()\n\nButton(onClick = {\n    scope.launch { snackbarHostState.showSnackbar(\"Готово\") }   // реакция на событие\n}) { Text(\"Сохранить\") }\n\nLaunchedEffect(state.error) {            // реакция на состояние\n    state.error?.let { snackbarHostState.showSnackbar(it) }\n}\n```",
   "explanation": "Правило: реакция на состояние — `LaunchedEffect`; реакция на событие пользователя — `rememberCoroutineScope`."
  },
  {
@@ -93,6 +104,7 @@
   "subtopic": "состояние",
   "question": "Как показать `Flow` в Compose?",
   "answer": "`collectAsStateWithLifecycle()` — он останавливает сбор, когда экран уходит в фон. Обычный `collectAsState()` продолжает собирать и тратит ресурсы.",
+  "example": "```kotlin\nval state by viewModel.state.collectAsStateWithLifecycle()   // остановится в фоне\n\n// collectAsState() продолжит собирать и тратить ресурсы, пока экран не виден\nScreen(state)\n```",
   "explanation": "Для `StateFlow` начальное значение известно, для холодного `Flow` его надо передать явно."
  },
  {
@@ -101,6 +113,7 @@
   "subtopic": "производительность",
   "question": "Что такое стабильность типа и почему она влияет на производительность?",
   "answer": "Compose пропускает рекомпозицию функции, если её параметры стабильны и не изменились. Нестабильный тип (например, `List` — интерфейс с потенциально изменяемой реализацией) заставляет перевыполнять функцию всегда.",
+  "example": "```kotlin\n@Composable\nfun UserList(users: List<User>) { }   // List нестабилен: функция не пропускается\n\n// Варианты:\n@Composable\nfun UserList(users: ImmutableList<User>) { }   // kotlinx.collections.immutable\n\n@Immutable\ndata class UsersUi(val items: List<User>)\n```",
   "explanation": "Стабильны: примитивы, строки, лямбды, `data class` только из стабильных `val`. Для списков есть `ImmutableList` из `kotlinx.collections.immutable` или аннотация `@Immutable`."
  },
  {
@@ -109,6 +122,7 @@
   "subtopic": "производительность",
   "question": "Почему передача лямбды в composable может ломать пропуск рекомпозиции?",
   "answer": "Лямбда, захватывающая изменяющееся значение, создаётся заново и считается новым параметром. Compose запоминает лямбды сам, но только если захваченные значения стабильны.",
+  "example": "```kotlin\n// Новая лямбда на каждую рекомпозицию — параметр «меняется»\nUserRow(user = user, onClick = { onOpen(user.id) })\n\n// Стабильная ссылка:\nUserRow(user = user, onClick = onOpen)   // onClick: (Long) -> Unit\n```",
   "explanation": "Лучше передавать не `{ onClick(item.id) }`, а стабильную ссылку, либо поднимать лямбду выше через `remember`."
  },
  {
@@ -117,6 +131,7 @@
   "subtopic": "рендеринг",
   "question": "Из каких фаз состоит кадр в Compose?",
   "answer": "Composition (что рисовать), Layout (измерение и размещение), Drawing (отрисовка). Состояние, прочитанное позже, вызывает перезапуск только своих фаз.",
+  "example": "```kotlin\n// Читаем состояние в композиции — перезапускается всё три фазы\nBox(Modifier.offset(x = offset.dp))\n\n// Читаем в фазе layout — рекомпозиции не происходит вовсе\nBox(Modifier.offset { IntOffset(offset.roundToPx(), 0) })\n```",
   "explanation": "Отсюда оптимизация: `Modifier.offset { }` с лямбдой читает состояние в фазе layout и не вызывает рекомпозицию вовсе — важнейший приём для анимаций."
  },
  {
@@ -125,6 +140,7 @@
   "subtopic": "модификаторы",
   "question": "Почему порядок модификаторов важен?",
   "answer": "Модификаторы применяются слева направо, оборачивая друг друга: `padding().background()` красит фон внутри отступа, а `background().padding()` — снаружи.",
+  "example": "```kotlin\nBox(Modifier.padding(16.dp).background(Color.Red))   // фон внутри отступа\nBox(Modifier.background(Color.Red).padding(16.dp))   // фон снаружи, отступ внутри\n\nBox(Modifier.padding(16.dp).clickable { })           // область нажатия меньше\nBox(Modifier.clickable { }.padding(16.dp))           // область нажатия больше\n```",
   "explanation": "То же с `clickable`: до `padding` область нажатия меньше, после — больше. Это самый частый вопрос-подвох по Compose."
  },
  {
@@ -133,6 +149,7 @@
   "subtopic": "модификаторы",
   "question": "Почему свой composable должен принимать `modifier` параметром?",
   "answer": "Чтобы вызывающий мог задать размеры, отступы и поведение снаружи. По соглашению это первый необязательный параметр, применяемый к корневому элементу.",
+  "example": "```kotlin\n@Composable\nfun UserRow(\n    user: User,\n    modifier: Modifier = Modifier,   // первый необязательный параметр\n) {\n    Row(modifier.fillMaxWidth()) { Text(user.name) }\n}\n\nUserRow(user, Modifier.padding(8.dp))\n```",
   "explanation": "Без него компонент невозможно встроить в чужой макет, не переписывая."
  },
  {
@@ -141,6 +158,7 @@
   "subtopic": "списки",
   "question": "Чем `LazyColumn` отличается от `Column` с прокруткой?",
   "answer": "`LazyColumn` создаёт и держит только видимые элементы, `Column(Modifier.verticalScroll())` компонует весь список сразу.",
+  "example": "```kotlin\nLazyColumn {                        // создаёт только видимые элементы\n    items(users) { UserRow(it) }\n}\n\n// Так весь список компонуется сразу — на тысяче элементов это провал\nColumn(Modifier.verticalScroll(rememberScrollState())) {\n    users.forEach { UserRow(it) }\n}\n```",
   "explanation": "Это аналог RecyclerView. На длинном списке второй вариант просто убивает производительность и память."
  },
  {
@@ -149,6 +167,7 @@
   "subtopic": "списки",
   "question": "Зачем нужен `key` в `items` у LazyColumn?",
   "answer": "Он сопоставляет элементы между обновлениями списка: без него при вставке в начало Compose переиспользует состояние не тех элементов и теряет позицию прокрутки.",
+  "example": "```kotlin\nLazyColumn {\n    items(users, key = { it.id }) { user ->    // без key вставка в начало\n        UserRow(user)                          // ломает состояние и прокрутку\n    }\n}\n```",
   "explanation": "Ровно та же роль, что у `track` в Angular и `key` в React."
  },
  {
@@ -157,6 +176,7 @@
   "subtopic": "списки",
   "question": "Что даёт `contentType` в LazyColumn?",
   "answer": "Подсказку о типе элемента, чтобы Compose переиспользовал структуру композиции между однотипными элементами в разнородном списке.",
+  "example": "```kotlin\nLazyColumn {\n    items(rows, key = { it.id }, contentType = { it::class }) { row ->\n        when (row) {\n            is Row.Header -> Header(row)\n            is Row.Item -> Item(row)\n        }\n    }\n}\n```",
   "explanation": "Заметно ускоряет прокрутку списков с заголовками, разделителями и карточками разных видов."
  },
  {
@@ -165,6 +185,7 @@
   "subtopic": "DI",
   "question": "Что такое `CompositionLocal` и когда он уместен?",
   "answer": "Неявная передача значения вниз по дереву без прокидывания параметров: тема, размеры, `LocalContext`. Уместен для сквозных данных, которые нужны почти везде.",
+  "example": "```kotlin\nval LocalSpacing = compositionLocalOf { Spacing() }\n\nCompositionLocalProvider(LocalSpacing provides Spacing(large = 24.dp)) {\n    Screen()\n}\n\n@Composable\nfun Screen() = Box(Modifier.padding(LocalSpacing.current.large))\n```",
   "explanation": "Для передачи данных экрана он вреден: зависимость становится невидимой в сигнатуре, а компонент — непереиспользуемым. Аналог React Context со всеми теми же оговорками."
  },
  {
@@ -173,6 +194,7 @@
   "subtopic": "тема",
   "question": "Как устроена тема в Material 3?",
   "answer": "`MaterialTheme` предоставляет `colorScheme`, `typography` и `shapes` через CompositionLocal. Компоненты берут значения оттуда, а не из аргументов.",
+  "example": "```kotlin\nMaterialTheme(\n    colorScheme = if (isSystemInDarkTheme()) darkColorScheme() else lightColorScheme(),\n    typography = Typography,\n) {\n    App()\n}\n\nText(\"Заголовок\", color = MaterialTheme.colorScheme.primary)\n```",
   "explanation": "Динамические цвета (Material You) с Android 12 строятся из обоев пользователя через `dynamicColorScheme`."
  },
  {
@@ -181,6 +203,7 @@
   "subtopic": "инструменты",
   "question": "Что даёт `@Preview` и какие у него ограничения?",
   "answer": "Отрисовку composable в IDE без запуска приложения, в том числе в нескольких конфигурациях сразу.",
+  "example": "```kotlin\n@Preview(name = \"Светлая\")\n@Preview(name = \"Тёмная\", uiMode = Configuration.UI_MODE_NIGHT_YES)\n@Composable\nprivate fun ProfilePreview() {\n    AppTheme { ProfileContent(user = User(1, \"Аня\")) }   // stateless-компонент\n}\n```",
   "explanation": "Превью не умеет внедрять зависимости и не работает с ViewModel: поэтому превьюить нужно stateless-компоненты, принимающие данные параметрами."
  },
  {
@@ -189,6 +212,7 @@
   "subtopic": "навигация",
   "question": "Как устроена навигация в Compose?",
   "answer": "`NavHost` описывает граф маршрутов, `NavController` выполняет переходы. Современный вариант — типобезопасные маршруты на `@Serializable`-объектах вместо строк.",
+  "example": "```kotlin\n@Serializable data object Home\n@Serializable data class Details(val id: Long)\n\nNavHost(navController, startDestination = Home) {\n    composable<Home> { HomeScreen(onOpen = { navController.navigate(Details(it)) }) }\n    composable<Details> { entry -> DetailsScreen(entry.toRoute<Details>().id) }\n}\n```",
   "explanation": "Передавать между экранами нужно идентификаторы, а не объекты: аргументы уходят в Bundle со всеми его ограничениями."
  },
  {
@@ -197,6 +221,7 @@
   "subtopic": "навигация",
   "question": "Как ViewModel привязывается к экрану навигации?",
   "answer": "`hiltViewModel()` или `viewModel()` внутри `composable(route)` привязывает её к записи бэкстека: при уходе с экрана она уничтожается, при повороте — живёт.",
+  "example": "```kotlin\ncomposable<Details> {\n    val viewModel: DetailsViewModel = hiltViewModel()   // живёт вместе с записью бэкстека\n    DetailsScreen(viewModel)\n}\n\n// Общая на подграф:\nval parentEntry = remember(entry) { navController.getBackStackEntry(Flow) }\nval shared: FlowViewModel = hiltViewModel(parentEntry)\n```",
   "explanation": "Общая ViewModel для нескольких экранов получается через скоуп родительской записи графа."
  },
  {
@@ -205,6 +230,7 @@
   "subtopic": "интероп",
   "question": "Как совместить Compose и View?",
   "answer": "`AndroidView` встраивает View внутрь Compose, `ComposeView` — Compose внутрь XML-иерархии.",
+  "example": "```kotlin\n// View внутри Compose\nAndroidView(factory = { context -> MapView(context) }, update = { it.setMarker(point) })\n\n// Compose внутри View\ncomposeView.setViewCompositionStrategy(\n    ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed,\n)\ncomposeView.setContent { Profile(user) }\n```",
   "explanation": "У `ComposeView` во фрагменте обязательно задают `ViewCompositionStrategy`, иначе композиция живёт дольше View и утекает."
  },
  {
@@ -213,6 +239,7 @@
   "subtopic": "тестирование",
   "question": "Как тестируют Compose UI?",
   "answer": "`createComposeRule()` плюс поиск по семантике: `onNodeWithText`, `onNodeWithTag`, действия `performClick` и проверки `assertIsDisplayed`.",
+  "example": "```kotlin\n@get:Rule val rule = createComposeRule()\n\n@Test\nfun `кнопка открывает профиль`() {\n    rule.setContent { AppTheme { Home(onOpen = { opened = true }) } }\n\n    rule.onNodeWithText(\"Профиль\").performClick()\n    rule.onNodeWithTag(\"profile\").assertIsDisplayed()\n}\n```",
   "explanation": "Синхронизация автоматическая, но при собственных корутинах и анимациях нужен `mainClock` и отключение автопродвижения."
  },
  {
@@ -221,6 +248,7 @@
   "subtopic": "доступность",
   "question": "Что такое дерево семантики?",
   "answer": "Параллельное UI-дереву описание смысла элементов: роль, текст, состояние. Им пользуются TalkBack и тесты.",
+  "example": "```kotlin\nIcon(\n    imageVector = Icons.Default.Search,\n    contentDescription = \"Поиск\",       // для декоративной — null\n)\n\nRow(Modifier.semantics(mergeDescendants = true) { }) {   // TalkBack прочитает как одно\n    Text(\"Аня\")\n    Text(\"онлайн\")\n}\n```",
   "explanation": "`contentDescription` у иконок обязателен; декоративным элементам передают `null`, чтобы TalkBack их пропускал."
  },
  {
@@ -229,6 +257,7 @@
   "subtopic": "производительность",
   "question": "Чем `@Stable` отличается от `@Immutable`?",
   "answer": "`@Immutable` обещает, что объект вообще не меняется после создания. `@Stable` — что он может меняться, но обо всех изменениях уведомит Compose.",
+  "example": "```kotlin\n@Immutable                       // обещаю: не изменится никогда\ndata class Filter(val query: String)\n\n@Stable                          // может меняться, но уведомит Compose\nclass FormState {\n    var query by mutableStateOf(\"\")\n}\n```",
   "explanation": "Это обещания компилятору, которые он не проверяет: неверная аннотация даёт неперерисовывающийся экран."
  },
  {
@@ -237,6 +266,7 @@
   "subtopic": "рекомпозиция",
   "question": "Что такое область рекомпозиции?",
   "answer": "Наименьшая перезапускаемая часть — тело composable-функции. Изменение состояния перезапускает ту функцию, которая его **читает**, а не ту, где оно объявлено.",
+  "example": "```kotlin\n@Composable\nfun Screen(viewModel: ScreenViewModel) {\n    val state by viewModel.state.collectAsStateWithLifecycle()\n\n    Column {\n        Header()                 // не читает state — будет пропущен\n        Content(state.items)     // перезапустится при изменении\n    }\n}\n```",
   "explanation": "Отсюда приём: чтение состояния опускают как можно ниже по дереву, чтобы перерисовывался маленький кусок, а не весь экран."
  },
  {
@@ -245,6 +275,7 @@
   "subtopic": "состояние",
   "question": "Что такое снапшот-система Compose?",
   "answer": "Механизм, отслеживающий чтения и записи состояния: он знает, какая функция что прочитала, и потому умеет перезапускать только нужное.",
+  "example": "```kotlin\nvar count by mutableStateOf(0)\n\nSnapshot.withMutableSnapshot {   // изменения применяются атомарно\n    count += 1\n    count += 1\n}\n// На экран промежуточное значение не попадёт\n```",
   "explanation": "Изменения применяются атомарно, поэтому промежуточное состояние никогда не попадает на экран."
  },
  {
@@ -253,6 +284,7 @@
   "subtopic": "состояние",
   "question": "Почему `mutableStateOf(mutableListOf())` не работает?",
   "answer": "`State` замечает только замену **ссылки**. Добавление элемента в тот же список ничего не уведомляет, и экран не перерисовывается.",
+  "example": "```kotlin\n// Не работает: ссылка не меняется\nval items = remember { mutableStateOf(mutableListOf<Item>()) }\nitems.value.add(item)            // экран не перерисуется\n\n// Работает:\nval items = remember { mutableStateListOf<Item>() }\nitems.add(item)\n\n// Или замена целиком:\nvar list by remember { mutableStateOf(emptyList<Item>()) }\nlist = list + item\n```",
   "explanation": "Решения два: `mutableStateListOf()` — наблюдаемый список, либо замена списка целиком (`list = list + item`). Ровно та же ловушка, что с `OnPush` в Angular."
  },
  {
@@ -261,6 +293,7 @@
   "subtopic": "макет",
   "question": "Чем `Box`, `Row` и `Column` отличаются от View-аналогов?",
   "answer": "Это composable-функции, а не классы View: они не создают объектов иерархии View и почти ничего не стоят по вложенности.",
+  "example": "```kotlin\nColumn {                          // не создаёт объектов View\n    Row(verticalAlignment = Alignment.CenterVertically) {\n        Avatar()\n        Spacer(Modifier.width(8.dp))\n        Text(user.name)\n    }\n    Box(contentAlignment = Alignment.Center) { Badge() }\n}\n```",
   "explanation": "Поэтому в Compose нет проблемы «слишком глубокая иерархия»: измерение однопроходное, и вложенность не бьёт по производительности так, как в View."
  },
  {
@@ -269,6 +302,7 @@
   "subtopic": "макет",
   "question": "Почему в Compose измерение однопроходное?",
   "answer": "Дочерний элемент измеряется ровно один раз — это гарантирует линейную сложность вместо экспоненциальной у вложенных `LinearLayout` с весами.",
+  "example": "```kotlin\nRow(Modifier.height(IntrinsicSize.Min)) {   // дополнительный проход измерения\n    Divider(Modifier.fillMaxHeight().width(1.dp))\n    Text(\"Текст\")\n}\n// Обычный случай обходится одним проходом — этим Compose и быстрее View\n```",
   "explanation": "Когда нужен размер соседа, применяют `IntrinsicSize`, но он стоит дополнительного прохода — им не злоупотребляют."
  },
  {
@@ -277,6 +311,7 @@
   "subtopic": "основы",
   "question": "Что назвать главным преимуществом Compose на собеседовании?",
   "answer": "Единственный источник истины: экран — функция от состояния. Исчезает целый класс багов «состояние поменялось, а View забыли обновить», меньше кода, проще переиспользование.",
+  "example": "```kotlin\n// Один источник истины: экран — функция от состояния\n@Composable\nfun Profile(state: UiState) = when (state) {\n    UiState.Loading -> Spinner()\n    is UiState.Content -> Content(state.user)\n    is UiState.Error -> Error(state.message)\n}\n// Рассинхрона «состояние поменялось, а View забыли обновить» не бывает\n```",
   "explanation": "Честные минусы тоже стоит назвать: размер APK, стоимость обучения, необходимость понимать стабильность типов ради производительности."
  },
  {
@@ -285,6 +320,7 @@
   "subtopic": "паттерны",
   "question": "Что такое slot API в Compose?",
   "answer": "Приём, когда composable принимает не данные, а лямбду-содержимое (`content: @Composable () -> Unit`) и решает только, где его разместить.",
+  "example": "```kotlin\n@Composable\nfun Card(\n    modifier: Modifier = Modifier,\n    header: @Composable () -> Unit,\n    content: @Composable () -> Unit,     // компонент решает где, вызывающий — что\n) {\n    Column(modifier) {\n        header()\n        content()\n    }\n}\n```",
   "explanation": "Так устроены `Scaffold`, `Card`, `Button`. Это аналог контент-проекции: компонент отвечает за расположение, вызывающий — за содержимое."
  },
  {
@@ -293,6 +329,7 @@
   "subtopic": "паттерны",
   "question": "Что даёт `Scaffold`?",
   "answer": "Готовый каркас экрана Material: слоты для топ-бара, нижней панели, FAB и снекбара, а также корректные отступы через `PaddingValues` в `content`.",
+  "example": "```kotlin\nScaffold(\n    topBar = { TopAppBar(title = { Text(\"Профиль\") }) },\n    floatingActionButton = { FloatingActionButton({}) { Icon(Icons.Default.Add, null) } },\n) { padding ->\n    LazyColumn(Modifier.padding(padding)) { }   // игнорировать padding нельзя\n}\n```",
   "explanation": "Игнорирование переданного `paddingValues` — самая частая ошибка: контент уезжает под топ-бар."
  },
  {
@@ -301,6 +338,7 @@
   "subtopic": "состояние",
   "question": "Где держать состояние экрана — в `remember` или в ViewModel?",
   "answer": "Состояние UI-элемента (раскрыт ли блок, позиция прокрутки) — в `remember`. Состояние экрана, переживающее поворот и связанное с данными, — в ViewModel.",
+  "example": "```kotlin\n@Composable\nfun Screen(viewModel: ScreenViewModel) {\n    val state by viewModel.state.collectAsStateWithLifecycle()   // данные экрана\n    var expanded by rememberSaveable { mutableStateOf(false) }   // состояние элемента\n}\n```",
   "explanation": "Признак: если состояние нужно восстановить после смены конфигурации или оно приходит из репозитория, ему место в ViewModel."
  },
  {
@@ -309,6 +347,7 @@
   "subtopic": "состояние",
   "question": "Что делает `produceState`?",
   "answer": "Превращает не-Compose источник (колбэк, suspend-функцию) в `State`: запускает корутину и позволяет писать в значение по мере поступления данных.",
+  "example": "```kotlin\nval user by produceState<User?>(initialValue = null, userId) {\n    value = repository.load(userId)      // корутина + состояние в одном вызове\n}\n```",
   "explanation": "Это `LaunchedEffect` + `remember { mutableStateOf(...) }` в одном вызове."
  },
  {
@@ -317,6 +356,7 @@
   "subtopic": "состояние",
   "question": "Зачем нужен `snapshotFlow`?",
   "answer": "Он превращает чтение состояния Compose в `Flow` — чтобы применить к нему операторы (`debounce`, `distinctUntilChanged`) или собрать в корутине.",
+  "example": "```kotlin\nLaunchedEffect(listState) {\n    snapshotFlow { listState.firstVisibleItemIndex }\n        .distinctUntilChanged()\n        .filter { it > items.size - 5 }\n        .collect { viewModel.loadNextPage() }\n}\n```",
   "explanation": "Типичный случай: реагировать на `listState.firstVisibleItemIndex` для подгрузки следующей страницы."
  },
  {
@@ -325,6 +365,7 @@
   "subtopic": "эффекты",
   "question": "Для чего нужен `rememberUpdatedState`?",
   "answer": "Чтобы долгоживущий эффект видел актуальное значение, не перезапускаясь. `LaunchedEffect(Unit)` захватывает лямбду один раз, и без него будет вызвана устаревшая.",
+  "example": "```kotlin\n@Composable\nfun Timer(onTimeout: () -> Unit) {\n    val currentOnTimeout by rememberUpdatedState(onTimeout)\n\n    LaunchedEffect(Unit) {          // не перезапускается\n        delay(5_000)\n        currentOnTimeout()          // вызовется самая свежая лямбда\n    }\n}\n```",
   "explanation": "Классический пример — таймер, по истечении которого нужно вызвать самый свежий `onTimeout`."
  },
  {
@@ -333,6 +374,7 @@
   "subtopic": "рекомпозиция",
   "question": "Что делает функция `key()` в композиции?",
   "answer": "Задаёт явную идентичность куску композиции: при изменении ключа Compose считает его новым и пересоздаёт состояние вместо переиспользования.",
+  "example": "```kotlin\nColumn {\n    items.forEach { item ->\n        key(item.id) {              // явная идентичность\n            ItemRow(item)           // состояние не перепутается при вставке\n        }\n    }\n}\n```",
   "explanation": "Нужна там, где элементы одного типа идут подряд и позиционная идентичность вводит в заблуждение."
  },
  {
@@ -341,6 +383,7 @@
   "subtopic": "рекомпозиция",
   "question": "Зачем нужен `movableContentOf`?",
   "answer": "Он позволяет перенести кусок композиции в другое место дерева, сохранив его состояние — например, при переходе списка из одной колонки в две.",
+  "example": "```kotlin\nval content = remember {\n    movableContentOf { Player(state) }   // состояние переживёт перенос\n}\n\nif (isWide) Row { content() } else Column { content() }\n```",
   "explanation": "Без него перемещение содержимого сбрасывает `remember` и анимации."
  },
  {
@@ -349,6 +392,7 @@
   "subtopic": "макет",
   "question": "Как написать собственный макет?",
   "answer": "Composable `Layout(content) { measurables, constraints -> }`: измерить детей, вычислить размер, разместить в `layout(w, h) { placeable.place(x, y) }`.",
+  "example": "```kotlin\n@Composable\nfun TwoColumn(content: @Composable () -> Unit) {\n    Layout(content) { measurables, constraints ->\n        val placeables = measurables.map { it.measure(constraints) }  // каждый — один раз\n        layout(constraints.maxWidth, placeables.sumOf { it.height }) {\n            var y = 0\n            placeables.forEach { it.place(0, y); y += it.height }\n        }\n    }\n}\n```",
   "explanation": "Правило: каждого ребёнка измеряют ровно один раз, иначе Compose бросит исключение — так гарантируется однопроходность."
  },
  {
@@ -357,6 +401,7 @@
   "subtopic": "макет",
   "question": "Когда нужен `SubcomposeLayout` и чем он плох?",
   "answer": "Когда состав детей зависит от результата измерения других (`LazyColumn`, `BoxWithConstraints`). Плох тем, что композиция происходит во время измерения и стоит дороже обычной.",
+  "example": "```kotlin\nBoxWithConstraints {                 // внутри — SubcomposeLayout\n    if (maxWidth > 600.dp) TwoPane() else SinglePane()\n}\n// Композиция во время измерения: в горячем месте это дорого\n```",
   "explanation": "Использовать его в горячем месте — верный способ получить просадку кадров."
  },
  {
@@ -365,6 +410,7 @@
   "subtopic": "макет",
   "question": "Что даёт `BoxWithConstraints`?",
   "answer": "Доступ к ограничениям родителя (`maxWidth`, `maxHeight`) в момент композиции — можно выбрать разную вёрстку под ширину.",
+  "example": "```kotlin\nBoxWithConstraints {\n    when {\n        maxWidth < 400.dp -> CompactList()\n        else -> Grid(columns = 2)\n    }\n}\n```",
   "explanation": "Внутри он использует `SubcomposeLayout`, поэтому для адаптивности лучше опираться на window size classes на уровне экрана."
  },
  {
@@ -373,6 +419,7 @@
   "subtopic": "макет",
   "question": "Что такое window size classes?",
   "answer": "Стандартные категории ширины и высоты окна (compact / medium / expanded), по которым выбирают вёрстку — вместо проверки диагонали или ориентации.",
+  "example": "```kotlin\nval sizeClass = calculateWindowSizeClass(activity)\n\nwhen (sizeClass.widthSizeClass) {\n    WindowWidthSizeClass.Compact -> ListOnly()\n    else -> ListDetail()          // корректно и в многооконном режиме\n}\n```",
   "explanation": "Они корректно работают с многооконным режимом и складными устройствами, где «планшет» и «телефон» перестают быть надёжными понятиями."
  },
  {
@@ -381,6 +428,7 @@
   "subtopic": "модификаторы",
   "question": "Чем `Modifier.Node` лучше `Modifier.composed`?",
   "answer": "`composed` создаёт композицию для каждого применения модификатора и мешает его переиспользованию. `Modifier.Node` — низкоуровневый API без композиции, заметно дешевле.",
+  "example": "```kotlin\n// Дёшево: без композиции на каждое применение\nprivate class BorderNode(var color: Color) : DrawModifierNode, Modifier.Node() {\n    override fun ContentDrawScope.draw() {\n        drawContent()\n        drawRect(color, style = Stroke(2f))\n    }\n}\n\n// Modifier.composed { } создавал бы композицию для каждого элемента списка\n```",
   "explanation": "Актуально для библиотек и для модификаторов, применяемых в списках."
  },
  {
@@ -389,6 +437,7 @@
   "subtopic": "рендеринг",
   "question": "Чем `drawBehind` отличается от `drawWithContent` и `graphicsLayer`?",
   "answer": "`drawBehind` рисует под содержимым, `drawWithContent` даёт контроль над порядком (`drawContent()`), `graphicsLayer` меняет трансформации и альфу на отдельном слое.",
+  "example": "```kotlin\nBox(Modifier.drawBehind { drawCircle(Color.Red) })          // под содержимым\n\nBox(Modifier.drawWithContent {\n    drawContent()\n    drawRect(Color.Black.copy(alpha = 0.3f))                 // поверх\n})\n\nBox(Modifier.graphicsLayer { alpha = progress })            // отдельный слой\n```",
   "explanation": "Анимировать через `graphicsLayer` с лямбдой выгодно: состояние читается в фазе отрисовки, и рекомпозиции не происходит вовсе."
  },
  {
@@ -397,6 +446,7 @@
   "subtopic": "анимация",
   "question": "Какие есть уровни API анимации в Compose?",
   "answer": "`animate*AsState` — одно значение; `updateTransition` — несколько значений одного перехода; `Animatable` — императивный контроль с отменой; `AnimatedVisibility` и `animateContentSize` — готовые сценарии.",
+  "example": "```kotlin\nval alpha by animateFloatAsState(if (visible) 1f else 0f)   // одно значение\n\nval transition = updateTransition(state)                     // несколько сразу\nval color by transition.animateColor { if (it) Color.Red else Color.Gray }\n\nAnimatedVisibility(visible) { Content() }\n```",
   "explanation": "Для анимации между экранами есть `AnimatedContent`, для списков — `animateItem` в Lazy-компонентах."
  },
  {
@@ -405,6 +455,7 @@
   "subtopic": "жесты",
   "question": "Как обрабатывать жесты в Compose?",
   "answer": "Готовыми модификаторами (`clickable`, `draggable`, `scrollable`, `transformable`) либо низкоуровневым `pointerInput` с `detectTapGestures`/`detectDragGestures`.",
+  "example": "```kotlin\nBox(Modifier.pointerInput(itemId) {          // ключ обязателен\n    detectTapGestures(\n        onTap = { onOpen(itemId) },\n        onLongPress = { onMenu(itemId) },\n    )\n})\n```",
   "explanation": "`pointerInput` принимает ключи, как `LaunchedEffect`: без них лямбда захватит устаревшие значения."
  },
  {
@@ -413,6 +464,7 @@
   "subtopic": "жесты",
   "question": "Что решает `nestedScroll`?",
   "answer": "Согласование прокрутки вложенных областей: например, сворачивающийся топ-бар должен «съедать» часть прокрутки списка.",
+  "example": "```kotlin\nval behavior = TopAppBarDefaults.enterAlwaysScrollBehavior()\n\nScaffold(\n    modifier = Modifier.nestedScroll(behavior.nestedScrollConnection),\n    topBar = { TopAppBar(title = { Text(\"Список\") }, scrollBehavior = behavior) },\n) { padding -> LazyColumn(Modifier.padding(padding)) { } }\n```",
   "explanation": "Без него вложенный список и внешний контейнер прокручиваются независимо и конфликтуют."
  },
  {
@@ -421,6 +473,7 @@
   "subtopic": "ввод",
   "question": "Как управлять фокусом и клавиатурой?",
   "answer": "`FocusRequester` для перевода фокуса, `focusable`/`onFocusChanged` для реакции, `LocalSoftwareKeyboardController` и `LocalFocusManager` — чтобы скрыть клавиатуру или уйти с поля.",
+  "example": "```kotlin\nval focusRequester = remember { FocusRequester() }\nval keyboard = LocalSoftwareKeyboardController.current\n\nLaunchedEffect(Unit) { focusRequester.requestFocus() }   // не в теле composable\n\nTextField(\n    value = query,\n    onValueChange = { query = it },\n    modifier = Modifier.focusRequester(focusRequester),\n    keyboardActions = KeyboardActions(onSearch = { keyboard?.hide() }),\n)\n```",
   "explanation": "`FocusRequester.requestFocus()` до присоединения к дереву бросает исключение — поэтому его зовут из `LaunchedEffect`."
  },
  {
@@ -429,6 +482,7 @@
   "subtopic": "ввод",
   "question": "В чём подвох состояния у `TextField`?",
   "answer": "Он полностью управляемый: показывает то, что передали в `value`. Если не сохранять изменение из `onValueChange`, поле будет выглядеть «не набирающим текст».",
+  "example": "```kotlin\nvar query by remember { mutableStateOf(\"\") }\n\nTextField(\n    value = query,\n    onValueChange = { query = it },   // без этой строки поле не набирает текст\n)\n```",
   "explanation": "Асинхронное обновление значения (через сеть или debounce) ломает позицию курсора — для этого есть варианты с `TextFieldValue` и state-объектом поля."
  },
  {
@@ -437,6 +491,7 @@
   "subtopic": "основы",
   "question": "Каков жизненный цикл композиции?",
   "answer": "Вход в композицию → рекомпозиции при изменении входных данных → выход из композиции. Это не жизненный цикл Activity: composable может выйти и вернуться много раз.",
+  "example": "```kotlin\n@Composable\nfun Screen(visible: Boolean) {\n    if (visible) {\n        DisposableEffect(Unit) {\n            onDispose { }      // выход из композиции, а не уничтожение Activity\n        }\n        Content()\n    }\n}\n```",
   "explanation": "Привязать работу к этому циклу позволяют `LaunchedEffect` и `DisposableEffect`."
  },
  {
@@ -445,6 +500,7 @@
   "subtopic": "производительность",
   "question": "Что означает `@ReadOnlyComposable`?",
   "answer": "Функция читает композицию (например, `CompositionLocal`), но ничего в неё не добавляет — компилятор может сгенерировать более дешёвый код.",
+  "example": "```kotlin\nval colors: ColorScheme\n    @Composable @ReadOnlyComposable get() = LocalColorScheme.current\n```",
   "explanation": "Так помечены `MaterialTheme.colorScheme` и подобные аксессоры."
  },
  {
@@ -453,6 +509,7 @@
   "subtopic": "производительность",
   "question": "Как понять, почему composable перерисовывается?",
   "answer": "Отчёты компилятора Compose (`compiler metrics`) показывают, какие функции пропускаемы и какие параметры нестабильны. Layout Inspector считает число рекомпозиций в реальном времени.",
+  "example": "```kotlin\n// build.gradle.kts\ncomposeCompiler {\n    reportsDestination = layout.buildDirectory.dir(\"compose_reports\")\n    metricsDestination = layout.buildDirectory.dir(\"compose_metrics\")\n}\n// В отчёте видно: skippable / restartable и какие параметры нестабильны\n```",
   "explanation": "Обычные причины: нестабильные параметры (`List`, интерфейсы), новые лямбды и чтение состояния слишком высоко по дереву."
  },
  {
@@ -461,6 +518,7 @@
   "subtopic": "производительность",
   "question": "Что изменил режим strong skipping?",
   "answer": "Compose стал пропускать composable даже с нестабильными параметрами, сравнивая их по ссылке, и автоматически запоминать лямбды.",
+  "example": "```kotlin\n// Раньше требовалась стабильная коллекция:\n@Composable fun List(users: ImmutableList<User>) { }\n\n// Со strong skipping пропускается и обычный List — сравнение по ссылке\n@Composable fun List(users: List<User>) { }\n```",
   "explanation": "Это снимает часть боли со стабильностью, но не отменяет её: неизменяемые модели по-прежнему предсказуемее."
  },
  {
@@ -469,6 +527,7 @@
   "subtopic": "списки",
   "question": "Какие ещё ленивые контейнеры есть, кроме `LazyColumn`?",
   "answer": "`LazyRow`, `LazyVerticalGrid`, `LazyHorizontalGrid`, `LazyVerticalStaggeredGrid`, а также `stickyHeader` внутри Lazy-скоупа.",
+  "example": "```kotlin\nLazyVerticalGrid(columns = GridCells.Adaptive(120.dp)) {\n    items(photos, key = { it.id }) { Photo(it) }\n}\n\nLazyColumn {\n    stickyHeader { Header() }\n    items(items, key = { it.id }) { Row(it) }\n}\n```",
   "explanation": "У всех тот же контракт: `key` для идентичности и `contentType` для переиспользования."
  },
  {
@@ -477,6 +536,7 @@
   "subtopic": "списки",
   "question": "Почему нельзя обернуть `items` в обычный `if` с циклом?",
   "answer": "`LazyListScope` — не composable-контекст: его блок вызывается для описания элементов, а не для их отрисовки. Внутри нельзя вызывать composable-функции и использовать `remember`.",
+  "example": "```kotlin\nLazyColumn {\n    // val state = remember { }    // ошибка: здесь ещё нет композиции\n    items(users, key = { it.id }) { user ->\n        val expanded = remember { mutableStateOf(false) }   // а здесь уже можно\n        UserRow(user, expanded)\n    }\n}\n```",
   "explanation": "Состояние элемента объявляется внутри `item { }`, где уже действует композиция."
  },
  {
@@ -485,6 +545,7 @@
   "subtopic": "макет",
   "question": "Чем `contentPadding` отличается от `Modifier.padding` у списка?",
   "answer": "`contentPadding` добавляет отступ внутри области прокрутки — элементы уезжают под него при скролле. `Modifier.padding` обрезает саму область.",
+  "example": "```kotlin\nLazyColumn(\n    contentPadding = PaddingValues(bottom = 88.dp),   // элементы уезжают под отступ\n) { }\n\n// Modifier.padding обрезал бы саму область прокрутки\n```",
   "explanation": "Для списков под системными панелями правильный вариант — `contentPadding`."
  },
  {
@@ -493,6 +554,7 @@
   "subtopic": "DI",
   "question": "Как передать своё значение через `CompositionLocal`?",
   "answer": "Создать `compositionLocalOf`/`staticCompositionLocalOf` и обернуть поддерево в `CompositionLocalProvider(Local provides value)`.",
+  "example": "```kotlin\nval LocalUser = staticCompositionLocalOf<User> { error(\"нет пользователя\") }\n\nCompositionLocalProvider(LocalUser provides user) {\n    Screen()   // при изменении перекомпонуется всё поддерево\n}\n```",
   "explanation": "`staticCompositionLocalOf` не отслеживает чтения: при изменении перекомпонуется всё поддерево, зато чтение бесплатно. Для редко меняющихся значений он предпочтительнее."
  },
  {
@@ -501,6 +563,7 @@
   "subtopic": "паттерны",
   "question": "Как показать разовое событие (снекбар, переход) в Compose?",
   "answer": "Либо частью состояния с последующим «потреблением», либо каналом/`SharedFlow`, который собирается в `LaunchedEffect`.",
+  "example": "```kotlin\n// Разовое событие — не состояние\nLaunchedEffect(Unit) {\n    viewModel.events.collect { event ->\n        when (event) {\n            is Event.ShowMessage -> snackbarHostState.showSnackbar(event.text)\n            is Event.NavigateBack -> navController.popBackStack()\n        }\n    }\n}\n```",
   "explanation": "Хранить разовое событие в `StateFlow` опасно: после поворота оно придёт снова и снекбар покажется повторно."
  },
  {
@@ -509,6 +572,7 @@
   "subtopic": "экосистема",
   "question": "Чем Compose Multiplatform отличается от Jetpack Compose?",
   "answer": "Jetpack Compose — Android-реализация от Google. Compose Multiplatform — надстройка JetBrains, переносящая тот же API на iOS, десктоп и web.",
+  "example": "```kotlin\n// commonMain — один и тот же код на Android, iOS и десктопе\n@Composable\nfun Profile(user: User) {\n    Column { Text(user.name) }\n}\n\n// Платформенное — через expect/actual\nexpect fun openUrl(url: String)\n```",
   "explanation": "Общими остаются UI-код и логика; платформенные API по-прежнему требуют `expect/actual`."
  },
  {
@@ -517,6 +581,7 @@
   "subtopic": "экосистема",
   "question": "Зачем нужен Compose BOM?",
   "answer": "Он задаёт согласованный набор версий всех артефактов Compose одной строкой — версии рантайма, UI, Material и компилятора должны быть совместимы.",
+  "example": "```kotlin\ndependencies {\n    val bom = platform(\"androidx.compose:compose-bom:2024.09.00\")\n    implementation(bom)\n    androidTestImplementation(bom)\n\n    implementation(\"androidx.compose.ui:ui\")            // версии из BOM\n    implementation(\"androidx.compose.material3:material3\")\n}\n```",
   "explanation": "Ручное указание разных версий — типичная причина падений вида `NoSuchMethodError` при запуске."
  },
  {
@@ -525,6 +590,7 @@
   "subtopic": "тестирование",
   "question": "Почему тест Compose зависает на анимации?",
   "answer": "Тестовые правила синхронизируются с композицией и ждут её простоя; бесконечная анимация никогда не даёт состояния покоя.",
+  "example": "```kotlin\n@Test\nfun `анимация не подвешивает тест`() {\n    rule.mainClock.autoAdvance = false\n    rule.setContent { Screen() }\n\n    rule.mainClock.advanceTimeBy(500)\n    rule.onNodeWithTag(\"banner\").assertIsDisplayed()\n}\n```",
   "explanation": "Лечится `mainClock.autoAdvance = false` с ручным продвижением времени."
  },
  {
@@ -533,6 +599,7 @@
   "subtopic": "рекомпозиция",
   "question": "Откуда берётся бесконечная рекомпозиция?",
   "answer": "Из записи в состояние прямо в теле composable: запись вызывает рекомпозицию, та снова выполняет запись.",
+  "example": "```kotlin\n@Composable\nfun Broken(items: List<Item>) {\n    var count by remember { mutableStateOf(0) }\n    count = items.size          // запись в теле — бесконечная рекомпозиция\n}\n\n@Composable\nfun Fixed(items: List<Item>) {\n    val count = items.size      // просто вычисление\n}\n```",
   "explanation": "Изменять состояние можно только в эффектах и обработчиках событий. То же правило, что «не менять сигнал внутри computed» в Angular."
  }
 ]

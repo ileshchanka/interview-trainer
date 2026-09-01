@@ -7,7 +7,14 @@ import { Card } from '../../domain/models';
 import { BrowsePage } from './browse-page';
 
 function card(id: string, topic: Card['topic'] = 'kotlin'): Card {
-  return { id, topic, subtopic: 'основы', question: `вопрос ${id}`, answer: `ответ ${id}` };
+  return {
+    id,
+    topic,
+    subtopic: 'основы',
+    question: `вопрос ${id}`,
+    answer: `ответ ${id}`,
+    example: '```kotlin\nval x = 1\n```',
+  };
 }
 
 describe('BrowsePage', () => {
@@ -75,6 +82,17 @@ describe('BrowsePage', () => {
     await fixture.whenStable();
     // Иначе следующий вопрос открывался бы сразу с ответом.
     expect(answer()).toBeUndefined();
+  });
+
+  it('пример показывается вместе с ответом и остаётся блоком кода', async () => {
+    expect(page.querySelector('.example')).toBeNull();
+
+    button('Показать ответ')!.click();
+    await fixture.whenStable();
+
+    // Markdown обязан превратиться в <pre><code>, иначе отступы схлопнутся.
+    const code = page.querySelector('.example pre code');
+    expect(code?.textContent?.trim()).toBe('val x = 1');
   });
 
   it('переход по номеру ограничен размером колоды', async () => {

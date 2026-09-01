@@ -43,6 +43,11 @@ export interface Card {
   readonly question: string;
   /** Короткий ответ в Markdown — то, что нужно вспомнить. */
   readonly answer: string;
+  /**
+   * Пример кода в Markdown — отдельным полем, а не внутри разбора: он
+   * показывается сразу вместе с ответом, а разбор человек читает по желанию.
+   */
+  readonly example?: string;
   /** Развёрнутый разбор: почему так, где подвох. */
   readonly explanation?: string;
 }

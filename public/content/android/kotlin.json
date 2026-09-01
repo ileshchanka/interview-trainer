@@ -5,6 +5,7 @@
   "subtopic": "основы",
   "question": "Чем `val` отличается от `var` и что `val` не гарантирует?",
   "answer": "`val` запрещает переприсваивание ссылки, `var` разрешает. Неизменяемость самого объекта `val` не даёт: поля `var` внутри него меняются свободно.",
+  "example": "```kotlin\nval name = \"Аня\"      // переприсвоить нельзя\nvar count = 0\ncount++               // а это можно\n\nval user = User(mutableListOf())\nuser.tags.add(\"новый\")  // val не мешает: меняется не ссылка, а объект\n```",
   "explanation": "Ровно как `const` в JavaScript. Кроме того, `val` может быть вычисляемым: `val size get() = items.size` пересчитывается при каждом чтении."
  },
  {
@@ -13,6 +14,7 @@
   "subtopic": "основы",
   "question": "Чем `const val` отличается от обычного `val`?",
   "answer": "`const val` — константа времени компиляции: она встраивается в место использования, допускается только на верхнем уровне или в `object`/`companion` и только для примитивов и строк.",
+  "example": "```kotlin\nconst val API_URL = \"https://example.com\"   // подставится в место использования\nval startedAt = System.currentTimeMillis()  // вычисляется в рантайме\n\n@Deprecated(API_URL)  // с const работает, с обычным val — ошибка компиляции\nfun old() {}\n```",
   "explanation": "Обычный `val` вычисляется в рантайме и может быть чем угодно. `const` также нужен, чтобы значение можно было использовать в аннотациях."
  },
  {
@@ -21,6 +23,7 @@
   "subtopic": "основы",
   "question": "Когда тип обязательно писать явно?",
   "answer": "В публичном API (компилятор требует явный тип у public-членов с непубличным типом), при рекурсии, при пустых коллекциях и когда выведенный тип шире или уже нужного.",
+  "example": "```kotlin\nval count = 0                  // Int выведен, писать не нужно\nval items = mutableListOf<String>()  // а тут без параметра типа не обойтись\n\n// В публичном API тип — часть контракта, его пишут явно:\nfun loadUsers(): List<User> = repository.all()\n```",
   "explanation": "Для локальных переменных вывод почти всегда достаточен, но явный тип в публичной функции — часть контракта, а не многословие."
  },
  {
@@ -29,6 +32,7 @@
   "subtopic": "основы",
   "question": "Что такое expression body у функции?",
   "answer": "Запись `fun f() = выражение` вместо блока с `return`. Тип возвращаемого значения при этом выводится автоматически.",
+  "example": "```kotlin\nfun square(x: Int) = x * x          // тип выведен: Int\n\nfun describe(user: User): String =  // в публичном API тип указан явно\n    \"${user.name}, ${user.age}\"\n```",
   "explanation": "Для публичного API тип лучше указывать явно: иначе случайное изменение выражения тихо меняет сигнатуру."
  },
  {
@@ -37,6 +41,7 @@
   "subtopic": "основы",
   "question": "Почему `if` и `when` в Kotlin — выражения?",
   "answer": "Они возвращают значение, поэтому тернарного оператора в языке нет: `val x = if (a) 1 else 2`. При использовании как выражения ветка `else` обязательна.",
+  "example": "```kotlin\nval label = if (count > 0) \"есть\" else \"пусто\"   // тернарного оператора нет\n\nval category = when {\n    age < 18 -> \"юниор\"\n    age < 65 -> \"взрослый\"\n    else -> \"старший\"\n}\n```",
   "explanation": "`when` без аргумента заменяет цепочку `else if`, а `when` по sealed-типу проверяется на полноту."
  },
  {
@@ -45,6 +50,7 @@
   "subtopic": "основы",
   "question": "Как устроены строковые шаблоны и raw-строки?",
   "answer": "`\"$name\"` и `\"${expr}\"` подставляют значения. Тройные кавычки дают raw-строку без экранирования, а `trimIndent()` убирает общий отступ.",
+  "example": "```kotlin\nval name = \"Аня\"\nprintln(\"Привет, $name! Длина: ${name.length}\")\n\nval json = \"\"\"\n    { \"name\": \"$name\" }\n\"\"\".trimIndent()\n\nval price = \"${'$'}100\"   // единственный способ вставить сам знак доллара\n```",
   "explanation": "В raw-строке `$` вставляется как `${'$'}` — единственный способ его экранировать."
  },
  {
@@ -53,6 +59,7 @@
   "subtopic": "основы",
   "question": "Чем `==` отличается от `===`?",
   "answer": "`==` вызывает `equals` (с корректной обработкой null), `===` сравнивает ссылки. Это противоположно JavaScript, где `==` — приведение типов.",
+  "example": "```kotlin\nval a = \"текст\"\nval b = buildString { append(\"текст\") }\n\nprintln(a == b)    // true  — вызывается equals\nprintln(a === b)   // false — разные объекты\n```",
   "explanation": "Для примитивных типов `===` не имеет смысла: компилятор запрещает его для несравнимых типов."
  },
  {
@@ -61,6 +68,7 @@
   "subtopic": "основы",
   "question": "Как задать диапазон и чем `until` отличается от `..`?",
   "answer": "`1..5` включает обе границы, `1..<5` (и устаревшее `1 until 5`) исключает верхнюю. `downTo` идёт вниз, `step` задаёт шаг.",
+  "example": "```kotlin\nfor (i in 1..5) print(i)        // 12345\nfor (i in 1..<5) print(i)       // 1234\nfor (i in 5 downTo 1 step 2) print(i)  // 531\n\nif (age in 18..64) println(\"взрослый\")\n```",
   "explanation": "Диапазон — обычный объект, поэтому `x in 1..5` работает и в `when`, и в условиях."
  },
  {
@@ -69,6 +77,7 @@
   "subtopic": "null-safety",
   "question": "Как система типов Kotlin защищает от NPE?",
   "answer": "Тип по умолчанию не допускает null; nullable-тип пишется с `?`, и компилятор требует проверки перед разыменованием.",
+  "example": "```kotlin\nvar name: String = \"Аня\"\n// name = null          // ошибка компиляции\n\nvar nickname: String? = null\n// println(nickname.length)     // ошибка: нужна проверка\nprintln(nickname?.length)       // null\n```",
   "explanation": "Это ровно то же, что `strictNullChecks` в TypeScript, только не отключаемое. Дыры остаются три: `!!`, платформенные типы из Java и `lateinit`."
  },
  {
@@ -77,6 +86,7 @@
   "subtopic": "null-safety",
   "question": "Что делают `?.`, `?:` и `!!`?",
   "answer": "`?.` возвращает null вместо вызова на null. `?:` (элвис) подставляет запасное значение, если слева null. `!!` утверждает, что значения не null, и бросает NPE, если ошибся.",
+  "example": "```kotlin\nval length = text?.length ?: 0          // null -> 0\nval user = findUser(id) ?: return null  // элвис с ранним выходом\nval forced = text!!.length              // NPE, если text == null\n```",
   "explanation": "`?:` реагирует только на null — ноль и пустая строка проходят как есть, в отличие от `||` в JavaScript."
  },
  {
@@ -85,6 +95,7 @@
   "subtopic": "null-safety",
   "question": "Что такое платформенные типы?",
   "answer": "Типы, пришедшие из Java, о nullability которых компилятор ничего не знает (`String!`). Проверок он не требует, и NPE возможен.",
+  "example": "```kotlin\n// Java: public String getName() { ... }\nval name = javaObject.name       // тип String! — проверок компилятор не требует\nprintln(name.length)             // может упасть с NPE\n\nval safe: String? = javaObject.name   // сразу сузили до честного типа\n```",
   "explanation": "Поэтому аннотации `@Nullable`/`@NonNull` в Java-коде важны: по ним Kotlin восстанавливает точный тип. Значения из Java-API стоит сразу приводить к явному `String?`."
  },
  {
@@ -93,6 +104,7 @@
   "subtopic": "null-safety",
   "question": "Когда использовать `lateinit`, а когда `by lazy`?",
   "answer": "`lateinit var` — когда значение присваивается извне позже конструктора (инъекция, `onCreate`); обращение до присваивания бросает `UninitializedPropertyAccessException`. `by lazy` — когда значение вычисляется само при первом обращении.",
+  "example": "```kotlin\nclass ProfileFragment : Fragment() {\n    @Inject lateinit var repository: UserRepository  // присвоят снаружи\n    private val adapter by lazy { UserAdapter() }    // создастся при первом обращении\n\n    fun isReady() = ::repository.isInitialized\n}\n```",
   "explanation": "`lateinit` не работает с примитивами и с `val`; проверить состояние можно через `::field.isInitialized`."
  },
  {
@@ -101,6 +113,7 @@
   "subtopic": "null-safety",
   "question": "Что такое умное приведение и когда оно не работает?",
   "answer": "После проверки `if (x is String)` компилятор сам считает `x` строкой. Не работает для `var`-свойств класса и для `open val`: между проверкой и использованием значение могло измениться.",
+  "example": "```kotlin\nfun show(value: Any) {\n    if (value is String) {\n        println(value.length)   // умное приведение: value уже String\n    }\n}\n\nclass Screen(var title: String?) {\n    fun render() {\n        // if (title != null) println(title.length)  // ошибка: var-свойство\n        val local = title ?: return\n        println(local.length)   // так работает\n    }\n}\n```",
   "explanation": "Обход — присвоить в локальную переменную: `val local = field ?: return`."
  },
  {
@@ -109,6 +122,7 @@
   "subtopic": "классы",
   "question": "Что генерирует `data class` и какие у него ограничения?",
   "answer": "`equals`/`hashCode`, `toString`, `copy` и `componentN` для деструктуризации — по свойствам **первичного конструктора**. Класс не может быть `abstract`, `open`, `sealed` или `inner`.",
+  "example": "```kotlin\ndata class User(val id: Long, val name: String) {\n    var lastSeen: Long = 0   // в теле класса: в equals и copy НЕ попадёт\n}\n\nval a = User(1, \"Аня\")\nval b = a.copy(name = \"Борис\")\nprintln(a == User(1, \"Аня\"))  // true\n```",
   "explanation": "Свойства из тела класса в сгенерированные методы не попадают — частая причина «почему equals не видит поле»."
  },
  {
@@ -117,6 +131,7 @@
   "subtopic": "классы",
   "question": "Зачем нужны `sealed class` и `sealed interface`?",
   "answer": "Ограничить иерархию известным набором наследников, чтобы `when` проверялся на полноту компилятором.",
+  "example": "```kotlin\nsealed interface UiState\ndata object Loading : UiState\ndata class Content(val items: List<Item>) : UiState\ndata class Failure(val error: Throwable) : UiState\n\nfun render(state: UiState) = when (state) {   // else не нужен\n    Loading -> showSpinner()\n    is Content -> showItems(state.items)\n    is Failure -> showError(state.error)\n}\n```",
   "explanation": "С Kotlin 1.5 наследники могут лежать в любом файле того же модуля и пакета. `sealed interface` позволяет типу входить сразу в несколько иерархий."
  },
  {
@@ -125,6 +140,7 @@
   "subtopic": "классы",
   "question": "Чем `object` отличается от `companion object`?",
   "answer": "`object` — синглтон, объявленный самостоятельно. `companion object` — синглтон, привязанный к классу, через него делают фабрики и константы вместо статических членов Java.",
+  "example": "```kotlin\nobject Analytics {                 // синглтон сам по себе\n    fun track(event: String) { }\n}\n\nclass User private constructor(val name: String) {\n    companion object {             // привязан к классу\n        fun create(name: String) = User(name)\n    }\n}\n\nAnalytics.track(\"open\")\nval user = User.create(\"Аня\")\n```",
   "explanation": "Оба инициализируются лениво, при первом обращении. Для вызова из Java как статики нужны `@JvmStatic`/`@JvmField`."
  },
  {
@@ -133,6 +149,7 @@
   "subtopic": "классы",
   "question": "Какие модификаторы видимости есть и чем `internal` полезен?",
   "answer": "`public` (по умолчанию), `private`, `protected`, `internal` — видно внутри модуля компиляции.",
+  "example": "```kotlin\ninternal class Cache          // видно всему модулю, но не его потребителям\nprivate fun helper() {}       // только в этом файле\n\nclass Repository {\n    private val db = ...      // только внутри класса\n    protected open fun hook() {}  // класс и наследники\n}\n```",
   "explanation": "`internal` — то, чего нет в Java: он даёт API, открытое всему модулю, но закрытое для его потребителей. На уровне файла `private` означает «видно только в этом файле»."
  },
  {
@@ -141,6 +158,7 @@
   "subtopic": "классы",
   "question": "Почему классы в Kotlin закрыты по умолчанию?",
   "answer": "Наследование должно быть осознанным: незапланированное переопределение метода ломает инварианты класса. Открыть класс и метод нужно явным `open`.",
+  "example": "```kotlin\nopen class Base {\n    open fun render() {}      // без open переопределить нельзя\n    fun fixed() {}\n}\n\nclass Child : Base() {\n    override fun render() {}\n    // override fun fixed() {}   // ошибка: метод final\n}\n```",
   "explanation": "Для Android это важно и практически: моки в тестах требуют открытых классов, отсюда плагин `all-open` для Spring и `mockk` с его инструментированием."
  },
  {
@@ -149,6 +167,7 @@
   "subtopic": "классы",
   "question": "Чем вложенный класс отличается от `inner`?",
   "answer": "Вложенный (по умолчанию) не хранит ссылку на внешний экземпляр. `inner` хранит и может обращаться к его членам через `this@Outer`.",
+  "example": "```kotlin\nclass Outer(private val name: String) {\n    class Nested {                      // ссылки на Outer нет\n        fun hello() = \"привет\"\n    }\n    inner class Inner {                 // хранит ссылку на Outer\n        fun hello() = \"привет, $name\"\n    }\n}\n\nOuter.Nested().hello()\nOuter(\"Аня\").Inner().hello()\n```",
   "explanation": "В Android `inner` — классический источник утечек: нестатический внутренний класс держит Activity."
  },
  {
@@ -157,6 +176,7 @@
   "subtopic": "классы",
   "question": "Что может интерфейс в Kotlin, чего не может абстрактный класс?",
   "answer": "Интерфейсов можно реализовать несколько. Он может содержать реализацию методов и абстрактные свойства, но не хранить состояние — у его свойств нет backing field.",
+  "example": "```kotlin\ninterface Clickable {\n    val label: String            // абстрактное свойство, без поля\n    fun click()\n    fun describe() = \"кнопка $label\"   // реализация по умолчанию\n}\n\nclass Button : Clickable {\n    override val label = \"OK\"\n    override fun click() {}\n}\n```",
   "explanation": "При конфликте одинаковых методов двух интерфейсов нужен явный `super<A>.method()`."
  },
  {
@@ -165,6 +185,7 @@
   "subtopic": "классы",
   "question": "Что делает `class A(b: B) : B by b`?",
   "answer": "Делегирование реализации: компилятор генерирует методы интерфейса `B`, перенаправляющие вызовы в `b`. Композиция вместо наследования без ручной писанины.",
+  "example": "```kotlin\ninterface Repository {\n    fun load(): List<Item>\n}\n\nclass CachingRepository(\n    private val origin: Repository,\n) : Repository by origin {          // остальные методы делегируются\n    private var cache: List<Item>? = null\n    override fun load() = cache ?: origin.load().also { cache = it }\n}\n```",
   "explanation": "Важная тонкость: делегат не знает про переопределённые в `A` методы — внутренние вызовы внутри `b` пойдут в его собственную реализацию."
  },
  {
@@ -173,6 +194,7 @@
   "subtopic": "классы",
   "question": "Какие бывают делегаты свойств?",
   "answer": "`by lazy` — ленивое вычисление, `Delegates.observable`/`vetoable` — реакция на изменение, `by map` — чтение из словаря, и любой свой класс с `getValue`/`setValue`.",
+  "example": "```kotlin\nclass Screen {\n    val adapter by lazy { Adapter() }\n\n    var title: String by Delegates.observable(\"\") { _, old, new ->\n        println(\"$old -> $new\")\n    }\n\n    private val prefs: Map<String, Any> = mapOf(\"theme\" to \"dark\")\n    val theme: Any by prefs        // читается из словаря по имени свойства\n}\n```",
   "explanation": "В Android на делегатах построены `by viewModels()`, `by activityViewModels()` и `by viewBinding()`."
  },
  {
@@ -181,6 +203,7 @@
   "subtopic": "классы",
   "question": "Когда брать `enum`, а когда `sealed`?",
   "answer": "`enum` — фиксированный набор значений **без собственных данных** у каждого. `sealed` — когда варианты несут разные поля.",
+  "example": "```kotlin\nenum class Direction { UP, DOWN }        // варианты без своих данных\n\nsealed interface Payment\ndata class Card(val number: String) : Payment\ndata class Cash(val amount: Int) : Payment\n\n// entries вместо values(): не создаёт новый массив на каждый вызов\nDirection.entries.forEach(::println)\n```",
   "explanation": "Начиная с Kotlin 1.9 у enum есть `entries` вместо `values()`: он не создаёт новый массив на каждый вызов."
  },
  {
@@ -189,6 +212,7 @@
   "subtopic": "классы",
   "question": "Что даёт `value class` (inline-класс)?",
   "answer": "Обёртку над одним значением, которая в рантайме чаще всего стирается до самого значения: типобезопасность `UserId` без накладных расходов.",
+  "example": "```kotlin\n@JvmInline\nvalue class UserId(val value: String)\n\nfun load(id: UserId) { }\n\nload(UserId(\"u-1\"))\n// load(\"u-1\")   // ошибка компиляции — в отличие от typealias\n```",
   "explanation": "Стирание не срабатывает, когда значение используется как nullable или как обобщённый тип. Это ближайший аналог «брендированных» типов TypeScript, но с настоящей проверкой."
  },
  {
@@ -197,6 +221,7 @@
   "subtopic": "функции",
   "question": "Что дают значения по умолчанию и именованные аргументы?",
   "answer": "Они заменяют перегрузки: одна функция вместо пяти. Именованные аргументы позволяют пропускать параметры и делают вызов читаемым.",
+  "example": "```kotlin\nfun show(\n    text: String,\n    duration: Int = 2000,\n    action: (() -> Unit)? = null,\n) { }\n\nshow(\"Готово\")\nshow(\"Готово\", action = { undo() })   // duration пропущен по имени\n\n@JvmOverloads                          // перегрузки для вызова из Java\nfun log(message: String, level: Int = 0) { }\n```",
   "explanation": "Для Java-вызывающих нужна `@JvmOverloads` — иначе перегрузок в байткоде не появится."
  },
  {
@@ -205,6 +230,7 @@
   "subtopic": "функции",
   "question": "Как работают extension-функции?",
   "answer": "Компилируются в статические функции с получателем первым параметром. Диспетчеризация статическая — по объявленному типу переменной, а не по фактическому.",
+  "example": "```kotlin\nfun String.initials() = split(\" \").mapNotNull { it.firstOrNull() }.joinToString(\"\")\n\n\"Анна Иванова\".initials()   // \"АИ\"\n\n// Диспетчеризация статическая: важен объявленный тип переменной\nopen class Animal\nclass Dog : Animal()\nfun Animal.name() = \"животное\"\nfun Dog.name() = \"собака\"\n\nval pet: Animal = Dog()\nprintln(pet.name())         // животное\n```",
   "explanation": "Расширение не может обращаться к приватным членам класса и не переопределяет его методы: при совпадении сигнатур выигрывает метод."
  },
  {
@@ -213,6 +239,7 @@
   "subtopic": "функции",
   "question": "Что такое infix-функция?",
   "answer": "Функция с одним параметром, помеченная `infix`, которую можно вызывать без точки и скобок: `1 to 2`, `x shl 2`.",
+  "example": "```kotlin\ninfix fun Int.pow(n: Int): Int = (1..n).fold(1) { acc, _ -> acc * this }\n\nprintln(2 pow 10)     // 1024\nval pair = \"ключ\" to \"значение\"   // тот же механизм в стандартной библиотеке\n```",
   "explanation": "Так устроен `to`, создающий `Pair`. Злоупотребление делает код нечитаемым: инфиксная запись уместна там, где она читается как естественная фраза."
  },
  {
@@ -221,6 +248,7 @@
   "subtopic": "функции",
   "question": "Зачем нужен `inline` и когда он вреден?",
   "answer": "Он подставляет тело функции и лямбды в место вызова, убирая создание объекта-лямбды. Вреден для больших функций: код раздувается в каждом месте вызова.",
+  "example": "```kotlin\ninline fun measure(block: () -> Unit): Long {\n    val start = System.nanoTime()\n    block()                      // подставится на место вызова, без объекта-лямбды\n    return System.nanoTime() - start\n}\n\nval ns = measure { heavyWork() }\n```",
   "explanation": "`inline` осмыслен именно для функций высшего порядка. Для обычных компилятор и так справляется, а IDE выдаёт предупреждение."
  },
  {
@@ -229,6 +257,7 @@
   "subtopic": "функции",
   "question": "Что делает `reified` и почему без `inline` он невозможен?",
   "answer": "Позволяет обращаться к типу-параметру в рантайме (`T::class`, `is T`). Работает только в inline-функциях: тип подставляется на месте вызова, где он известен.",
+  "example": "```kotlin\ninline fun <reified T> Bundle.get(key: String): T? = get(key) as? T\n\nval id: Long? = bundle.get(\"id\")\n\ninline fun <reified T : Activity> Context.start() =\n    startActivity(Intent(this, T::class.java))   // без reified тип стёрся бы\n\ncontext.start<MainActivity>()\n```",
   "explanation": "Классический пример — `inline fun <reified T> Gson.fromJson(json: String): T`. Без `reified` тип стёрся бы, как в Java."
  },
  {
@@ -237,6 +266,7 @@
   "subtopic": "функции",
   "question": "Зачем нужны `crossinline` и `noinline`?",
   "answer": "`crossinline` запрещает нелокальный `return` из лямбды — нужен, когда лямбда вызывается не напрямую, а из другого контекста. `noinline` оставляет лямбду обычным объектом, чтобы её можно было сохранить или передать дальше.",
+  "example": "```kotlin\ninline fun run(\n    crossinline onEach: () -> Unit,   // return из лямбды запрещён\n    noinline onDone: () -> Unit,      // лямбду можно сохранить\n) {\n    listOf(1, 2).forEach { onEach() }\n    callbacks += onDone\n}\n```",
   "explanation": "Без них компилятор просто не даст скомпилировать такой inline-код."
  },
  {
@@ -245,6 +275,7 @@
   "subtopic": "функции",
   "question": "Что такое функциональный тип и как передать ссылку на функцию?",
   "answer": "Тип вида `(Int) -> String`. Ссылка на существующую функцию — `::name`, на метод объекта — `obj::method`, на конструктор — `::ClassName`.",
+  "example": "```kotlin\nval transform: (Int) -> String = { it.toString() }\n\nfun apply(values: List<Int>, block: (Int) -> String) = values.map(block)\n\napply(listOf(1, 2), ::describe)      // ссылка на функцию\napply(listOf(1, 2)) { \"№$it\" }       // последняя лямбда выносится за скобки\n```",
   "explanation": "Лямбда с одним параметром может использовать неявное `it`. Последняя лямбда выносится за скобки — на этом построен весь DSL-стиль Kotlin."
  },
  {
@@ -253,6 +284,7 @@
   "subtopic": "функции",
   "question": "Как объявить переменное число аргументов и передать массив?",
   "answer": "`vararg items: Int` в объявлении; при вызове массив разворачивается оператором `*`: `f(*array)`.",
+  "example": "```kotlin\nfun log(vararg parts: String) = parts.joinToString(\" \")\n\nlog(\"a\", \"b\")\n\nval array = arrayOf(\"a\", \"b\")\nlog(*array)          // распаковка массива\n```",
   "explanation": "Внутри функции `vararg` — обычный массив. Параметр после `vararg` можно передать только по имени."
  },
  {
@@ -261,6 +293,7 @@
   "subtopic": "функции",
   "question": "Что делает `tailrec`?",
   "answer": "Превращает хвостовую рекурсию в цикл, снимая риск переполнения стека. Работает только если рекурсивный вызов — последняя операция.",
+  "example": "```kotlin\ntailrec fun sum(n: Int, acc: Long = 0): Long =\n    if (n == 0) acc else sum(n - 1, acc + n)   // рекурсивный вызов — последняя операция\n\nsum(1_000_000)   // без tailrec был бы StackOverflowError\n```",
   "explanation": "Если условие не выполнено, компилятор выдаёт предупреждение, а не ошибку — легко не заметить."
  },
  {
@@ -269,6 +302,7 @@
   "subtopic": "коллекции",
   "question": "Чем `List` отличается от `MutableList`?",
   "answer": "`List` — интерфейс только для чтения, а не неизменяемая коллекция: под ним может лежать `MutableList`, который изменит кто-то другой.",
+  "example": "```kotlin\nval mutable = mutableListOf(1, 2)\nval readOnly: List<Int> = mutable\n\nmutable.add(3)\nprintln(readOnly)        // [1, 2, 3] — тот же объект\n\nval snapshot = readOnly.toList()   // вот это настоящая копия\n```",
   "explanation": "Настоящий снимок даёт `toList()`. По-настоящему неизменяемые коллекции появляются только в `kotlinx.collections.immutable`."
  },
  {
@@ -277,6 +311,7 @@
   "subtopic": "коллекции",
   "question": "Когда `Sequence` выгоднее `List`?",
   "answer": "Когда цепочка операций длинная, коллекция большая или результат нужен не весь: `Sequence` вычисляет лениво по элементу и не создаёт промежуточных коллекций.",
+  "example": "```kotlin\nval first = listOf(1, 2, 3, 4)\n    .asSequence()\n    .map { expensive(it) }   // вычислится только для 1 и 2\n    .first { it > 10 }\n\n// без asSequence map прошёл бы по всем четырём элементам\n```",
   "explanation": "На коротких списках последовательность медленнее из-за накладных расходов. Терминальные операции (`toList`, `first`, `sum`) запускают вычисление."
  },
  {
@@ -285,6 +320,7 @@
   "subtopic": "коллекции",
   "question": "Чем `map` отличается от `flatMap`, а `filter` от `partition`?",
   "answer": "`flatMap` разворачивает вложенные коллекции в одну. `partition` разбивает коллекцию на две по предикату и возвращает `Pair`.",
+  "example": "```kotlin\nval users = listOf(user1, user2)\n\nusers.map { it.name }                 // [String]\nusers.flatMap { it.tags }             // теги всех пользователей одним списком\n\nval (active, rest) = users.partition { it.isActive }\n```",
   "explanation": "Полезные соседи: `associateBy` строит Map по ключу, `groupBy` — Map со списками, `chunked`/`windowed` режут на куски."
  },
  {
@@ -293,6 +329,7 @@
   "subtopic": "коллекции",
   "question": "Почему `listOf()` и `mapOf()` предпочтительнее `ArrayList()`?",
   "answer": "Они возвращают интерфейс только для чтения и не позволяют случайно изменить коллекцию через ссылку, отданную наружу.",
+  "example": "```kotlin\nclass Basket {\n    private val _items = mutableListOf<Item>()\n    val items: List<Item> get() = _items.toList()  // наружу — снимок\n\n    fun add(item: Item) { _items += item }\n}\n```",
   "explanation": "В публичном API из `MutableList` наружу лучше отдавать `toList()`: иначе внутреннее состояние правится извне."
  },
  {
@@ -301,6 +338,7 @@
   "subtopic": "коллекции",
   "question": "Как работает деструктуризация?",
   "answer": "Через функции `component1()`, `component2()` — их автоматически получают `data class`, `Pair`, `Triple` и записи Map.",
+  "example": "```kotlin\nval (id, name) = user               // componentN у data-класса\n\nfor ((key, value) in map) { }\n\nval (_, second) = pair              // ненужный компонент — подчёркивание\n```",
   "explanation": "Порядок позиционный, а не по именам: перестановка полей в data-классе тихо меняет смысл кода. Ненужный компонент обозначается `_`."
  },
  {
@@ -309,6 +347,7 @@
   "subtopic": "generics",
   "question": "Что означают `out` и `in` в объявлении обобщённого типа?",
   "answer": "`out T` — ковариантность, тип только возвращается (`List<out E>`): `List<Dog>` подходит там, где ждут `List<Animal>`. `in T` — контравариантность, тип только принимается (`Comparable<in T>`).",
+  "example": "```kotlin\ninterface Producer<out T> { fun get(): T }      // только возвращает\ninterface Consumer<in T> { fun accept(value: T) }  // только принимает\n\nval dogs: Producer<Dog> = ...\nval animals: Producer<Animal> = dogs   // ковариантность\n\nfun copy(from: Array<out Any>, to: Array<Any>) { }  // вариантность на месте использования\n```",
   "explanation": "Подсказка: производитель — `out`, потребитель — `in` (PECS из Java). Место использования тоже поддерживается: `Array<out Any>`."
  },
  {
@@ -317,6 +356,7 @@
   "subtopic": "generics",
   "question": "Что означает `List<*>`?",
   "answer": "Звёздочная проекция: тип-аргумент неизвестен. Читать элементы можно как `Any?`, а записывать нельзя ничего.",
+  "example": "```kotlin\nfun sizeOf(list: List<*>) = list.size    // тип элементов не важен\n\nval items: List<*> = listOf(1, \"два\")\nval first: Any? = items.first()          // читаем как Any?\n// items.add(1)                          // записать нельзя\n```",
   "explanation": "Отличается от `List<Any?>`, куда можно положить что угодно."
  },
  {
@@ -325,6 +365,7 @@
   "subtopic": "generics",
   "question": "Стираются ли обобщённые типы в Kotlin?",
   "answer": "Да, как и в Java: в рантайме `List<String>` и `List<Int>` неразличимы. Обойти можно только `inline` + `reified`.",
+  "example": "```kotlin\nfun check(value: Any) {\n    // if (value is List<String>) { }   // ошибка: тип стёрт\n    if (value is List<*>) println(\"список\")\n}\n\ninline fun <reified T> isType(value: Any) = value is T   // так можно\n```",
   "explanation": "Отсюда предупреждение при `is List<String>` — проверить получится лишь `is List<*>`."
  },
  {
@@ -333,6 +374,7 @@
   "subtopic": "generics",
   "question": "Как ограничить тип-параметр?",
   "answer": "`<T : Number>` — верхняя граница; несколько границ задаются через `where T : A, T : B`.",
+  "example": "```kotlin\nfun <T : Number> sum(items: List<T>) = items.sumOf { it.toDouble() }\n\nfun <T> copy(items: List<T>): List<T> where T : Cloneable, T : Comparable<T> = items\n\nfun <T : Any> requireValue(value: T?): T = value ?: error(\"нет значения\")\n```",
   "explanation": "По умолчанию граница — `Any?`, то есть тип-параметр допускает null. `<T : Any>` это запрещает."
  },
  {
@@ -341,6 +383,7 @@
   "subtopic": "исключения",
   "question": "Почему в Kotlin нет проверяемых исключений?",
   "answer": "Опыт Java показал, что они порождают пустые `catch` и не улучшают надёжность. Любое исключение в Kotlin — непроверяемое.",
+  "example": "```kotlin\n@Throws(IOException::class)          // подсказка для вызывающего Java-кода\nfun read(): String = file.readText()\n\n// Kotlin компилировать try/catch не заставляет:\nval text = try { read() } catch (e: IOException) { \"\" }\n```",
   "explanation": "Для Java-вызывающих сигнатуру можно уточнить аннотацией `@Throws`. Альтернатива исключениям в API — `Result` или sealed-тип."
  },
  {
@@ -349,6 +392,7 @@
   "subtopic": "исключения",
   "question": "Что делает `runCatching` и в чём его опасность?",
   "answer": "Оборачивает вызов в `Result`, ловя любое исключение. Опасность в том, что он ловит и `CancellationException`, ломая отмену корутин.",
+  "example": "```kotlin\nval result = runCatching { api.load() }\n    .getOrElse { error ->\n        if (error is CancellationException) throw error   // отмену пробрасываем\n        Fallback\n    }\n```",
   "explanation": "В корутинах после `runCatching` нужно пробрасывать отмену: `getOrElse { if (it is CancellationException) throw it else … }`."
  },
  {
@@ -357,6 +401,7 @@
   "subtopic": "интероп",
   "question": "Что нужно знать про вызов Kotlin из Java?",
   "answer": "`@JvmStatic` делает члены companion статическими, `@JvmField` убирает геттер, `@JvmOverloads` порождает перегрузки для значений по умолчанию, `@JvmName` меняет имя в байткоде.",
+  "example": "```kotlin\n// Kotlin\nclass Config {\n    companion object {\n        @JvmStatic fun default() = Config()\n        @JvmField val VERSION = 1\n    }\n}\n\n// Java\nConfig.default();\nint v = Config.VERSION;\n```",
   "explanation": "Функции верхнего уровня попадают в класс `ИмяФайлаKt`. Свойства превращаются в геттеры/сеттеры."
  },
  {
@@ -365,6 +410,7 @@
   "subtopic": "scope-функции",
   "question": "Как выбрать между `let`, `run`, `with`, `apply` и `also`?",
   "answer": "Возвращают лямбду: `let` (`it`), `run` и `with` (`this`). Возвращают сам объект: `apply` (`this`, настройка) и `also` (`it`, побочное действие).",
+  "example": "```kotlin\nval user = User().apply {      // настройка, возвращает сам объект\n    name = \"Аня\"\n    age = 30\n}\n\nval length = user.name?.let { it.length } ?: 0   // только если не null\n\nuser.also { log(it) }          // побочное действие в середине цепочки\nval label = with(user) { \"$name, $age\" }         // группировка обращений\n```",
   "explanation": "`?.let` — идиома «сделать что-то, если не null». `apply` удобен для конфигурации объекта, `also` — для логирования в середине цепочки."
  },
  {
@@ -373,6 +419,7 @@
   "subtopic": "scope-функции",
   "question": "Что делают `takeIf` и `takeUnless`?",
   "answer": "Возвращают сам объект, если предикат выполнен (или не выполнен), иначе null — превращают условие в звено цепочки вызовов.",
+  "example": "```kotlin\nval name = input.takeIf { it.isNotBlank() } ?: \"аноним\"\nval even = number.takeUnless { it % 2 != 0 }\n```",
   "explanation": "`name.takeIf { it.isNotBlank() } ?: \"аноним\"` читается лучше, чем `if`, но злоупотребление превращает код в ребус."
  },
  {
@@ -381,6 +428,7 @@
   "subtopic": "операторы",
   "question": "Как перегрузить оператор?",
   "answer": "Функцией с модификатором `operator` и фиксированным именем: `plus`, `minus`, `get`, `set`, `invoke`, `contains`, `compareTo`, `rangeTo`.",
+  "example": "```kotlin\ndata class Money(val cents: Int) {\n    operator fun plus(other: Money) = Money(cents + other.cents)\n    operator fun compareTo(other: Money) = cents.compareTo(other.cents)\n}\n\nclass Config(private val map: Map<String, String>) {\n    operator fun get(key: String) = map[key]\n    operator fun contains(key: String) = key in map\n}\n\nMoney(100) + Money(50)\nif (\"theme\" in config) println(config[\"theme\"])\n```",
   "explanation": "`get`/`set` дают синтаксис `obj[key]`, `invoke` — вызов объекта как функции, `contains` — работу оператора `in`."
  },
  {
@@ -389,6 +437,7 @@
   "subtopic": "система типов",
   "question": "Чем различаются `Any`, `Unit` и `Nothing`?",
   "answer": "`Any` — корень иерархии, аналог `Object`. `Unit` — тип с единственным значением, аналог `void`, но настоящий тип. `Nothing` — тип без значений: им помечается то, что никогда не возвращает управление.",
+  "example": "```kotlin\nfun log(value: Any) {}          // принимает что угодно\nfun save(): Unit {}             // аналог void, но настоящий тип\nfun fail(message: String): Nothing = throw IllegalStateException(message)\n\nval name: String = user.name ?: fail(\"нет имени\")   // Nothing подходит везде\n```",
   "explanation": "Функция с типом `Nothing` (`throw`, бесконечный цикл, `TODO()`) может стоять в любой ветке `when`, потому что `Nothing` — подтип всех типов. `null` имеет тип `Nothing?`."
  },
  {
@@ -397,6 +446,7 @@
   "subtopic": "система типов",
   "question": "Чем `as` отличается от `as?`?",
   "answer": "`as` бросает `ClassCastException`, если приведение невозможно. `as?` возвращает `null` — и потому обычно используется в паре с `?:`.",
+  "example": "```kotlin\nval text = value as String        // ClassCastException, если не строка\nval safe = value as? String       // null вместо исключения\nval length = (value as? String)?.length ?: 0\n```",
   "explanation": "`value as? String ?: return` — идиома «либо строка, либо выходим». Проверять тип лучше через `is` со смарт-кастом."
  },
  {
@@ -405,6 +455,7 @@
   "subtopic": "система типов",
   "question": "Где на практике встречается тип `Nothing`?",
   "answer": "У `TODO()`, `error()`, `throw`-выражения и у пустого списка `emptyList<Nothing>()`. Он позволяет использовать такое выражение там, где ждут любой тип.",
+  "example": "```kotlin\nfun notImplemented(): Nothing = TODO(\"напишу позже\")\n\nval config: Config = loadConfig() ?: error(\"конфиг не найден\")\n\nval empty: List<String> = emptyList()   // внутри List<Nothing>\n```",
   "explanation": "Поэтому `val x: String = TODO()` компилируется: `Nothing` подставляется вместо чего угодно."
  },
  {
@@ -413,6 +464,7 @@
   "subtopic": "система типов",
   "question": "Почему `val x: Long = 1` работает, а `val y: Long = intValue` — нет?",
   "answer": "Литерал компилятор трактует как значение нужного типа, а неявных преобразований между числовыми типами в Kotlin нет: нужен явный `toLong()`.",
+  "example": "```kotlin\nval long: Long = 1          // литерал — можно\nval int: Int = 1\n// val bad: Long = int      // ошибка компиляции\nval ok: Long = int.toLong()\n```",
   "explanation": "Так сделано, чтобы `equals` между разными числовыми типами не давал неожиданных результатов. Оборотная сторона — многословность при работе с Java-API."
  },
  {
@@ -421,6 +473,7 @@
   "subtopic": "система типов",
   "question": "Чем сравнение `Double` в Kotlin отличается от Java?",
   "answer": "Когда тип известен статически, используется IEEE 754: `NaN != NaN`, `-0.0 == 0.0`. Но если значения приведены к `Any` или лежат в коллекции, работает `equals`, где `NaN == NaN` истинно, а `-0.0 != 0.0`.",
+  "example": "```kotlin\nprintln(Double.NaN == Double.NaN)                 // false — статический тип известен\nprintln(listOf(Double.NaN).contains(Double.NaN))  // true  — работает equals\n\nprintln(0.0 == -0.0)                              // true\nprintln(setOf(0.0).contains(-0.0))                // false\n```",
   "explanation": "Ловушка на собеседовании: `listOf(Double.NaN).contains(Double.NaN)` возвращает `true`."
  },
  {
@@ -429,6 +482,7 @@
   "subtopic": "система типов",
   "question": "Что произойдёт при переполнении `Int`?",
   "answer": "Значение молча переполнится по правилам дополнительного кода — исключения не будет. `Int.MAX_VALUE + 1` даст `Int.MIN_VALUE`.",
+  "example": "```kotlin\nprintln(Int.MAX_VALUE + 1)      // -2147483648, без исключения\n\nval safe = Math.addExact(Int.MAX_VALUE, 1)   // ArithmeticException\nval big = Int.MAX_VALUE.toLong() + 1         // 2147483648\n```",
   "explanation": "Для защиты есть `Math.addExact` из Java или переход на `Long`. Беззнаковые типы (`UInt`) существуют, но в API их применяют редко."
  },
  {
@@ -437,6 +491,7 @@
   "subtopic": "система типов",
   "question": "Почему конкатенация строк в цикле — плохая идея?",
   "answer": "Строки неизменяемы: каждая конкатенация создаёт новый объект. В цикле это квадратичная сложность и мусор для сборщика.",
+  "example": "```kotlin\n// Плохо: на каждой итерации новая строка\nvar text = \"\"\nfor (word in words) text += word\n\n// Хорошо\nval result = buildString { words.forEach(::append) }\nval joined = words.joinToString(\", \")\n```",
   "explanation": "Решения: `StringBuilder`, `buildString { }`, `joinToString` для коллекций."
  },
  {
@@ -445,6 +500,7 @@
   "subtopic": "коллекции",
   "question": "Чем `Array` отличается от `List` и когда нужен `IntArray`?",
   "answer": "`Array` фиксированного размера и изменяемый, `List` — интерфейс с богатым API. `IntArray` хранит примитивы без упаковки, а `Array<Int>` — объекты.",
+  "example": "```kotlin\nval boxed: Array<Int> = arrayOf(1, 2, 3)   // объекты Integer\nval raw: IntArray = intArrayOf(1, 2, 3)    // примитивы, без упаковки\n\nval list = listOf(1, 2, 3)                 // богатый API, размер фиксирован\nval mutable = mutableListOf(1, 2, 3)\n```",
   "explanation": "На горячем пути специализированные массивы экономят память и время на боксинге; в обычном коде читаемость `List` важнее."
  },
  {
@@ -453,6 +509,7 @@
   "subtopic": "система типов",
   "question": "Что делает `typealias` и чего он не делает?",
   "answer": "Даёт короткое имя существующему типу. Нового типа не создаёт: `typealias UserId = String` взаимозаменяем со `String`, и опечатку он не поймает.",
+  "example": "```kotlin\ntypealias UserId = String            // просто короткое имя\ntypealias Handler = (Event) -> Unit\n\nfun load(id: UserId) {}\nload(\"что угодно\")                   // опечатку компилятор не поймает\n\n@JvmInline value class RealUserId(val value: String)  // вот это защищает\n```",
   "explanation": "Настоящую типобезопасность даёт `value class`. `typealias` уместен для длинных функциональных типов и дженериков."
  },
  {
@@ -461,6 +518,7 @@
   "subtopic": "классы",
   "question": "Чем первичный конструктор отличается от вторичного?",
   "answer": "Первичный объявляется в заголовке класса и не может содержать кода — за него работают блоки `init`. Вторичные объявляются в теле и обязаны делегировать первичному через `this(...)`.",
+  "example": "```kotlin\nclass User(val name: String, val age: Int) {   // первичный конструктор\n    init {\n        require(age >= 0) { \"возраст отрицательный\" }\n    }\n\n    constructor(name: String) : this(name, 0)  // вторичный делегирует первичному\n}\n```",
   "explanation": "Инициализаторы свойств и блоки `init` выполняются в порядке объявления, как часть первичного конструктора, — до тела вторичного."
  },
  {
@@ -469,6 +527,7 @@
   "subtopic": "классы",
   "question": "В каком порядке выполняется инициализация при наследовании?",
   "answer": "Сначала конструктор и инициализаторы базового класса, затем инициализаторы и `init` наследника. Поэтому вызов `open`-метода из конструктора базового класса увидит неинициализированные поля наследника.",
+  "example": "```kotlin\nopen class Base {\n    init { render() }              // вызовется до инициализации Child\n    open fun render() {}\n}\n\nclass Child : Base() {\n    private val title = \"заголовок\"\n    override fun render() = println(title)   // напечатает null\n}\n```",
   "explanation": "Это одна из главных ловушек наследования: `open` в конструкторе — почти всегда ошибка."
  },
  {
@@ -477,6 +536,7 @@
   "subtopic": "классы",
   "question": "Что такое backing field и когда он создаётся?",
   "answer": "Скрытое поле, хранящее значение свойства. Оно создаётся, только если хотя бы один аксессор использует ключевое слово `field` либо используется реализация по умолчанию.",
+  "example": "```kotlin\nclass Screen {\n    var title: String = \"\"\n        set(value) {\n            field = value.trim()   // field — то самое скрытое поле\n        }\n\n    val isEmpty: Boolean get() = title.isEmpty()  // поля нет, считается каждый раз\n}\n```",
   "explanation": "Свойство с вычисляемым геттером (`val size get() = items.size`) поля не имеет и пересчитывается при каждом обращении."
  },
  {
@@ -485,6 +545,7 @@
   "subtopic": "классы",
   "question": "Как написать собственный сеттер с валидацией?",
   "answer": "В теле свойства: `set(value) { field = value.coerceIn(0, 100) }`. Внутри аксессора к хранилищу обращаются через `field`, а не по имени свойства — иначе получится бесконечная рекурсия.",
+  "example": "```kotlin\nclass Player {\n    var volume: Int = 50\n        set(value) { field = value.coerceIn(0, 100) }\n\n    var state: State = State.Idle\n        private set               // менять можно только изнутри класса\n}\n```",
   "explanation": "Видимость сеттера можно сузить: `var state: State = …; private set`."
  },
  {
@@ -493,6 +554,7 @@
   "subtopic": "классы",
   "question": "Что делает `object : Interface { }`?",
   "answer": "Создаёт анонимный объект — реализацию интерфейса или наследника класса на месте. В отличие от Java, он может реализовать сразу несколько интерфейсов.",
+  "example": "```kotlin\nval listener = object : View.OnClickListener {\n    override fun onClick(v: View) { open() }\n}\n\n// Захватывает внешние переменные и живёт столько же, сколько подписка:\nbutton.setOnClickListener(listener)   // не забыть снять при уничтожении View\n```",
   "explanation": "Анонимный объект захватывает внешние переменные и потому легко удерживает Activity — классический источник утечки в колбэках."
  },
  {
@@ -501,6 +563,7 @@
   "subtopic": "классы",
   "question": "Что такое `fun interface` и SAM-преобразование?",
   "answer": "Интерфейс с одним абстрактным методом, помеченный `fun`. Его реализацию можно передать лямбдой вместо `object :`.",
+  "example": "```kotlin\nfun interface Mapper {\n    fun map(value: String): Int\n}\n\nval mapper = Mapper { it.length }        // лямбдой вместо object :\nprintln(mapper.map(\"текст\"))             // 5\n```",
   "explanation": "Для Java-интерфейсов SAM-преобразование работает всегда, для Kotlin-интерфейсов — только с модификатором `fun`."
  },
  {
@@ -509,6 +572,7 @@
   "subtopic": "классы",
   "question": "Зачем нужен `data object`?",
   "answer": "Он даёт объекту осмысленный `toString` (имя вместо адреса) и корректные `equals`/`hashCode` — важно для sealed-иерархий состояния, которые сравниваются и логируются.",
+  "example": "```kotlin\nsealed interface State\ndata object Loading : State\nobject Legacy : State\n\nprintln(Loading)   // Loading\nprintln(Legacy)    // Legacy@4a2f7 — в логах бесполезно\n```",
   "explanation": "Обычный `object` печатается как `Loading@4a2f7` и в логах бесполезен."
  },
  {
@@ -517,6 +581,7 @@
   "subtopic": "классы",
   "question": "Какой контракт связывает `equals` и `hashCode`?",
   "answer": "Равные объекты обязаны иметь равный `hashCode`; обратное неверно. Нарушение ломает `HashMap` и `HashSet`: объект «теряется» в корзине.",
+  "example": "```kotlin\nclass Point(val x: Int, val y: Int) {\n    override fun equals(other: Any?) = other is Point && x == other.x && y == other.y\n    override fun hashCode() = 31 * x + y     // без него объект «теряется» в HashSet\n}\n\nval set = hashSetOf(Point(1, 1))\nprintln(Point(1, 1) in set)   // true только при согласованном hashCode\n```",
   "explanation": "Второе правило: поля, участвующие в `equals`, не должны меняться, пока объект лежит в хеш-коллекции."
  },
  {
@@ -525,6 +590,7 @@
   "subtopic": "функции",
   "question": "Может ли extension быть свойством?",
   "answer": "Да: `val String.lastChar get() = this[length - 1]`. Но хранить состояние оно не может — backing field у расширения не бывает.",
+  "example": "```kotlin\nval String.lastChar: Char get() = this[length - 1]   // геттер обязателен\nval <T> List<T>.secondOrNull: T? get() = getOrNull(1)\n\n\"текст\".lastChar\n```",
   "explanation": "Поэтому у extension-свойства обязателен явный геттер."
  },
  {
@@ -533,6 +599,7 @@
   "subtopic": "функции",
   "question": "Зачем нужны локальные функции?",
   "answer": "Они видны только внутри объемлющей функции и имеют доступ к её переменным — способ вынести повторяющийся кусок, не засоряя класс приватными методами.",
+  "example": "```kotlin\nfun process(users: List<User>) {\n    fun validate(user: User) {           // видна только здесь\n        require(user.name.isNotBlank()) { \"пустое имя\" }\n    }\n\n    users.forEach { validate(it) }\n}\n```",
   "explanation": "Злоупотребление ими делает функцию длинной: если локальных функций больше двух, обычно пора выделять класс."
  },
  {
@@ -541,6 +608,7 @@
   "subtopic": "функции",
   "question": "Как выйти только из лямбды, а не из внешней функции?",
   "answer": "Меткой: `return@forEach`. По умолчанию меткой служит имя функции, принимающей лямбду; можно задать свою: `loop@ for (...) { break@loop }`.",
+  "example": "```kotlin\nfun findFirst(items: List<Int>): Int? {\n    items.forEach { if (it > 0) return it }   // выход из findFirst\n    return null\n}\n\nitems.forEach {\n    if (it < 0) return@forEach   // пропустить элемент, продолжить цикл\n    println(it)\n}\n\nouter@ for (row in rows) {\n    for (cell in row) if (cell.isEmpty()) break@outer\n}\n```",
   "explanation": "Без метки `return` внутри лямбды inline-функции выходит из внешней функции — это и есть нелокальный возврат."
  },
  {
@@ -549,6 +617,7 @@
   "subtopic": "исключения",
   "question": "Чем различаются `require`, `check` и `error`?",
   "answer": "`require` проверяет аргументы и бросает `IllegalArgumentException`. `check` проверяет состояние и бросает `IllegalStateException`. `error` просто бросает `IllegalStateException` с сообщением.",
+  "example": "```kotlin\nfun transfer(amount: Int, account: Account?) {\n    require(amount > 0) { \"сумма должна быть положительной\" }   // IllegalArgumentException\n    val target = requireNotNull(account) { \"счёт не указан\" }   // ещё и сужает тип\n    check(target.isOpen) { \"счёт закрыт\" }                      // IllegalStateException\n}\n```",
   "explanation": "Есть ещё `requireNotNull` и `checkNotNull`, которые дополнительно сужают тип до non-null — их предпочитают `!!`."
  },
  {
@@ -557,6 +626,7 @@
   "subtopic": "исключения",
   "question": "Является ли `try` выражением?",
   "answer": "Да: `val x = try { parse(s) } catch (e: Exception) { null }`. Значением становится последнее выражение выбранной ветки.",
+  "example": "```kotlin\nval port = try {\n    text.toInt()\n} catch (e: NumberFormatException) {\n    8080\n}\n\nval safe = text.toIntOrNull() ?: 8080   // без исключений вовсе\n```",
   "explanation": "Блок `finally` на значение не влияет — в отличие от Java, где `return` в `finally` его перебивает."
  },
  {
@@ -565,6 +635,7 @@
   "subtopic": "исключения",
   "question": "Что такое `Result` и почему его редко возвращают из API?",
   "answer": "Обёртка над «успех или исключение». Из публичных функций его долго нельзя было возвращать (ограничение компилятора), а сам он не различает типы ошибок.",
+  "example": "```kotlin\nval result: Result<User> = runCatching { api.load() }\nresult.onSuccess(::show).onFailure(::report)\n\n// В доменном API обычно точнее собственный тип:\nsealed interface LoadResult\ndata class Success(val user: User) : LoadResult\ndata object NotFound : LoadResult\ndata class Failure(val cause: Throwable) : LoadResult\n```",
   "explanation": "Для доменных ошибок обычно берут собственный sealed-тип: он перечисляет возможные исходы и проверяется `when` на полноту."
  },
  {
@@ -573,6 +644,7 @@
   "subtopic": "коллекции",
   "question": "Чем `fold` отличается от `reduce`?",
   "answer": "`fold` принимает начальное значение и задаёт тип результата; `reduce` начинает с первого элемента и падает на пустой коллекции.",
+  "example": "```kotlin\nval sum = listOf(1, 2, 3).reduce { acc, x -> acc + x }        // 6\nval text = listOf(1, 2, 3).fold(\"\") { acc, x -> acc + x }     // \"123\", тип задан\n\nemptyList<Int>().fold(0) { a, b -> a + b }   // 0\n// emptyList<Int>().reduce { a, b -> a + b } // UnsupportedOperationException\n```",
   "explanation": "Ровно та же пара, что `reduce` с начальным значением и без него в JavaScript."
  },
  {
@@ -581,6 +653,7 @@
   "subtopic": "коллекции",
   "question": "Чем `groupBy` отличается от `associateBy`?",
   "answer": "`groupBy` возвращает `Map<K, List<V>>` — все элементы с одинаковым ключом. `associateBy` возвращает `Map<K, V>`, и при совпадении ключей побеждает последний элемент.",
+  "example": "```kotlin\nval byCity: Map<String, List<User>> = users.groupBy { it.city }\nval byId: Map<Long, User> = users.associateBy { it.id }\n\n// При неуникальном ключе associateBy молча оставит последнего:\nlistOf(a1, a2).associateBy { it.city }   // одна запись вместо двух\n```",
   "explanation": "Тихая потеря данных в `associateBy` при неуникальном ключе — частый баг."
  },
  {
@@ -589,6 +662,7 @@
   "subtopic": "коллекции",
   "question": "Что делают `zip`, `chunked` и `windowed`?",
   "answer": "`zip` объединяет две коллекции попарно по минимальной длине. `chunked(n)` режет на непересекающиеся куски, `windowed(n)` даёт скользящее окно.",
+  "example": "```kotlin\nlistOf(1, 2, 3).zip(listOf(\"a\", \"b\"))     // [(1, a), (2, b)] — по минимуму\nlistOf(1, 2, 3, 4).chunked(2)             // [[1, 2], [3, 4]]\nlistOf(1, 2, 3, 4).windowed(2)            // [[1, 2], [2, 3], [3, 4]]\nlistOf(1, 4, 9).zipWithNext { a, b -> b - a }   // [3, 5]\n```",
   "explanation": "`zipWithNext()` — частый способ посчитать разницу между соседними элементами."
  },
  {
@@ -597,6 +671,7 @@
   "subtopic": "коллекции",
   "question": "Как отсортировать по нескольким полям?",
   "answer": "`sortedWith(compareBy({ it.a }, { it.b }))` или `compareBy<T> { it.a }.thenByDescending { it.b }`.",
+  "example": "```kotlin\nusers.sortedBy { it.age }\nusers.sortedWith(compareBy({ it.city }, { it.age }))\nusers.sortedWith(compareBy<User> { it.city }.thenByDescending { it.age })\n\nmutableUsers.sortBy { it.age }   // меняет сам список\n```",
   "explanation": "`sortedBy` меняет копию и возвращает новый список, `sort` — изменяет `MutableList` на месте. Сортировка стабильна."
  },
  {
@@ -605,6 +680,7 @@
   "subtopic": "коллекции",
   "question": "Чем `getOrElse`, `getOrPut` и `getOrDefault` различаются для `Map`?",
   "answer": "`getOrElse` вычисляет запасное значение и ничего не сохраняет. `getOrPut` вычисляет и **кладёт** в map. `getOrDefault` возвращает переданное значение без вычисления.",
+  "example": "```kotlin\nval counts = mutableMapOf<String, Int>()\n\ncounts.getOrElse(\"a\") { 0 }        // вернёт 0, в map не запишет\ncounts.getOrPut(\"a\") { 0 }         // вернёт 0 и положит в map\ncounts.getOrDefault(\"a\", 0)        // без вычисления\n\nval cache = mutableMapOf<Long, User>()\nfun user(id: Long) = cache.getOrPut(id) { loadUser(id) }\n```",
   "explanation": "`getOrPut` — стандартный способ реализовать кэш в одну строку."
  },
  {
@@ -613,6 +689,7 @@
   "subtopic": "коллекции",
   "question": "Чем `Iterable`, `Collection` и `List` отличаются?",
   "answer": "`Iterable` умеет только перебор, `Collection` добавляет размер и проверку вхождения, `List` — доступ по индексу и порядок.",
+  "example": "```kotlin\nfun sum(values: Iterable<Int>) = values.sumOf { it }        // достаточно перебора\nfun isEmpty(values: Collection<*>) = values.size == 0       // нужен размер\nfun first(values: List<*>) = values[0]                      // нужен индекс\n\nsum(setOf(1, 2))      // подойдёт любой Iterable\n```",
   "explanation": "Принимать в параметрах лучше самый слабый достаточный тип: обычно это `Iterable` или `Collection`."
  },
  {
@@ -621,6 +698,7 @@
   "subtopic": "коллекции",
   "question": "Почему изменяемая коллекция в публичном API опасна?",
   "answer": "Отдав `MutableList` наружу, класс теряет контроль над своим состоянием: его изменят в обход инвариантов и, возможно, из другого потока.",
+  "example": "```kotlin\nclass Cart {\n    private val items = mutableListOf<Item>()\n\n    fun items(): List<Item> = items.toList()   // снимок\n    // fun items(): MutableList<Item> = items  // так состояние правят снаружи\n}\n```",
   "explanation": "Наружу отдают `toList()` или неизменяемый интерфейс; внутри держат изменяемую."
  },
  {
@@ -629,6 +707,7 @@
   "subtopic": "делегаты",
   "question": "Какие режимы у `lazy` и когда нужен не стандартный?",
   "answer": "`SYNCHRONIZED` (по умолчанию) — потокобезопасно, вычисление один раз. `PUBLICATION` — вычислить могут несколько потоков, победит первый. `NONE` — без синхронизации, только когда доступ гарантированно однопоточный.",
+  "example": "```kotlin\nval heavy by lazy { Parser() }                              // SYNCHRONIZED\nval uiOnly by lazy(LazyThreadSafetyMode.NONE) { Adapter() } // без синхронизации\nval racy by lazy(LazyThreadSafetyMode.PUBLICATION) { Id() } // победит первый\n```",
   "explanation": "`NONE` дешевле, и в UI-коде, работающем только в главном потоке, он оправдан."
  },
  {
@@ -637,6 +716,7 @@
   "subtopic": "делегаты",
   "question": "Что делают `Delegates.observable` и `Delegates.vetoable`?",
   "answer": "`observable` вызывает колбэк после изменения свойства, `vetoable` — до, и может изменение отклонить, вернув `false`.",
+  "example": "```kotlin\nvar title: String by Delegates.observable(\"\") { _, old, new ->\n    println(\"$old -> $new\")\n}\n\nvar age: Int by Delegates.vetoable(0) { _, _, new ->\n    new >= 0            // false — изменение отклоняется\n}\n```",
   "explanation": "Полезны для логирования и валидации без ручного сеттера."
  },
  {
@@ -645,6 +725,7 @@
   "subtopic": "рефлексия",
   "question": "Чем `KClass` отличается от `Class` и чего стоит рефлексия?",
   "answer": "`KClass` — Kotlin-представление с доступом к свойствам, конструкторам и модификаторам Kotlin; `Class` — Java-представление. Переходы: `::class` и `::class.java`.",
+  "example": "```kotlin\nval kClass = user::class          // KClass\nval jClass = user::class.java     // Class\n\nkClass.simpleName\nkClass.memberProperties.forEach { println(\"${it.name} = ${it.get(user)}\") }\n```",
   "explanation": "Полная рефлексия требует зависимости `kotlin-reflect` (несколько мегабайт) и медленна; она же ломается под R8 без правил `-keep`."
  },
  {
@@ -653,6 +734,7 @@
   "subtopic": "рефлексия",
   "question": "Как объявить аннотацию и что задаёт `@Target`/`@Retention`?",
   "answer": "`annotation class Marker`. `@Target` перечисляет допустимые места применения, `@Retention` — доживает ли аннотация до рантайма (`RUNTIME`), остаётся ли в классе (`BINARY`) или только в исходниках (`SOURCE`).",
+  "example": "```kotlin\n@Target(AnnotationTarget.CLASS)\n@Retention(AnnotationRetention.RUNTIME)\nannotation class Screen(val route: String)\n\n@Screen(\"profile\")\nclass ProfileFragment\n```",
   "explanation": "Аннотации с `SOURCE`-хранением используют кодогенераторы (KSP), с `RUNTIME` — рефлексия."
  },
  {
@@ -661,6 +743,7 @@
   "subtopic": "инструменты",
   "question": "Чем KSP лучше kapt?",
   "answer": "KSP работает напрямую с деревом Kotlin, не порождая Java-заглушек, и потому в разы быстрее. kapt — старый механизм на основе Java-процессоров аннотаций.",
+  "example": "```kotlin\n// build.gradle.kts\nplugins {\n    id(\"com.google.devtools.ksp\")\n}\n\ndependencies {\n    ksp(\"androidx.room:room-compiler:2.6.1\")   // было kapt(...)\n}\n```",
   "explanation": "Room, Hilt и Moshi поддерживают KSP; переход обычно сводится к замене плагина и конфигурации."
  },
  {
@@ -669,6 +752,7 @@
   "subtopic": "мультиплатформа",
   "question": "Что означают `expect` и `actual`?",
   "answer": "Механизм KMP: общий модуль объявляет `expect`-объявление без реализации, а каждая платформа даёт свою `actual`.",
+  "example": "```kotlin\n// commonMain\nexpect fun currentTimeMillis(): Long\n\n// androidMain\nactual fun currentTimeMillis(): Long = System.currentTimeMillis()\n\n// iosMain\nactual fun currentTimeMillis(): Long = (NSDate().timeIntervalSince1970 * 1000).toLong()\n```",
   "explanation": "Используется для платформенных API (файлы, криптография, время). Основная часть логики при этом остаётся общей и не требует пары."
  },
  {
@@ -677,6 +761,7 @@
   "subtopic": "сравнение",
   "question": "Чем корутины лучше RxJava и в чём Rx всё ещё сильнее?",
   "answer": "Корутины дают линейный код без цепочек операторов, структурированный параллелизм и отмену «из коробки», и они дешевле. Rx богаче операторами и лучше подходит для сложных потоковых сценариев.",
+  "example": "```kotlin\n// RxJava\napi.load()\n    .subscribeOn(Schedulers.io())\n    .observeOn(AndroidSchedulers.mainThread())\n    .subscribe(::show, ::showError)\n\n// Корутины: линейный код, отмена по скоупу\nviewModelScope.launch {\n    runCatching { api.load() }.onSuccess(::show).onFailure(::showError)\n}\n```",
   "explanation": "На практике Flow покрывает большинство нужд; смешивать оба в одном проекте — источник путаницы в обработке ошибок."
  },
  {
@@ -685,6 +770,7 @@
   "subtopic": "сравнение",
   "question": "Что назвать главными преимуществами Kotlin перед Java на собеседовании?",
   "answer": "Null-safety на уровне типов, лаконичность (data-классы, свойства, вывод типов), extension-функции, корутины, sealed-иерархии с проверкой полноты, полная совместимость с Java.",
+  "example": "```kotlin\n// Java\npublic final class User {\n    private final String name;\n    public User(String name) { this.name = name; }\n    public String getName() { return name; }\n    // equals, hashCode, toString — руками\n}\n\n// Kotlin\ndata class User(val name: String)\n```",
   "explanation": "Честные минусы тоже полезно назвать: время сборки, размер рантайма, сложность некоторых абстракций (inline, reified, вариантность)."
  },
  {
@@ -693,6 +779,7 @@
   "subtopic": "система типов",
   "question": "Как правильно сравнивать строки без учёта регистра?",
   "answer": "`a.equals(b, ignoreCase = true)` или `a.compareTo(b, ignoreCase = true) == 0`. Приведение к нижнему регистру зависит от локали: в турецкой локали `I` превращается не в `i`.",
+  "example": "```kotlin\na.equals(b, ignoreCase = true)\n\n// Осторожно с локалью: в турецкой \"I\".lowercase() даёт \"ı\"\n\"I\".lowercase(Locale.ROOT)\n\"Straße\".compareTo(\"strasse\", ignoreCase = true)\n```",
   "explanation": "Для локале-независимого приведения есть `lowercase()` без аргументов (использует Locale.ROOT)."
  },
  {
@@ -701,6 +788,7 @@
   "subtopic": "коллекции",
   "question": "Как безопасно отдать неизменяемый снимок изменяемого состояния?",
   "answer": "Скопировать: `toList()`, `toMap()`, `toSet()`. Приведение `MutableList as List` снимка не создаёт — под ним остаётся тот же изменяемый объект.",
+  "example": "```kotlin\nprivate val _items = mutableListOf<Item>()\n\nval snapshot: List<Item> = _items.toList()   // независимая копия\nval fake: List<Item> = _items                // та же ссылка, изменится вместе с ней\n\n_items.add(newItem)\nprintln(snapshot.size)   // не изменился\n```",
   "explanation": "Тот же принцип, что `structuredClone` против spread в JavaScript, только на уровне одного уровня вложенности."
  }
 ]

@@ -5,6 +5,7 @@
   "subtopic": "жизненный цикл",
   "question": "Перечислите колбэки жизненного цикла Activity по порядку.",
   "answer": "`onCreate` → `onStart` → `onResume` → (работа) → `onPause` → `onStop` → `onDestroy`. При возврате из фона — `onRestart` → `onStart` → `onResume`.",
+  "example": "```kotlin\nclass MainActivity : AppCompatActivity() {\n    override fun onCreate(savedInstanceState: Bundle?) {\n        super.onCreate(savedInstanceState)\n        setContentView(R.layout.main)     // разовая настройка\n    }\n    override fun onStart() { super.onStart(); locationClient.start() }  // стал виден\n    override fun onResume() { super.onResume(); player.play() }         // получил фокус\n    override fun onPause() { super.onPause(); player.pause() }          // быстро!\n    override fun onStop() { super.onStop(); locationClient.stop() }\n}\n```",
   "explanation": "`onStart`/`onStop` — про видимость, `onResume`/`onPause` — про фокус ввода. `onPause` обязан быть быстрым: пока он выполняется, следующая Activity не отрисуется."
  },
  {
@@ -13,6 +14,7 @@
   "subtopic": "жизненный цикл",
   "question": "Что происходит с Activity при повороте экрана и как это пережить?",
   "answer": "По умолчанию она уничтожается и создаётся заново с новой конфигурацией. Состояние сохраняют `ViewModel` (переживает пересоздание) и `onSaveInstanceState`/`SavedStateHandle` (переживает и убийство процесса).",
+  "example": "```kotlin\nclass ProfileViewModel(\n    private val handle: SavedStateHandle,   // переживёт и смерть процесса\n) : ViewModel() {\n    val query = handle.getStateFlow(\"query\", \"\")   // переживёт всё\n    var cached: List<User> = emptyList()           // переживёт только поворот\n}\n```",
   "explanation": "Разница принципиальна: ViewModel живёт в памяти процесса и умирает вместе с ним, а `SavedStateHandle` сериализуется в Bundle. Пароль в Bundle класть нельзя — он попадёт на диск."
  },
  {
@@ -21,6 +23,7 @@
   "subtopic": "жизненный цикл",
   "question": "Когда вызывается `onSaveInstanceState` и каков лимит Bundle?",
   "answer": "Перед возможным уничтожением Activity — при повороте, уходе в фон, нехватке памяти. Bundle передаётся через Binder, и на транзакцию есть лимит около 1 МБ (`TransactionTooLargeException`).",
+  "example": "```kotlin\noverride fun onSaveInstanceState(outState: Bundle) {\n    super.onSaveInstanceState(outState)\n    outState.putLong(\"selectedId\", selectedId)   // id, а не сам объект\n}\n\noverride fun onCreate(savedInstanceState: Bundle?) {\n    super.onCreate(savedInstanceState)\n    selectedId = savedInstanceState?.getLong(\"selectedId\") ?: NO_ID\n}\n```",
   "explanation": "Поэтому в Bundle кладут идентификаторы и позицию списка, а не сами данные."
  },
  {
@@ -29,6 +32,7 @@
   "subtopic": "жизненный цикл",
   "question": "Чем жизненный цикл Fragment отличается от Activity?",
   "answer": "У фрагмента два жизненных цикла: самого фрагмента и его View (`onCreateView` → `onViewCreated` → `onDestroyView`). View может пересоздаваться, пока фрагмент жив.",
+  "example": "```kotlin\noverride fun onViewCreated(view: View, state: Bundle?) {\n    viewLifecycleOwner.lifecycleScope.launch {          // не this!\n        viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {\n            viewModel.state.collect(::render)\n        }\n    }\n}\n\noverride fun onDestroyView() {\n    _binding = null       // иначе утечка View\n    super.onDestroyView()\n}\n```",
   "explanation": "Отсюда правило подписок: `viewLifecycleOwner`, а не `this` — иначе после возврата по бэкстеку получится вторая подписка на ту же View. По той же причине ссылку на binding обнуляют в `onDestroyView`."
  },
  {
@@ -37,6 +41,7 @@
   "subtopic": "жизненный цикл",
   "question": "Что делает `android:configChanges` и почему это не решение?",
   "answer": "Отменяет пересоздание Activity и вызывает `onConfigurationChanged`. Не решение, потому что ресурсы (макеты, строки, размеры) для новой конфигурации не перечитаются — их придётся применять руками.",
+  "example": "```xml\n<!-- Пересоздание отменяется, но ресурсы под новую конфигурацию не перечитаются -->\n<activity\n    android:name=\".MainActivity\"\n    android:configChanges=\"orientation|screenSize|keyboardHidden\" />\n```",
   "explanation": "Смена конфигурации — это не только поворот: язык, тема, размер шрифта, многооконный режим."
  },
  {
@@ -45,6 +50,7 @@
   "subtopic": "жизненный цикл",
   "question": "Что такое process death и как его воспроизвести?",
   "answer": "Система убивает процесс приложения в фоне ради памяти, но сохраняет стек задач: при возврате Activity воссоздаётся с сохранённым Bundle, а вся память (включая ViewModel и синглтоны) пуста.",
+  "example": "```bash\n# Воспроизвести: свернуть приложение и убить процесс\nadb shell am kill com.example.app\n\n# Либо Developer options -> Don't keep activities\n```",
   "explanation": "Проверяется в Developer options → «Don't keep activities» или командой `adb shell am kill <package>`. Самая частая причина «у меня всё работает, а у пользователя падает»."
  },
  {
@@ -53,6 +59,7 @@
   "subtopic": "компоненты",
   "question": "Какие есть основные компоненты приложения?",
   "answer": "Activity, Service, BroadcastReceiver и ContentProvider. Все объявляются в манифесте, все могут быть точкой входа.",
+  "example": "```xml\n<application>\n    <activity android:name=\".MainActivity\" android:exported=\"true\" />\n    <service android:name=\".SyncService\" android:exported=\"false\" />\n    <receiver android:name=\".BootReceiver\" android:exported=\"false\" />\n    <provider android:name=\".DataProvider\" android:authorities=\"com.example.data\" />\n</application>\n```",
   "explanation": "Каждый из них создаётся системой, а не приложением, — поэтому у них нет конструкторов с параметрами и им нельзя передать зависимости напрямую."
  },
  {
@@ -61,6 +68,7 @@
   "subtopic": "компоненты",
   "question": "Чем явный Intent отличается от неявного?",
   "answer": "Явный называет конкретный класс-получатель, неявный описывает действие (`action`, `data`, `category`), а получателя выбирает система по intent-фильтрам.",
+  "example": "```kotlin\n// Явный: получатель назван прямо\nstartActivity(Intent(this, DetailsActivity::class.java).putExtra(\"id\", id))\n\n// Неявный: получателя выберет система\nstartActivity(Intent(Intent.ACTION_VIEW, \"https://example.com\".toUri()))\n```",
   "explanation": "С Android 11 видимость чужих пакетов ограничена: чтобы проверить наличие обработчика, нужен раздел `<queries>` в манифесте."
  },
  {
@@ -69,6 +77,7 @@
   "subtopic": "компоненты",
   "question": "Что такое PendingIntent и почему он требует флаг изменяемости?",
   "answer": "Токен, позволяющий другому приложению выполнить действие от имени вашего. С Android 12 обязателен явный `FLAG_IMMUTABLE` или `FLAG_MUTABLE`.",
+  "example": "```kotlin\nval intent = PendingIntent.getActivity(\n    context,\n    0,\n    Intent(context, MainActivity::class.java),\n    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,  // обязателен с Android 12\n)\n```",
   "explanation": "Изменяемый PendingIntent позволяет получателю подменить содержимое — отсюда требование указывать намерение явно."
  },
  {
@@ -77,6 +86,7 @@
   "subtopic": "компоненты",
   "question": "Какие есть режимы запуска Activity?",
   "answer": "`standard` — новый экземпляр всегда; `singleTop` — переиспользование, если Activity уже наверху; `singleTask` — единственный экземпляр в задаче, поверх него стек очищается; `singleInstance` — в отдельной задаче.",
+  "example": "```xml\n<activity android:name=\".MainActivity\" android:launchMode=\"singleTop\" />\n```",
   "explanation": "При переиспользовании вместо `onCreate` вызывается `onNewIntent` — забытый override здесь даёт «экран не обновляется по пушу»."
  },
  {
@@ -85,6 +95,7 @@
   "subtopic": "компоненты",
   "question": "Чем Foreground Service отличается от обычного и когда он нужен?",
   "answer": "Он показывает постоянное уведомление и почти не подлежит убийству системой. Нужен для видимой пользователю длительной работы: навигация, плеер, запись трека.",
+  "example": "```xml\n<service\n    android:name=\".PlayerService\"\n    android:foregroundServiceType=\"mediaPlayback\"\n    android:exported=\"false\" />\n```",
   "explanation": "С Android 8 фоновые сервисы запускать из фона нельзя, с Android 14 требуется объявить тип foreground-сервиса. Для отложенной работы — WorkManager."
  },
  {
@@ -93,6 +104,7 @@
   "subtopic": "компоненты",
   "question": "Когда использовать WorkManager?",
   "answer": "Для работы, которая должна выполниться гарантированно и переживать перезапуск приложения и устройства: синхронизация, отправка логов, загрузка файлов.",
+  "example": "```kotlin\nval request = OneTimeWorkRequestBuilder<SyncWorker>()\n    .setConstraints(\n        Constraints.Builder()\n            .setRequiredNetworkType(NetworkType.CONNECTED)\n            .build(),\n    )\n    .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 10, TimeUnit.SECONDS)\n    .build()\n\nWorkManager.getInstance(context).enqueue(request)\n```",
   "explanation": "Он умеет ограничения (сеть, зарядка), повторы с backoff и цепочки задач. Для немедленной работы, привязанной к экрану, — корутины в `viewModelScope`."
  },
  {
@@ -101,6 +113,7 @@
   "subtopic": "компоненты",
   "question": "Какие ограничения у BroadcastReceiver?",
   "answer": "С Android 8 большинство неявных broadcast'ов нельзя объявлять в манифесте — только регистрировать в рантайме. Метод `onReceive` выполняется в главном потоке и ограничен примерно 10 секундами.",
+  "example": "```kotlin\nContextCompat.registerReceiver(\n    context,\n    receiver,\n    IntentFilter(Intent.ACTION_BATTERY_LOW),\n    ContextCompat.RECEIVER_NOT_EXPORTED,   // обязательно с Android 13\n)\n```",
   "explanation": "С Android 13 при регистрации требуется явно указать `RECEIVER_EXPORTED`/`RECEIVER_NOT_EXPORTED`."
  },
  {
@@ -109,6 +122,7 @@
   "subtopic": "компоненты",
   "question": "Зачем нужен ContentProvider, если есть Room?",
   "answer": "Он нужен для передачи данных **другим приложениям** и для системных интеграций (контакты, файлы, SAF). Внутри приложения он избыточен.",
+  "example": "```xml\n<provider\n    android:name=\".FilesProvider\"\n    android:authorities=\"com.example.files\"\n    android:exported=\"true\"\n    android:grantUriPermissions=\"true\" />\n```",
   "explanation": "Побочный эффект: провайдер инициализируется до `Application.onCreate` — на этом построен App Startup и автоинициализация библиотек."
  },
  {
@@ -117,6 +131,7 @@
   "subtopic": "контекст",
   "question": "Чем Application Context отличается от Activity Context?",
   "answer": "Application живёт всё время работы процесса, Activity — до её уничтожения. Activity-контекст знает про тему и оформление, Application — нет.",
+  "example": "```kotlin\nclass Repository(\n    @ApplicationContext private val context: Context,   // живёт весь процесс\n)\n\n// Диалогу нужен контекст Activity: у Application нет темы\nAlertDialog.Builder(activity).setTitle(\"Удалить?\").show()\n```",
   "explanation": "Правило: для UI (диалоги, инфляция макета, темы) — контекст Activity; для долгоживущих объектов (синглтоны, БД) — Application. Диалог с Application-контекстом упадёт."
  },
  {
@@ -125,6 +140,7 @@
   "subtopic": "контекст",
   "question": "Какие типичные источники утечек памяти в Android?",
   "answer": "Ссылка на Activity или View из объекта, живущего дольше: статическое поле, синглтон, нестатический внутренний класс, незакрытый слушатель, Handler с отложенным сообщением, RxJava-подписка без dispose.",
+  "example": "```kotlin\n// Утечка: статическое поле переживёт Activity\ncompanion object { var current: Activity? = null }\n\n// Утечка: отложенное сообщение держит Handler, а тот — Activity\nhandler.postDelayed({ render() }, 60_000)\n\n// Без утечки: корутина отменится вместе с экраном\nlifecycleScope.launch { delay(60_000); render() }\n```",
   "explanation": "Ловятся LeakCanary и Memory Profiler. Корутины в `viewModelScope`/`lifecycleScope` отменяются сами — в этом их главное практическое преимущество."
  },
  {
@@ -133,6 +149,7 @@
   "subtopic": "производительность",
   "question": "Что такое ANR и при каких условиях он возникает?",
   "answer": "Application Not Responding: главный поток заблокирован дольше примерно 5 секунд при обработке ввода (или 10 для BroadcastReceiver, 20 для сервиса).",
+  "example": "```kotlin\noverride fun onCreate(savedInstanceState: Bundle?) {\n    super.onCreate(savedInstanceState)\n    val data = database.loadAll()      // диск в главном потоке — путь к ANR\n}\n\n// Правильно:\nlifecycleScope.launch { val data = withContext(Dispatchers.IO) { database.loadAll() } }\n```",
   "explanation": "Причины — сеть или диск в главном потоке, тяжёлые вычисления, синхронный `Binder`-вызов, deadlock. Кадр должен укладываться в 16 мс при 60 Гц."
  },
  {
@@ -141,6 +158,7 @@
   "subtopic": "производительность",
   "question": "Почему UI можно трогать только из главного потока?",
   "answer": "Иерархия View не потокобезопасна: она проверяет поток при обращении и бросает `CalledFromWrongThreadException`. Синхронизация каждого обращения стоила бы дороже, чем даёт.",
+  "example": "```kotlin\nthread {\n    val data = load()\n    // textView.text = data          // CalledFromWrongThreadException\n    runOnUiThread { textView.text = data }\n}\n```",
   "explanation": "Переключение обратно — `Dispatchers.Main`, `Handler(Looper.getMainLooper())` или `View.post`."
  },
  {
@@ -149,6 +167,7 @@
   "subtopic": "многопоточность",
   "question": "Как устроены Looper, Handler и MessageQueue?",
   "answer": "`Looper` крутит цикл, вынимая сообщения из `MessageQueue`; `Handler` кладёт в очередь сообщения и Runnable для конкретного Looper.",
+  "example": "```kotlin\nval main = Handler(Looper.getMainLooper())\nmain.post { textView.text = \"готово\" }\n\n// Отложенное сообщение удерживает ссылку — снимать при уничтожении\nmain.removeCallbacksAndMessages(null)\n```",
   "explanation": "Это тот же event loop, что в браузере: главный поток Android — цикл обработки сообщений. Отложенные сообщения удерживают ссылку на Handler и через него на Activity."
  },
  {
@@ -157,6 +176,7 @@
   "subtopic": "UI",
   "question": "Как RecyclerView переиспользует элементы и зачем нужен DiffUtil?",
   "answer": "ViewHolder хранит найденные `findViewById`, а сам View переиспользуется при прокрутке через пул. `DiffUtil` считает минимальный набор изменений между списками, чтобы не звать `notifyDataSetChanged`.",
+  "example": "```kotlin\nclass UserAdapter : ListAdapter<User, UserHolder>(Diff) {\n    object Diff : DiffUtil.ItemCallback<User>() {\n        override fun areItemsTheSame(a: User, b: User) = a.id == b.id\n        override fun areContentsTheSame(a: User, b: User) = a == b\n    }\n}\n\nadapter.submitList(users)   // разница считается в фоне, анимации сохраняются\n```",
   "explanation": "`notifyDataSetChanged` перерисовывает всё и убивает анимации. `ListAdapter` считает разницу в фоновом потоке. `getItemId` со стабильными id помогает анимациям."
  },
  {
@@ -165,6 +185,7 @@
   "subtopic": "UI",
   "question": "Чем ViewBinding отличается от findViewById и от DataBinding?",
   "answer": "ViewBinding генерирует типобезопасные ссылки на View без разметки в XML. DataBinding дополнительно умеет выражения и двустороннюю привязку прямо в макете, но замедляет сборку.",
+  "example": "```kotlin\nprivate var _binding: FragmentProfileBinding? = null\nprivate val binding get() = _binding!!\n\noverride fun onCreateView(i: LayoutInflater, c: ViewGroup?, s: Bundle?): View {\n    _binding = FragmentProfileBinding.inflate(i, c, false)\n    return binding.root\n}\n\noverride fun onDestroyView() { _binding = null; super.onDestroyView() }\n```",
   "explanation": "Во фрагменте ссылку на binding обязательно обнулять в `onDestroyView` — иначе утечка View."
  },
  {
@@ -173,6 +194,7 @@
   "subtopic": "UI",
   "question": "Зачем нужен ConstraintLayout?",
   "answer": "Он позволяет описать сложный экран одним плоским уровнем вложенности: глубокая иерархия View замедляет измерение и отрисовку.",
+  "example": "```xml\n<androidx.constraintlayout.widget.ConstraintLayout\n    android:layout_width=\"match_parent\"\n    android:layout_height=\"wrap_content\">\n\n    <TextView\n        android:id=\"@+id/title\"\n        app:layout_constraintTop_toTopOf=\"parent\"\n        app:layout_constraintStart_toStartOf=\"parent\" />\n\n    <TextView\n        app:layout_constraintTop_toBottomOf=\"@id/title\"\n        app:layout_constraintStart_toStartOf=\"parent\" />\n</androidx.constraintlayout.widget.ConstraintLayout>\n```",
   "explanation": "Вложенные `LinearLayout` с весами измеряются дважды на каждом уровне — отсюда экспоненциальная стоимость."
  },
  {
@@ -181,6 +203,7 @@
   "subtopic": "UI",
   "question": "Из каких фаз состоит отрисовка View?",
   "answer": "`measure` (сколько места нужно), `layout` (расположение), `draw` (рисование). Кастомная View переопределяет `onMeasure`, `onLayout`, `onDraw`.",
+  "example": "```kotlin\nclass Badge(context: Context) : View(context) {\n    private val paint = Paint()          // создаём заранее, не в onDraw\n\n    override fun onMeasure(widthSpec: Int, heightSpec: Int) {\n        setMeasuredDimension(resolveSize(100, widthSpec), resolveSize(100, heightSpec))\n    }\n\n    override fun onDraw(canvas: Canvas) {\n        canvas.drawCircle(width / 2f, height / 2f, 40f, paint)\n    }\n}\n```",
   "explanation": "В `onDraw` нельзя создавать объекты: он вызывается каждый кадр, и аллокации порождают паузы GC."
  },
  {
@@ -189,6 +212,7 @@
   "subtopic": "UI",
   "question": "Чем dp отличается от px, а sp от dp?",
   "answer": "`dp` — независимая от плотности единица, `px` — физический пиксель. `sp` — то же, что dp, но масштабируется настройкой размера шрифта пользователя.",
+  "example": "```xml\n<TextView\n    android:layout_width=\"wrap_content\"\n    android:layout_height=\"48dp\"\n    android:padding=\"16dp\"\n    android:textSize=\"14sp\" />   <!-- шрифт всегда в sp -->\n```",
   "explanation": "Для шрифтов всегда `sp`: иначе приложение игнорирует настройки доступности."
  },
  {
@@ -197,6 +221,7 @@
   "subtopic": "UI",
   "question": "Как работают квалификаторы ресурсов?",
   "answer": "Каталоги вида `values-ru`, `layout-sw600dp`, `drawable-hdpi`, `values-night` — система сама выбирает подходящие под текущую конфигурацию.",
+  "example": "```text\nres/\n  values/strings.xml          # по умолчанию\n  values-ru/strings.xml       # русский\n  values-night/colors.xml     # тёмная тема\n  layout-sw600dp/main.xml     # ширина от 600dp\n  drawable-xxhdpi/icon.png    # плотность экрана\n```",
   "explanation": "Именно поэтому отмена пересоздания Activity через `configChanges` ломает поддержку локали и тёмной темы."
  },
  {
@@ -205,6 +230,7 @@
   "subtopic": "данные",
   "question": "Что даёт Room поверх SQLite?",
   "answer": "Проверку SQL на этапе компиляции, маппинг в объекты, миграции и наблюдаемые запросы, возвращающие `Flow` или `LiveData`.",
+  "example": "```kotlin\n@Dao\ninterface UserDao {\n    @Query(\"SELECT * FROM users WHERE city = :city\")\n    fun byCity(city: String): Flow<List<UserEntity>>   // наблюдаемый запрос\n\n    @Insert(onConflict = OnConflictStrategy.REPLACE)\n    suspend fun insert(users: List<UserEntity>)\n}\n```",
   "explanation": "Запросы Room обязаны быть асинхронными: синхронный вызов в главном потоке он запрещает сам. Забытая миграция роняет приложение при обновлении."
  },
  {
@@ -213,6 +239,7 @@
   "subtopic": "данные",
   "question": "Чем DataStore лучше SharedPreferences?",
   "answer": "Он асинхронный (`Flow`), транзакционный и не блокирует главный поток. У SharedPreferences `apply` пишет в фоне, но `commit` блокирует, а чтение при первом обращении синхронное.",
+  "example": "```kotlin\nval THEME = stringPreferencesKey(\"theme\")\n\nval theme: Flow<String> = context.dataStore.data.map { it[THEME] ?: \"system\" }\n\nsuspend fun setTheme(value: String) {\n    context.dataStore.edit { it[THEME] = value }   // транзакционно, без блокировок\n}\n```",
   "explanation": "Preferences DataStore хранит пары ключ-значение, Proto DataStore — типизированную схему."
  },
  {
@@ -221,6 +248,7 @@
   "subtopic": "данные",
   "question": "Что изменило Scoped Storage?",
   "answer": "С Android 10–11 приложение имеет свободный доступ только к своему каталогу и к медиа через MediaStore; произвольный доступ к файловой системе требует SAF или особого разрешения.",
+  "example": "```kotlin\n// Свой каталог: разрешений не требует, чистится вместе с приложением\nval file = File(context.getExternalFilesDir(null), \"report.pdf\")\n\n// Чужие медиа — только через MediaStore\nval uri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI\ncontext.contentResolver.query(uri, null, null, null, null)\n```",
   "explanation": "Свой каталог (`getExternalFilesDir`) не требует разрешений вообще и удаляется вместе с приложением."
  },
  {
@@ -229,6 +257,7 @@
   "subtopic": "безопасность",
   "question": "Где хранить токены и ключи?",
   "answer": "В Android Keystore: ключи не покидают защищённое хранилище, а на устройствах с TEE/StrongBox их нельзя извлечь даже с root.",
+  "example": "```kotlin\nval masterKey = MasterKey.Builder(context)\n    .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)\n    .build()\n\nval prefs = EncryptedSharedPreferences.create(\n    context, \"secrets\", masterKey,\n    EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,\n    EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM,\n)\n```",
   "explanation": "SharedPreferences и Bundle для секретов не годятся. Хардкод ключей в коде обходится декомпиляцией за минуты."
  },
  {
@@ -237,6 +266,7 @@
   "subtopic": "архитектура",
   "question": "Что такое ViewModel и почему она переживает поворот?",
   "answer": "Держатель состояния экрана, привязанный к `ViewModelStoreOwner`. При пересоздании Activity store сохраняется, и та же ViewModel отдаётся новой Activity.",
+  "example": "```kotlin\nclass ProfileViewModel(private val repository: UserRepository) : ViewModel() {\n    val state: StateFlow<UiState> = repository.user\n        .map(::toUiState)\n        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), UiState.Loading)\n\n    // Ссылки на View и Context Activity здесь держать нельзя\n}\n```",
   "explanation": "В ViewModel нельзя держать ссылку на View или Context Activity — она переживёт их. Для контекста есть `AndroidViewModel` с Application."
  },
  {
@@ -245,6 +275,7 @@
   "subtopic": "архитектура",
   "question": "Что такое однонаправленный поток данных (UDF)?",
   "answer": "Состояние течёт сверху вниз (ViewModel → UI), события — снизу вверх (UI → ViewModel). Состояние имеет единственный источник истины.",
+  "example": "```kotlin\n// Состояние вниз\nval state: StateFlow<UiState> = _state.asStateFlow()\n\n// События вверх\nfun onQueryChanged(query: String) {\n    _state.update { it.copy(query = query) }\n}\n\n// В UI\nScreen(state = viewModel.state.collectAsStateWithLifecycle().value,\n       onQueryChanged = viewModel::onQueryChanged)\n```",
   "explanation": "Так устроены MVI и рекомендации Google. Ключевая выгода — воспроизводимость: по состоянию всегда понятно, что нарисовано на экране."
  },
  {
@@ -253,6 +284,7 @@
   "subtopic": "архитектура",
   "question": "Зачем нужен слой Repository?",
   "answer": "Он скрывает происхождение данных (сеть, кэш, база) за одним интерфейсом и определяет источник истины — обычно локальную базу.",
+  "example": "```kotlin\nclass UserRepository(private val api: Api, private val dao: UserDao) {\n    // Источник истины — база, сеть лишь обновляет её\n    val users: Flow<List<User>> = dao.observeAll().map { it.map(::toDomain) }\n\n    suspend fun refresh() = dao.insert(api.load().map(::toEntity))\n}\n```",
   "explanation": "Это делает ViewModel независимой от сети и позволяет подменить репозиторий в тестах."
  },
  {
@@ -261,6 +293,7 @@
   "subtopic": "DI",
   "question": "Что даёт Hilt поверх Dagger?",
   "answer": "Готовые компоненты, привязанные к жизненным циклам Android (`SingletonComponent`, `ActivityComponent`, `ViewModelComponent`), и генерацию их связывания — вместо ручного описания графа.",
+  "example": "```kotlin\n@HiltAndroidApp\nclass App : Application()\n\n@Module\n@InstallIn(SingletonComponent::class)\nobject DataModule {\n    @Provides @Singleton fun api(): Api = Retrofit.Builder()...create()\n}\n\n@HiltViewModel\nclass ProfileViewModel @Inject constructor(private val api: Api) : ViewModel()\n```",
   "explanation": "Проверка графа происходит на этапе компиляции: ошибка внедрения — это ошибка сборки, а не падение в рантайме."
  },
  {
@@ -269,6 +302,7 @@
   "subtopic": "сборка",
   "question": "Зачем разбивать приложение на модули?",
   "answer": "Ради скорости инкрементальной сборки (перекомпилируется только затронутый модуль), явных границ между слоями и возможности параллельной работы команд.",
+  "example": "```text\n:app\n:feature:profile      # экран целиком: ui + viewmodel\n:feature:search\n:core:data            # репозитории\n:core:network\n:core:designsystem\n```",
   "explanation": "Цена — усложнение навигации и графа зависимостей. Разбиение по слоям (`data`/`domain`/`ui`) обычно уступает разбиению по фичам."
  },
  {
@@ -277,6 +311,7 @@
   "subtopic": "сборка",
   "question": "Что делает R8 и как не сломать приложение?",
   "answer": "Минифицирует, обфусцирует и удаляет неиспользуемый код в релизной сборке. Ломается всё, что находится рефлексией: модели для Gson/Moshi, имена классов в коде, сериализация.",
+  "example": "```text\n# proguard-rules.pro — модели, которые читает рефлексия\n-keep class com.example.model.** { *; }\n-keepclassmembers class * {\n    @com.google.gson.annotations.SerializedName <fields>;\n}\n```",
   "explanation": "Лечится правилами `-keep` в `proguard-rules.pro`. Обязательно проверять именно релизную сборку — в debug R8 выключен."
  },
  {
@@ -285,6 +320,7 @@
   "subtopic": "сборка",
   "question": "Чем buildType отличается от productFlavor?",
   "answer": "`buildType` — как собрано (debug/release: минификация, подпись, отладка). `productFlavor` — что собрано (free/paid, dev/prod). Их произведение даёт варианты сборки.",
+  "example": "```kotlin\nandroid {\n    buildTypes {\n        release { isMinifyEnabled = true }\n        debug { applicationIdSuffix = \".debug\" }   // обе сборки рядом на устройстве\n    }\n    flavorDimensions += \"tier\"\n    productFlavors {\n        create(\"free\") { dimension = \"tier\" }\n        create(\"paid\") { dimension = \"tier\" }\n    }\n}\n// Варианты: freeDebug, freeRelease, paidDebug, paidRelease\n```",
   "explanation": "`applicationIdSuffix` в debug позволяет держать обе сборки на одном устройстве."
  },
  {
@@ -293,6 +329,7 @@
   "subtopic": "безопасность",
   "question": "Как устроены разрешения в рантайме?",
   "answer": "Опасные разрешения запрашиваются во время работы, ответ пользователя может быть «отказать навсегда». Запрос делается через `ActivityResultContracts.RequestPermission`.",
+  "example": "```kotlin\nprivate val requestPermission = registerForActivityResult(\n    ActivityResultContracts.RequestPermission(),\n) { granted ->\n    if (granted) startCamera() else showRationale()\n}\n\nrequestPermission.launch(Manifest.permission.CAMERA)\n```",
   "explanation": "После двух отказов система больше не показывает диалог — приложение обязано работать без разрешения и объяснять, зачем оно нужно."
  },
  {
@@ -301,6 +338,7 @@
   "subtopic": "компоненты",
   "question": "Что пришло на смену `startActivityForResult`?",
   "answer": "Activity Result API: `registerForActivityResult` с контрактом. Регистрация обязана происходить до `onStart` — обычно в поле фрагмента.",
+  "example": "```kotlin\nprivate val pickImage = registerForActivityResult(\n    ActivityResultContracts.GetContent(),\n) { uri: Uri? -> uri?.let(::show) }\n\n// Регистрация — в поле фрагмента, до onStart\npickImage.launch(\"image/*\")\n```",
   "explanation": "Старый API ломался при process death: результат приходил в пересозданную Activity без сохранённого requestCode."
  },
  {
@@ -309,6 +347,7 @@
   "subtopic": "производительность",
   "question": "Из чего складывается время холодного старта?",
   "answer": "Создание процесса, инициализация `Application`, первый кадр первой Activity. Всё, что делается в `Application.onCreate`, откладывает показ экрана.",
+  "example": "```kotlin\nclass App : Application() {\n    override fun onCreate() {\n        super.onCreate()\n        // Всё тяжёлое — лениво или в фон\n        // Analytics.init(this)   <- откладывает первый кадр\n    }\n}\n```",
   "explanation": "Библиотеки, инициализирующиеся через ContentProvider, стартуют ещё раньше. Помогают ленивая инициализация, App Startup и Baseline Profiles."
  },
  {
@@ -317,6 +356,7 @@
   "subtopic": "производительность",
   "question": "Что такое Baseline Profiles?",
   "answer": "Список горячих методов, поставляемый с приложением: ART компилирует их заранее (AOT) вместо интерпретации при первом запуске.",
+  "example": "```kotlin\n@Test\nfun generate() = baselineProfileRule.collect(\"com.example.app\") {\n    startActivityAndWait()\n    device.findObject(By.res(\"list\")).fling(Direction.DOWN)\n}\n```",
   "explanation": "Даёт заметное ускорение холодного старта и прокрутки без единой правки в коде."
  },
  {
@@ -325,6 +365,7 @@
   "subtopic": "производительность",
   "question": "Зачем нужен StrictMode?",
   "answer": "Он ловит в debug-сборке дисковые и сетевые операции в главном потоке и утечки ресурсов, сообщая о них логом или падением.",
+  "example": "```kotlin\nif (BuildConfig.DEBUG) {\n    StrictMode.setThreadPolicy(\n        StrictMode.ThreadPolicy.Builder().detectDiskReads().detectNetwork().penaltyLog().build(),\n    )\n    StrictMode.setVmPolicy(\n        StrictMode.VmPolicy.Builder().detectLeakedClosableObjects().penaltyLog().build(),\n    )\n}\n```",
   "explanation": "Включается в `Application.onCreate` только для debug: в релизе это лишние проверки."
  },
  {
@@ -333,6 +374,7 @@
   "subtopic": "тестирование",
   "question": "Чем unit-тесты отличаются от инструментальных?",
   "answer": "Unit выполняются на JVM разработчика и не видят Android SDK (все методы возвращают null без Robolectric). Инструментальные идут на устройстве или эмуляторе и видят реальный фреймворк.",
+  "example": "```kotlin\n// src/test — JVM, быстро, без Android SDK\nclass SrsTest {\n    @Test fun `again сбрасывает интервал`() { }\n}\n\n// src/androidTest — на устройстве, видит настоящий фреймворк\n@RunWith(AndroidJUnit4::class)\nclass ProfileScreenTest {\n    @get:Rule val composeRule = createAndroidComposeRule<MainActivity>()\n}\n```",
   "explanation": "Отсюда правило: логика без Android-типов — в чистые классы, там она тестируется быстро и без эмулятора."
  },
  {
@@ -341,6 +383,7 @@
   "subtopic": "тестирование",
   "question": "Как Espresso синхронизируется с приложением?",
   "answer": "Он ждёт, пока очередь сообщений главного потока опустеет, а фоновые задачи не завершатся через IdlingResource. Собственные пулы потоков ему не видны.",
+  "example": "```kotlin\nonView(withId(R.id.list)).check(matches(isDisplayed()))\n\n// Espresso не видит собственные пулы потоков — нужен IdlingResource\nIdlingRegistry.getInstance().register(okHttpIdlingResource)\n```",
   "explanation": "Отсюда флейки: асинхронная работа мимо главного Looper требует явного IdlingResource или подмены диспетчера в тестах."
  },
  {
@@ -349,6 +392,7 @@
   "subtopic": "компоненты",
   "question": "Что такое класс `Application` и что в нём нельзя делать?",
   "answer": "Единственный объект на процесс, создаётся первым и живёт до конца. В `onCreate` нельзя делать долгую работу: она напрямую откладывает показ первого экрана.",
+  "example": "```kotlin\nclass App : Application() {\n    override fun onCreate() {\n        super.onCreate()\n        // Процесс может стартовать и без Activity — ради WorkManager или ресивера\n        if (isMainProcess()) Analytics.init(this)\n    }\n}\n```",
   "explanation": "Учтите, что процесс может создаваться и без Activity — например, для BroadcastReceiver или WorkManager. Инициализацию лучше делать ленивой или через App Startup."
  },
  {
@@ -357,6 +401,7 @@
   "subtopic": "безопасность",
   "question": "Что означает `android:exported` и почему с Android 12 он обязателен?",
   "answer": "Разрешает ли компоненту приниматься запросы от других приложений. С Android 12 любой компонент с intent-фильтром обязан объявить его явно, иначе приложение не установится.",
+  "example": "```xml\n<!-- С Android 12 атрибут обязателен, если есть intent-filter -->\n<activity android:name=\".DeepLinkActivity\" android:exported=\"true\">\n    <intent-filter>\n        <action android:name=\"android.intent.action.VIEW\" />\n        <data android:scheme=\"https\" android:host=\"example.com\" />\n    </intent-filter>\n</activity>\n\n<service android:name=\".SyncService\" android:exported=\"false\" />\n```",
   "explanation": "Экспортированный компонент без проверок — типичная уязвимость: чужое приложение может запустить экран или сервис с произвольными данными."
  },
  {
@@ -365,6 +410,7 @@
   "subtopic": "сборка",
   "question": "Чем App Bundle отличается от APK?",
   "answer": "Bundle (`.aab`) — формат публикации: Google Play сам собирает из него APK под конкретное устройство (архитектура, плотность, язык). Пользователь скачивает меньше.",
+  "example": "```bash\n./gradlew bundleRelease     # .aab для публикации: Play соберёт APK под устройство\n./gradlew assembleRelease   # .apk для прямой раздачи\n```",
   "explanation": "Обратная сторона — подпись ключом Play (Play App Signing) и невозможность просто раздать `.aab` файлом."
  },
  {
@@ -373,6 +419,7 @@
   "subtopic": "сборка",
   "question": "Чем различаются `minSdk`, `targetSdk` и `compileSdk`?",
   "answer": "`compileSdk` — против какого API компилируемся. `minSdk` — минимальная поддерживаемая версия. `targetSdk` — версия, под поведение которой приложение адаптировано: система включает для него новые ограничения.",
+  "example": "```kotlin\nandroid {\n    compileSdk = 35        // против какого API компилируемся\n    defaultConfig {\n        minSdk = 24        // ниже не установится\n        targetSdk = 35     // под какое поведение системы адаптированы\n    }\n}\n```",
   "explanation": "Повышение `targetSdk` — самое рискованное: именно оно включает новые ограничения (фон, разрешения, экспорт). Play требует поднимать его регулярно."
  },
  {
@@ -381,6 +428,7 @@
   "subtopic": "платформа",
   "question": "Чем ART отличается от Dalvik?",
   "answer": "Dalvik интерпретировал байткод с JIT-компиляцией, ART компилирует заранее (AOT) при установке и в фоне, плюс использует JIT и профили. Приложения запускаются быстрее.",
+  "example": "```bash\n# Что скомпилировано заранее и по какому профилю\nadb shell dumpsys package dexopt | grep -A2 com.example.app\n\n# Принудительная AOT-компиляция для замера\nadb shell cmd package compile -m speed -f com.example.app\n```",
   "explanation": "Современный ART компилирует по профилю использования; Baseline Profiles позволяют поставить такой профиль вместе с приложением."
  },
  {
@@ -389,6 +437,7 @@
   "subtopic": "сборка",
   "question": "Что такое dex и когда нужен multidex?",
   "answer": "Android исполняет `.dex`, а не `.class`. В одном dex не более 65 536 методов; при превышении на `minSdk` ниже 21 требуется библиотека multidex.",
+  "example": "```kotlin\nandroid {\n    defaultConfig {\n        multiDexEnabled = true   // нужно только при minSdk < 21\n    }\n}\n// Правильнее — сокращать зависимости и включать R8\n```",
   "explanation": "С API 21+ multidex встроен в платформу. Правильнее не наращивать multidex, а сокращать зависимости и включать R8."
  },
  {
@@ -397,6 +446,7 @@
   "subtopic": "платформа",
   "question": "Что такое Binder и почему у него лимит транзакции?",
   "answer": "Механизм межпроцессного взаимодействия Android: через него идут все вызовы к системным сервисам, запуск Activity и передача Bundle. Буфер транзакции общий на процесс и ограничен примерно 1 МБ.",
+  "example": "```kotlin\n// Всё это идёт через Binder с общим лимитом транзакции ~1 МБ\nstartActivity(intent.putExtra(\"payload\", hugeList))   // TransactionTooLargeException\n\n// Передавать нужно идентификатор\nstartActivity(intent.putExtra(\"id\", item.id))\n```",
   "explanation": "Отсюда `TransactionTooLargeException` при передаче больших Bundle и при сохранении состояния со списками."
  },
  {
@@ -405,6 +455,7 @@
   "subtopic": "данные",
   "question": "Чем `Parcelable` лучше `Serializable`?",
   "answer": "`Parcelable` пишется вручную (или генерируется `@Parcelize`) и работает через Binder без рефлексии — заметно быстрее. `Serializable` — Java-механизм на рефлексии, порождающий мусор.",
+  "example": "```kotlin\n@Parcelize\ndata class Filter(val query: String, val tags: List<String>) : Parcelable\n\nbundle.putParcelable(\"filter\", filter)\n\n// Serializable работает через рефлексию и заметно медленнее\n```",
   "explanation": "Оба предназначены для передачи между компонентами, а не для долговременного хранения: формат не стабилен между версиями."
  },
  {
@@ -413,6 +464,7 @@
   "subtopic": "платформа",
   "question": "Может ли приложение работать в нескольких процессах?",
   "answer": "Да, через `android:process` в манифесте. Каждый процесс получает свой экземпляр `Application`, свою память и своих синглтонов — общего состояния между ними нет.",
+  "example": "```xml\n<service\n    android:name=\".SyncService\"\n    android:process=\":sync\" />   <!-- отдельный процесс: свой Application и своя память -->\n```",
   "explanation": "Частая ошибка: инициализация в `Application.onCreate` выполняется в каждом процессе, включая служебные."
  },
  {
@@ -421,6 +473,7 @@
   "subtopic": "фрагменты",
   "question": "Чем `commit` отличается от `commitNow` и `commitAllowingStateLoss`?",
   "answer": "`commit` планирует транзакцию асинхронно, `commitNow` выполняет немедленно (и запрещает добавление в back stack). Варианты `…AllowingStateLoss` не бросают исключение после `onSaveInstanceState`, но могут потерять состояние.",
+  "example": "```kotlin\nsupportFragmentManager.commit {          // асинхронно\n    replace(R.id.container, ProfileFragment())\n    addToBackStack(null)\n}\n\nsupportFragmentManager.commitNow { }     // немедленно, без back stack\n\n// После onSaveInstanceState обычный commit бросит IllegalStateException\n```",
   "explanation": "`IllegalStateException: Can not perform this action after onSaveInstanceState` — следствие транзакции после сохранения состояния; глушить её `AllowingStateLoss` без понимания причины опасно."
  },
  {
@@ -429,6 +482,7 @@
   "subtopic": "фрагменты",
   "question": "Чем `childFragmentManager` отличается от `parentFragmentManager`?",
   "answer": "`childFragmentManager` управляет фрагментами внутри данного фрагмента, `parentFragmentManager` — тем контейнером, в котором лежит он сам.",
+  "example": "```kotlin\nclass TabsFragment : Fragment() {\n    fun showChild() {\n        childFragmentManager.commit {    // фрагменты внутри этого фрагмента\n            replace(R.id.tab_container, ListFragment())\n        }\n    }\n}\n\n// parentFragmentManager — тот контейнер, где лежит сам TabsFragment\n```",
   "explanation": "Использование не того менеджера — частая причина «фрагмент не восстанавливается» после пересоздания."
  },
  {
@@ -437,6 +491,7 @@
   "subtopic": "фрагменты",
   "question": "Как передать результат между фрагментами?",
   "answer": "`setFragmentResult` / `setFragmentResultListener` из Fragment Result API. Общая ViewModel на скоуп Activity или графа навигации — второй способ.",
+  "example": "```kotlin\n// Отправитель\nsetFragmentResult(\"filter\", bundleOf(\"query\" to query))\n\n// Получатель\nsetFragmentResultListener(\"filter\") { _, bundle ->\n    apply(bundle.getString(\"query\").orEmpty())\n}\n```",
   "explanation": "Прямые ссылки между фрагментами и колбэки-интерфейсы ломаются при пересоздании и удерживают ссылки."
  },
  {
@@ -445,6 +500,7 @@
   "subtopic": "навигация",
   "question": "Что даёт Navigation Component?",
   "answer": "Единый граф переходов, типобезопасные аргументы (Safe Args), обработку back stack и deep links в одном месте.",
+  "example": "```kotlin\n@Serializable data class Profile(val userId: Long)   // типобезопасный маршрут\n\nNavHost(navController, startDestination = Home) {\n    composable<Home> { HomeScreen(onOpen = { navController.navigate(Profile(it)) }) }\n    composable<Profile> { entry -> ProfileScreen(entry.toRoute<Profile>().userId) }\n}\n```",
   "explanation": "Аргументы уходят в Bundle, поэтому передавать нужно идентификаторы, а не объекты. Граф позволяет держать ViewModel на скоупе подграфа."
  },
  {
@@ -453,6 +509,7 @@
   "subtopic": "навигация",
   "question": "Чем App Links отличаются от обычных deep links?",
   "answer": "Обычный deep link открывается через диалог выбора приложения. App Links проверяются по файлу `assetlinks.json` на вашем домене и открываются сразу, без выбора.",
+  "example": "```xml\n<intent-filter android:autoVerify=\"true\">     <!-- App Links -->\n    <action android:name=\"android.intent.action.VIEW\" />\n    <category android:name=\"android.intent.category.BROWSABLE\" />\n    <data android:scheme=\"https\" android:host=\"example.com\" />\n</intent-filter>\n<!-- Плюс файл https://example.com/.well-known/assetlinks.json -->\n```",
   "explanation": "Без верификации домена ссылка по-прежнему уйдёт в браузер — самая частая причина «диплинк не работает»."
  },
  {
@@ -461,6 +518,7 @@
   "subtopic": "архитектура",
   "question": "Чем хорош подход Single Activity?",
   "answer": "Один жизненный цикл вместо множества, общий скоуп для ViewModel, дешёвые переходы и понятный back stack, а также естественная интеграция с Compose-навигацией.",
+  "example": "```kotlin\nclass MainActivity : ComponentActivity() {\n    override fun onCreate(savedInstanceState: Bundle?) {\n        super.onCreate(savedInstanceState)\n        setContent { AppNavHost() }   // единственная Activity, всё остальное — маршруты\n    }\n}\n```",
   "explanation": "Минус — вся навигация в одном месте и риск разрастания графа; для этого его разбивают на вложенные подграфы по фичам."
  },
  {
@@ -469,6 +527,7 @@
   "subtopic": "производительность",
   "question": "Что такое overdraw и как его уменьшить?",
   "answer": "Многократная отрисовка одного пикселя за кадр — фоны, наложенные друг на друга. Убирается удалением лишних фонов, `android:background=\"@null\"` и плоской иерархией.",
+  "example": "```xml\n<!-- Фон темы уже нарисован — второй такой же удваивает отрисовку -->\n<FrameLayout android:background=\"@android:color/transparent\">\n    <TextView android:background=\"@null\" />\n</FrameLayout>\n```",
   "explanation": "Смотрится в Developer options → Debug GPU overdraw: синий — один слой, красный — четыре и больше."
  },
  {
@@ -477,6 +536,7 @@
   "subtopic": "производительность",
   "question": "Что такое jank и сколько времени есть на кадр?",
   "answer": "Пропущенный кадр. При 60 Гц на кадр около 16 мс, при 120 Гц — около 8; всё, что дольше, приводит к рывку.",
+  "example": "```kotlin\nclass JankReporter(activity: Activity) {\n    private val stats = JankStats.createAndTrack(activity.window) { frame ->\n        if (frame.isJank) Log.w(\"jank\", \"${frame.frameDurationUiNanos / 1_000_000} мс\")\n    }\n}\n```",
   "explanation": "Измеряется через JankStats, Macrobenchmark и Perfetto. Главные причины: работа в главном потоке, аллокации и сложные макеты."
  },
  {
@@ -485,6 +545,7 @@
   "subtopic": "производительность",
   "question": "Сколько памяти занимает Bitmap и как её экономить?",
   "answer": "Ширина × высота × байты на пиксель (`ARGB_8888` — 4 байта). Фото 4000×3000 занимает около 48 МБ независимо от размера файла.",
+  "example": "```kotlin\nval options = BitmapFactory.Options().apply {\n    inJustDecodeBounds = true\n}\nBitmapFactory.decodeFile(path, options)\noptions.inSampleSize = calculateSampleSize(options, targetWidth, targetHeight)\noptions.inJustDecodeBounds = false\nval bitmap = BitmapFactory.decodeFile(path, options)   // 4000x3000 без этого ≈ 48 МБ\n```",
   "explanation": "Экономят масштабированием при декодировании (`inSampleSize`), форматом `RGB_565`, библиотеками Coil/Glide с кэшем и учётом размера View."
  },
  {
@@ -493,6 +554,7 @@
   "subtopic": "производительность",
   "question": "Почему возникает OutOfMemory, если у устройства много памяти?",
   "answer": "У процесса есть отдельный лимит кучи (десятки — сотни мегабайт в зависимости от устройства), а не вся память системы.",
+  "example": "```xml\n<application android:largeHeap=\"true\" />   <!-- подпорка, а не решение -->\n```",
   "explanation": "`android:largeHeap` поднимает лимит, но это подпорка: обычно причина в утечках или несжатых изображениях."
  },
  {
@@ -501,6 +563,7 @@
   "subtopic": "производительность",
   "question": "Как сборка мусора влияет на плавность?",
   "answer": "Аллокации в горячем коде (`onDraw`, обработчик прокрутки) вызывают частые сборки, а они приостанавливают потоки и съедают бюджет кадра.",
+  "example": "```kotlin\noverride fun onDraw(canvas: Canvas) {\n    // val paint = Paint()     // аллокация на каждый кадр — мусор и паузы GC\n    canvas.drawRect(rect, paint)   // paint и rect созданы заранее\n}\n```",
   "explanation": "Отсюда правила: не создавать объекты в `onDraw`, переиспользовать буферы, избегать автобоксинга в циклах."
  },
  {
@@ -509,6 +572,7 @@
   "subtopic": "UI",
   "question": "Что дороже в иерархии View и почему Compose от этого свободен?",
   "answer": "Вложенные `LinearLayout` с весами и `RelativeLayout` измеряются в несколько проходов, поэтому глубина иерархии бьёт по производительности нелинейно. В Compose измерение однопроходное.",
+  "example": "```xml\n<!-- Вложенные веса измеряются дважды на каждом уровне -->\n<LinearLayout android:orientation=\"vertical\">\n    <LinearLayout android:layout_weight=\"1\">\n        <LinearLayout android:layout_weight=\"1\" />\n    </LinearLayout>\n</LinearLayout>\n<!-- Плоская альтернатива — ConstraintLayout -->\n```",
   "explanation": "В View-мире лечится `ConstraintLayout` и `merge`-тегами."
  },
  {
@@ -517,6 +581,7 @@
   "subtopic": "UI",
   "question": "Чем `SurfaceView` отличается от обычной View?",
   "answer": "У него собственная поверхность, которую можно рисовать из отдельного потока, не нагружая главный. Нужен для видео, камеры и игр.",
+  "example": "```kotlin\nclass CameraPreview(context: Context) : SurfaceView(context), SurfaceHolder.Callback {\n    override fun surfaceCreated(holder: SurfaceHolder) {\n        thread {                       // рисуем из своего потока\n            val canvas = holder.lockCanvas()\n            holder.unlockCanvasAndPost(canvas)\n        }\n    }\n}\n```",
   "explanation": "Плата — сложности с анимацией и наложением: поверхность живёт вне обычной иерархии View."
  },
  {
@@ -525,6 +590,7 @@
   "subtopic": "UI",
   "question": "Какие механизмы анимации есть в View-системе?",
   "answer": "Property-анимации (`ObjectAnimator`, `ValueAnimator`, `ViewPropertyAnimator`), переходы (`Transition`, `MotionLayout`) и устаревшие view-анимации, которые меняли только отрисовку, а не реальные свойства.",
+  "example": "```kotlin\nObjectAnimator.ofFloat(view, View.ALPHA, 0f, 1f).apply {\n    duration = 200\n    start()\n}\n\nview.animate().translationY(0f).setDuration(200).start()\n```",
   "explanation": "Старые `Animation` не меняли положение для обработки нажатий — отсюда «кнопка уехала, а нажимается на старом месте»."
  },
  {
@@ -533,6 +599,7 @@
   "subtopic": "UI",
   "question": "Что такое WindowInsets и зачем нужен edge-to-edge?",
   "answer": "Insets описывают области, занятые системными панелями, вырезом и клавиатурой. Edge-to-edge — режим, когда приложение рисует под ними и само учитывает отступы.",
+  "example": "```kotlin\nenableEdgeToEdge()   // с targetSdk 35 включено принудительно\n\nViewCompat.setOnApplyWindowInsetsListener(binding.root) { view, insets ->\n    val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())\n    view.updatePadding(top = bars.top, bottom = bars.bottom)\n    insets\n}\n```",
   "explanation": "С Android 15 edge-to-edge включается принудительно для `targetSdk` 35: приложения, игнорирующие insets, получают контент под системной панелью."
  },
  {
@@ -541,6 +608,7 @@
   "subtopic": "UI",
   "question": "Как правильно поддержать тёмную тему?",
   "answer": "Через ресурсы: `values-night` и `DayNight`-тему, без ручного переключения цветов в коде. Переключение режима вызывает смену конфигурации.",
+  "example": "```xml\n<!-- res/values/colors.xml и res/values-night/colors.xml -->\n<color name=\"surface\">#FFFFFF</color>\n\n<!-- Тема наследует DayNight, цвета берутся из ресурсов -->\n<style name=\"AppTheme\" parent=\"Theme.Material3.DayNight\" />\n```",
   "explanation": "Захардкоженные цвета и `android:configChanges` — две главные причины, по которым тёмная тема выглядит наполовину сломанной."
  },
  {
@@ -549,6 +617,7 @@
   "subtopic": "UI",
   "question": "Что нужно для поддержки RTL-языков?",
   "answer": "Использовать `start`/`end` вместо `left`/`right`, включить `android:supportsRtl`, проверять зеркалирование иконок и форматирование чисел.",
+  "example": "```xml\n<TextView\n    android:layout_marginStart=\"16dp\"    <!-- не marginLeft -->\n    android:paddingEnd=\"8dp\"\n    android:textAlignment=\"viewStart\" />\n\n<application android:supportsRtl=\"true\" />\n```",
   "explanation": "Проверяется в Developer options → «Force RTL layout direction» без смены языка устройства."
  },
  {
@@ -557,6 +626,7 @@
   "subtopic": "доступность",
   "question": "Что делает приложение доступным?",
   "answer": "Содержательные `contentDescription`, области нажатия не меньше 48 dp, достаточный контраст, поддержка увеличенного шрифта (`sp`) и корректный порядок фокуса.",
+  "example": "```kotlin\nIcon(\n    imageVector = Icons.Default.Delete,\n    contentDescription = \"Удалить\",       // для декоративной иконки — null\n    modifier = Modifier.size(48.dp),       // область нажатия не меньше 48dp\n)\n```",
   "explanation": "Проверяется TalkBack и Accessibility Scanner. Декоративным картинкам описание задают `null`, а не пустую строку."
  },
  {
@@ -565,6 +635,7 @@
   "subtopic": "сеть",
   "question": "Как распределены роли между Retrofit и OkHttp?",
   "answer": "OkHttp — HTTP-клиент: соединения, пулы, кэш, интерсепторы, повторы. Retrofit — надстройка, превращающая интерфейс с аннотациями в реализацию поверх OkHttp.",
+  "example": "```kotlin\nval client = OkHttpClient.Builder()\n    .addInterceptor { chain ->\n        chain.proceed(chain.request().newBuilder().header(\"Authorization\", token).build())\n    }\n    .build()\n\nval api = Retrofit.Builder()\n    .baseUrl(\"https://example.com/\")\n    .client(client)\n    .build()\n    .create(Api::class.java)\n```",
   "explanation": "Интерсепторы OkHttp — место для авторизации, логирования и повторов; `Authenticator` отдельно обрабатывает 401 и обновление токена."
  },
  {
@@ -573,6 +644,7 @@
   "subtopic": "сеть",
   "question": "Как кэшировать ответы сети?",
   "answer": "Кэшем OkHttp по заголовкам сервера (`Cache-Control`, `ETag`) — для условных запросов. Для offline-first правильнее собственный кэш в базе, а сеть считать лишь источником обновления.",
+  "example": "```kotlin\nval client = OkHttpClient.Builder()\n    .cache(Cache(File(context.cacheDir, \"http\"), 10L * 1024 * 1024))\n    .build()\n\n// Offline-first надёжнее: источник истины — база, сеть только обновляет её\nval users: Flow<List<User>> = dao.observeAll()\n```",
   "explanation": "Room как единственный источник истины: UI подписывается на базу, сеть пишет в неё. Так экран работает и без сети."
  },
  {
@@ -581,6 +653,7 @@
   "subtopic": "данные",
   "question": "Чем `kotlinx.serialization` отличается от Gson и Moshi?",
   "answer": "`kotlinx.serialization` генерирует сериализаторы на этапе компиляции и знает про nullability Kotlin. Gson использует рефлексию и умеет подставить `null` в non-null поле, ломая гарантии типов.",
+  "example": "```kotlin\n@Serializable\ndata class User(val id: Long, val name: String, val city: String? = null)\n\nval user = Json.decodeFromString<User>(body)\n// Сериализаторы генерируются при компиляции: рефлексии и правил R8 не нужно\n```",
   "explanation": "Рефлексивные библиотеки требуют правил `-keep` для R8; кодогенерация от этого свободна."
  },
  {
@@ -589,6 +662,7 @@
   "subtopic": "безопасность",
   "question": "Что такое certificate pinning и в чём его риск?",
   "answer": "Привязка к конкретному сертификату или ключу сервера, чтобы подменённый корневой сертификат не позволил прочитать трафик. Риск — при смене сертификата приложение перестаёт работать до обновления.",
+  "example": "```kotlin\nval pinner = CertificatePinner.Builder()\n    .add(\"example.com\", \"sha256/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=\")\n    .add(\"example.com\", \"sha256/BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB=\")  // запасной\n    .build()\n\nOkHttpClient.Builder().certificatePinner(pinner).build()\n```",
   "explanation": "Конфигурируется в `network_security_config.xml` или через OkHttp `CertificatePinner`. Обязательно предусматривать запасной пин."
  },
  {
@@ -597,6 +671,7 @@
   "subtopic": "безопасность",
   "question": "Почему с Android 9 не работает HTTP по обычному адресу?",
   "answer": "Открытый трафик по умолчанию запрещён; нужен `network_security_config.xml` с явным разрешением для конкретных доменов.",
+  "example": "```xml\n<network-security-config>\n    <domain-config cleartextTrafficPermitted=\"true\">\n        <domain includeSubdomains=\"false\">localhost</domain>\n    </domain-config>\n</network-security-config>\n```",
   "explanation": "Глобальное `cleartextTrafficPermitted=\"true\"` — плохое решение: разрешение выдаётся всему приложению."
  },
  {
@@ -605,6 +680,7 @@
   "subtopic": "данные",
   "question": "Что произойдёт, если изменить схему Room без миграции?",
   "answer": "Приложение упадёт при открытии базы с ошибкой несовпадения схемы. `fallbackToDestructiveMigration` уберёт падение, но сотрёт данные пользователя.",
+  "example": "```kotlin\nval MIGRATION_1_2 = object : Migration(1, 2) {\n    override fun migrate(db: SupportSQLiteDatabase) {\n        db.execSQL(\"ALTER TABLE users ADD COLUMN city TEXT\")\n    }\n}\n\nRoom.databaseBuilder(context, AppDatabase::class.java, \"app.db\")\n    .addMigrations(MIGRATION_1_2)\n    .build()\n```",
   "explanation": "Схемы нужно экспортировать (`room.schemaLocation`) и тестировать миграции `MigrationTestHelper`."
  },
  {
@@ -613,6 +689,7 @@
   "subtopic": "данные",
   "question": "Почему запросы Room нельзя выполнять в главном потоке?",
   "answer": "Room явно это запрещает и бросает исключение: дисковая операция может занять сотни миллисекунд и привести к ANR.",
+  "example": "```kotlin\n@Dao\ninterface UserDao {\n    @Query(\"SELECT * FROM users\")\n    suspend fun all(): List<UserEntity>            // suspend — обязателен\n\n    @Query(\"SELECT * FROM users\")\n    fun observeAll(): Flow<List<UserEntity>>       // обновляется само\n}\n```",
   "explanation": "Возвращаемый `Flow` наблюдает изменения таблиц и обновляет UI сам — подписку достаточно завести один раз."
  },
  {
@@ -621,6 +698,7 @@
   "subtopic": "данные",
   "question": "Зачем нужна библиотека Paging?",
   "answer": "Она подгружает данные страницами по мере прокрутки, кэширует их и умеет объединять сеть с базой через `RemoteMediator`.",
+  "example": "```kotlin\nval users: Flow<PagingData<User>> = Pager(PagingConfig(pageSize = 20)) {\n    UserPagingSource(api)\n}.flow.cachedIn(viewModelScope)\n\n// В Compose\nval items = viewModel.users.collectAsLazyPagingItems()\n```",
   "explanation": "Ручная реализация обычно ломается на пересоздании экрана и дублирует запросы при быстрой прокрутке."
  },
  {
@@ -629,6 +707,7 @@
   "subtopic": "данные",
   "question": "Что такое Auto Backup и чем он опасен?",
   "answer": "Система по умолчанию копирует данные приложения в облако пользователя. В копию могут попасть токены и кэш, а после восстановления на другом устройстве оказаться невалидными.",
+  "example": "```xml\n<application android:dataExtractionRules=\"@xml/backup_rules\" />\n\n<!-- res/xml/backup_rules.xml -->\n<data-extraction-rules>\n    <cloud-backup>\n        <exclude domain=\"sharedpref\" path=\"secrets.xml\" />\n    </cloud-backup>\n</data-extraction-rules>\n```",
   "explanation": "Управляется правилами `dataExtractionRules` (Android 12+) и `fullBackupContent`; секреты из копии нужно исключать."
  },
  {
@@ -637,6 +716,7 @@
   "subtopic": "фон",
   "question": "Что делают Doze и App Standby?",
   "answer": "Doze при неподвижном устройстве с выключенным экраном откладывает сеть, задания и будильники до окон обслуживания. App Standby ограничивает редко используемые приложения.",
+  "example": "```kotlin\n// Точное время в Doze требует отдельного разрешения и метода\nalarmManager.setExactAndAllowWhileIdle(\n    AlarmManager.RTC_WAKEUP,\n    triggerAtMillis,\n    pendingIntent,\n)\n```",
   "explanation": "Поэтому «точное время» требует `setExactAndAllowWhileIdle` и разрешения на точные будильники, а фоновая работа — WorkManager, который сам учитывает эти режимы."
  },
  {
@@ -645,6 +725,7 @@
   "subtopic": "фон",
   "question": "Какие ограничения на фоновую работу появились начиная с Android 8?",
   "answer": "Нельзя запускать фоновый сервис из фона, ограничены неявные broadcast'ы в манифесте, ограничен доступ к местоположению в фоне.",
+  "example": "```kotlin\n// До Android 8 так было можно, теперь из фона — нельзя\n// context.startService(Intent(context, SyncService::class.java))\n\n// Отложенная работа — WorkManager, он сам учитывает ограничения\nWorkManager.getInstance(context).enqueue(OneTimeWorkRequestBuilder<SyncWorker>().build())\n```",
   "explanation": "С Android 12 добавлен запрет на запуск foreground-сервиса из фона (с исключениями), с 13 — разрешение на уведомления, с 14 — обязательные типы foreground-сервисов."
  },
  {
@@ -653,6 +734,7 @@
   "subtopic": "уведомления",
   "question": "Как устроены каналы уведомлений и разрешение на них?",
   "answer": "С Android 8 каждое уведомление принадлежит каналу, а настройки важности и звука пользователь меняет на уровне канала. С Android 13 нужно разрешение `POST_NOTIFICATIONS`.",
+  "example": "```kotlin\nval channel = NotificationChannel(\"sync\", \"Синхронизация\", NotificationManager.IMPORTANCE_LOW)\nmanager.createNotificationChannel(channel)   // настройки канала потом не изменить\n\n// С Android 13 нужно разрешение\nrequestPermission.launch(Manifest.permission.POST_NOTIFICATIONS)\n```",
   "explanation": "Настройки канала после создания менять из кода нельзя — только пользователь. Плохо продуманное разбиение на каналы потом не исправить."
  },
  {
@@ -661,6 +743,7 @@
   "subtopic": "уведомления",
   "question": "Чем data-сообщение FCM отличается от notification-сообщения?",
   "answer": "`notification` система показывает сама, когда приложение в фоне, и колбэк не вызывается. `data` всегда попадает в `onMessageReceived`, и уведомление строит приложение.",
+  "example": "```kotlin\nclass Messaging : FirebaseMessagingService() {\n    override fun onMessageReceived(message: RemoteMessage) {\n        // Вызовется всегда для data-сообщения; для notification в фоне — нет\n        val payload = message.data[\"type\"]\n        showNotification(payload)\n    }\n}\n```",
   "explanation": "Доставка не гарантируется и может задерживаться в Doze; для важных сценариев есть высокий приоритет, но он квотируется."
  },
  {
@@ -669,6 +752,7 @@
   "subtopic": "фон",
   "question": "Когда нужен AlarmManager, а не WorkManager?",
   "answer": "Когда работа привязана к точному моменту времени (будильник, напоминание). WorkManager гарантирует выполнение, но не точное время.",
+  "example": "```kotlin\n// С Android 12 нужно разрешение SCHEDULE_EXACT_ALARM\nif (alarmManager.canScheduleExactAlarms()) {\n    alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, at, intent)\n} else {\n    startActivity(Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM))\n}\n```",
   "explanation": "С Android 12 точные будильники требуют разрешения `SCHEDULE_EXACT_ALARM`, а с 13 оно даётся не всем приложениям."
  },
  {
@@ -677,6 +761,7 @@
   "subtopic": "тестирование",
   "question": "Что такое Robolectric и когда он уместен?",
   "answer": "Реализация Android-фреймворка на JVM: позволяет тестировать код с Android-типами без эмулятора, быстро.",
+  "example": "```kotlin\n@RunWith(RobolectricTestRunner::class)\nclass FormatterTest {\n    @Test fun `строка берётся из ресурсов`() {\n        val context = ApplicationProvider.getApplicationContext<Context>()\n        assertEquals(\"Готово\", context.getString(R.string.done))\n    }\n}\n```",
   "explanation": "Он моделирует поведение, а не воспроизводит его точно, поэтому критичные сценарии всё равно проверяют инструментальными тестами."
  },
  {
@@ -685,6 +770,7 @@
   "subtopic": "тестирование",
   "question": "Чем fake отличается от mock и почему это важно?",
   "answer": "Fake — рабочая упрощённая реализация (репозиторий в памяти). Mock — объект с заданными ответами и проверкой вызовов. Тесты на mock ломаются при рефакторинге, потому что проверяют взаимодействия, а не результат.",
+  "example": "```kotlin\n// Fake — рабочая упрощённая реализация\nclass FakeUserRepository : UserRepository {\n    private val users = MutableStateFlow(listOf(User(1, \"Аня\")))\n    override fun observe() = users\n}\n\n// Mock — проверка вызовов, ломается при рефакторинге\nval repo = mockk<UserRepository>()\nevery { repo.observe() } returns flowOf(emptyList())\n```",
   "explanation": "Google рекомендует fake для своих зависимостей и mock — для чужих."
  },
  {
@@ -693,6 +779,7 @@
   "subtopic": "тестирование",
   "question": "Как тестировать `Flow`?",
   "answer": "Собрать в список (`toList`) для конечного потока или использовать Turbine с `awaitItem`/`awaitComplete` для бесконечного, вместе с `runTest` и тестовым диспетчером.",
+  "example": "```kotlin\n@Test\nfun `состояние доходит до подписчика`() = runTest {\n    viewModel.state.test {                 // Turbine\n        assertEquals(UiState.Loading, awaitItem())\n        assertEquals(UiState.Content(users), awaitItem())\n        cancelAndIgnoreRemainingEvents()\n    }\n}\n```",
   "explanation": "Бесконечный `StateFlow` в `toList` просто зависнет — типичная ошибка первого теста."
  },
  {
@@ -701,6 +788,7 @@
   "subtopic": "тестирование",
   "question": "Чем Macrobenchmark отличается от Microbenchmark?",
   "answer": "Macrobenchmark измеряет пользовательские сценарии на реальной сборке — старт приложения, прокрутку, переходы. Microbenchmark меряет отдельные функции в изоляции.",
+  "example": "```kotlin\n@Test\nfun startup() = benchmarkRule.measureRepeated(\n    packageName = \"com.example.app\",\n    metrics = listOf(StartupTimingMetric()),\n    iterations = 10,\n    startupMode = StartupMode.COLD,\n) {\n    pressHome()\n    startActivityAndWait()\n}\n```",
   "explanation": "Macrobenchmark же генерирует Baseline Profiles."
  },
  {
@@ -709,6 +797,7 @@
   "subtopic": "качество",
   "question": "Что нужно, чтобы читать стектрейсы релизной сборки?",
   "answer": "Загрузить в сервис отчётов файл маппинга R8 (`mapping.txt`) для той же сборки. Без него стектрейс состоит из обфусцированных имён.",
+  "example": "```bash\n# Файл маппинга уникален для каждой сборки — без него стектрейс обфусцирован\napp/build/outputs/mapping/release/mapping.txt\n\n./gradlew assembleRelease appDistributionUploadRelease\n```",
   "explanation": "Файл маппинга уникален для каждой сборки — его нужно сохранять вместе с артефактом."
  },
  {
@@ -717,6 +806,7 @@
   "subtopic": "качество",
   "question": "Что проверяет Android Lint?",
   "answer": "Ошибки, специфичные для платформы: неиспользуемые ресурсы, вызовы API выше `minSdk`, утечки, проблемы доступности и безопасности манифеста.",
+  "example": "```kotlin\nandroid {\n    lint {\n        abortOnError = true\n        warningsAsErrors = true\n        disable += \"GradleDependency\"\n    }\n}\n```",
   "explanation": "Правила можно писать свои и включать `lintOptions { abortOnError true }` в CI, чтобы предупреждение не копилось годами."
  }
 ]

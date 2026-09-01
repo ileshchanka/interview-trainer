@@ -18,6 +18,9 @@
       @if (revealed()) {
         <hr />
         <div class="answer md" [innerHTML]="card.answer | md"></div>
+        @if (card.example) {
+          <div class="example md" [innerHTML]="card.example | md"></div>
+        }
         @if (card.explanation) {
           <details class="details">
             <summary>Подробный разбор</summary>

@@ -5,6 +5,7 @@
   "subtopic": "основы",
   "question": "Что делает модификатор `suspend`?",
   "answer": "Позволяет функции приостанавливаться, не блокируя поток, и вызываться только из корутины или другой suspend-функции.",
+  "example": "```kotlin\nsuspend fun load(id: Long): User {\n    delay(100)                 // приостановка, а не блокировка потока\n    return api.user(id)\n}\n\n// Вызвать можно только из корутины или другой suspend-функции\nviewModelScope.launch { val user = load(1) }\n```",
   "explanation": "Под капотом компилятор превращает её в конечный автомат и добавляет скрытый параметр `Continuation` (CPS-преобразование). Сам по себе `suspend` не переключает поток и ничего не распараллеливает."
  },
  {
@@ -13,6 +14,7 @@
   "subtopic": "основы",
   "question": "Чем корутина отличается от потока?",
   "answer": "Корутина — объект в памяти, а не ресурс ОС: их можно создать сотни тысяч. Приостановка корутины освобождает поток для другой работы, а блокировка потока — нет.",
+  "example": "```kotlin\n// Сто тысяч корутин — норма\nrepeat(100_000) { launch { delay(1000) } }\n\n// Сто тысяч потоков — OutOfMemoryError\n// repeat(100_000) { thread { Thread.sleep(1000) } }\n```",
   "explanation": "Отсюда правило: внутри корутины нельзя звать блокирующие API (`Thread.sleep`, синхронный HTTP) на диспетчере, не рассчитанном на блокировки."
  },
  {
@@ -21,6 +23,7 @@
   "subtopic": "основы",
   "question": "Что такое структурированный параллелизм?",
   "answer": "Каждая корутина принадлежит скоупу, и скоуп не завершается, пока не завершатся все его дети. Отмена родителя отменяет детей, ошибка ребёнка отменяет родителя.",
+  "example": "```kotlin\nsuspend fun loadAll(): Pair<User, Settings> = coroutineScope {\n    val user = async { api.user() }\n    val settings = async { api.settings() }\n    user.await() to settings.await()   // выйти отсюда, не дождавшись детей, нельзя\n}\n```",
   "explanation": "Главная выгода — не бывает потерянных задач: нельзя «забыть» корутину, работающую после закрытия экрана."
  },
  {
@@ -29,6 +32,7 @@
   "subtopic": "скоупы",
   "question": "Какие скоупы есть в Android и когда какой?",
   "answer": "`viewModelScope` — жизнь ViewModel, `lifecycleScope` — жизнь Activity/Fragment, `rememberCoroutineScope` — жизнь composable. `GlobalScope` не следует использовать почти никогда.",
+  "example": "```kotlin\nclass ProfileViewModel : ViewModel() {\n    init {\n        viewModelScope.launch { }      // отменится в onCleared\n    }\n}\n\nlifecycleScope.launch { }              // отменится с Activity/Fragment\n// GlobalScope.launch { }              // не отменится никогда — так не делают\n```",
   "explanation": "`GlobalScope` живёт всё время процесса, не отменяется и ломает структурированный параллелизм — прямой путь к утечкам."
  },
  {
@@ -37,6 +41,7 @@
   "subtopic": "основы",
   "question": "Чем `launch` отличается от `async`?",
   "answer": "`launch` запускает работу и возвращает `Job` — «сделай и забудь». `async` возвращает `Deferred<T>`, у которого запрашивают результат через `await`.",
+  "example": "```kotlin\nval job: Job = scope.launch { sync() }              // сделай и забудь\nval deferred: Deferred<User> = scope.async { load() }  // с результатом\n\njob.join()\nval user = deferred.await()   // здесь же вылетит исключение, если оно было\n```",
   "explanation": "Исключение из `async` доставляется в момент `await`, а из `launch` — сразу вверх по иерархии. Поэтому необработанный `Deferred` может тихо проглотить ошибку."
  },
  {
@@ -45,6 +50,7 @@
   "subtopic": "основы",
   "question": "Где допустим `runBlocking`?",
   "answer": "В `main`-функции консольного приложения и в тестах. В Android-коде он блокирует поток и в главном потоке приводит к ANR.",
+  "example": "```kotlin\nfun main() = runBlocking {          // допустимо: точка входа\n    launch { println(\"работа\") }\n}\n\n@Test fun test() = runTest { }      // в тестах — runTest с виртуальным временем\n\n// В Android-коде runBlocking в главном потоке = ANR\n```",
   "explanation": "Для тестов сегодня правильнее `runTest` из `kotlinx-coroutines-test`: он умеет виртуальное время и мгновенно проматывает `delay`."
  },
  {
@@ -53,6 +59,7 @@
   "subtopic": "диспетчеры",
   "question": "Какие бывают диспетчеры и для чего каждый?",
   "answer": "`Main` — UI-поток, `Default` — вычисления (пул по числу ядер), `IO` — блокирующие операции (пул до 64 потоков), `Unconfined` — без переключения, почти всегда не нужен.",
+  "example": "```kotlin\nwithContext(Dispatchers.IO) { file.readText() }          // блокирующие операции\nwithContext(Dispatchers.Default) { list.sortedBy { } }   // вычисления\nwithContext(Dispatchers.Main) { textView.text = text }   // UI\n```",
   "explanation": "`IO` и `Default` делят потоки: `withContext(IO)` из `Default` часто обходится без реального переключения потока."
  },
  {
@@ -61,6 +68,7 @@
   "subtopic": "диспетчеры",
   "question": "Как правильно выбирать поток в suspend-функции?",
   "answer": "Функция сама отвечает за свой контекст: она оборачивает тяжёлую часть в `withContext(Dispatchers.IO)`. Вызывающий не должен знать, на каком потоке она работает.",
+  "example": "```kotlin\n// Функция сама отвечает за свой поток — её безопасно звать откуда угодно\nsuspend fun loadUsers(): List<User> = withContext(Dispatchers.IO) {\n    dao.all()\n}\n\n// Вызывающему не нужно знать про диспетчеры:\nviewModelScope.launch { val users = loadUsers() }\n```",
   "explanation": "Это принцип main-safety: любую suspend-функцию должно быть безопасно вызвать из главного потока."
  },
  {
@@ -69,6 +77,7 @@
   "subtopic": "отмена",
   "question": "Что такое `Job` и какие у него состояния?",
   "answer": "Хендл корутины с жизненным циклом: New → Active → Completing → Completed, и отдельная ветка Cancelling → Cancelled. `join()` ждёт завершения, `cancel()` запрашивает отмену.",
+  "example": "```kotlin\nval job = scope.launch { work() }\n\nprintln(job.isActive)\njob.invokeOnCompletion { cause -> println(cause ?: \"успех\") }\njob.cancel()\njob.join()\n```",
   "explanation": "`Job` образует иерархию: у скоупа есть родительский Job, у каждой корутины — свой, привязанный к родителю."
  },
  {
@@ -77,6 +86,7 @@
   "subtopic": "отмена",
   "question": "Почему отмена корутины кооперативная?",
   "answer": "`cancel` только выставляет флаг. Корутина завершится, когда дойдёт до точки приостановки (все suspend-функции из kotlinx проверяют отмену) или сама проверит `isActive`.",
+  "example": "```kotlin\nval job = scope.launch(Dispatchers.Default) {\n    while (isActive) {            // без проверки отмена не сработает\n        heavyStep()\n        ensureActive()            // либо так — бросит CancellationException\n    }\n}\njob.cancel()\n```",
   "explanation": "Вычислительный цикл без точек приостановки продолжит работу. Спасают `ensureActive()`, `yield()` или проверка `isActive` в цикле."
  },
  {
@@ -85,6 +95,7 @@
   "subtopic": "отмена",
   "question": "Как обрабатывать `CancellationException`?",
   "answer": "Никак — её нужно пробрасывать. Она означает штатную отмену, а не ошибку, и перехват общим `catch (e: Exception)` ломает механизм отмены.",
+  "example": "```kotlin\ntry {\n    api.load()\n} catch (e: CancellationException) {\n    throw e                       // отмену всегда пробрасываем\n} catch (e: Exception) {\n    report(e)\n}\n```",
   "explanation": "Опасны `try/catch (Exception)` и `runCatching`: оба проглатывают отмену. Проверяйте тип и перебрасывайте `CancellationException`."
  },
  {
@@ -93,6 +104,7 @@
   "subtopic": "отмена",
   "question": "Как выполнить suspend-код при отмене?",
   "answer": "Обернуть в `withContext(NonCancellable)` внутри `finally`. В отменённой корутине обычные suspend-вызовы немедленно бросают `CancellationException`.",
+  "example": "```kotlin\ntry {\n    stream()\n} finally {\n    withContext(NonCancellable) {    // обычный suspend-вызов здесь упал бы\n        repository.saveProgress()\n    }\n}\n```",
   "explanation": "Используется для закрытия ресурсов и записи финального состояния — но блок должен быть коротким."
  },
  {
@@ -101,6 +113,7 @@
   "subtopic": "ошибки",
   "question": "Как распространяются исключения в корутинах?",
   "answer": "Ошибка в `launch` идёт вверх и отменяет родителя и всех его детей. Ошибка в `async` хранится в `Deferred` и всплывает при `await`.",
+  "example": "```kotlin\nscope.launch { throw IOException() }        // всплывёт вверх и отменит родителя\n\nval deferred = scope.async { throw IOException() }\n// пока не вызвать await, исключение никого не потревожит\ntry { deferred.await() } catch (e: IOException) { }\n```",
   "explanation": "Прервать распространение можно `SupervisorJob` или `supervisorScope`."
  },
  {
@@ -109,6 +122,7 @@
   "subtopic": "ошибки",
   "question": "Чем `supervisorScope` отличается от `coroutineScope`?",
   "answer": "В `coroutineScope` падение любого ребёнка отменяет остальных. В `supervisorScope` дети независимы: один упал — другие продолжают.",
+  "example": "```kotlin\ncoroutineScope {                 // один упал — отменились все\n    launch { api.a() }\n    launch { api.b() }\n}\n\nsupervisorScope {                // независимы друг от друга\n    launch { api.a() }\n    launch { api.b() }\n}\n```",
   "explanation": "Первый нужен, когда результат нужен целиком (загрузить всё или ничего), второй — для независимых операций, где частичный результат допустим."
  },
  {
@@ -117,6 +131,7 @@
   "subtopic": "ошибки",
   "question": "Где работает `CoroutineExceptionHandler`?",
   "answer": "Только для корневой корутины скоупа, запущенной через `launch`. Для `async` и для дочерних корутин он игнорируется.",
+  "example": "```kotlin\nval handler = CoroutineExceptionHandler { _, e -> report(e) }\nval scope = CoroutineScope(SupervisorJob() + Dispatchers.Default + handler)\n\nscope.launch { throw IOException() }     // handler сработает\nscope.async { throw IOException() }      // а здесь нет — ошибка ждёт await\n```",
   "explanation": "Это последний рубеж, а не замена `try/catch`: локальную ошибку правильнее обработать там, где она случилась."
  },
  {
@@ -125,6 +140,7 @@
   "subtopic": "Flow",
   "question": "Что такое `Flow` и чем он отличается от последовательности?",
   "answer": "Асинхронный поток значений: он может приостанавливаться между элементами. `Sequence` синхронна и блокирует поток.",
+  "example": "```kotlin\nval numbers: Flow<Int> = flow {\n    repeat(3) {\n        delay(100)        // можно приостанавливаться — в Sequence так нельзя\n        emit(it)\n    }\n}\n\nnumbers.collect { println(it) }\n```",
   "explanation": "Flow холодный: тело билдера выполняется заново на каждый сбор. Терминальные операторы — `collect`, `toList`, `first`."
  },
  {
@@ -133,6 +149,7 @@
   "subtopic": "Flow",
   "question": "Чем `StateFlow` отличается от `SharedFlow`?",
   "answer": "`StateFlow` — состояние: всегда имеет текущее значение, отдаёт его новому подписчику, склеивает быстрые обновления и пропускает повторы по `equals`. `SharedFlow` — события: настраиваемый буфер, повторы не отбрасываются.",
+  "example": "```kotlin\nprivate val _state = MutableStateFlow(UiState.Loading)   // состояние\nval state = _state.asStateFlow()\n\nprivate val _events = MutableSharedFlow<Event>()          // события\nval events = _events.asSharedFlow()\n```",
   "explanation": "Правило: состояние экрана — `StateFlow`, разовые события (навигация, снекбар) — `SharedFlow` или канал."
  },
  {
@@ -141,6 +158,7 @@
   "subtopic": "Flow",
   "question": "Чем холодный поток отличается от горячего?",
   "answer": "Холодный запускается на каждого подписчика отдельно (два сборщика — два сетевых запроса). Горячий существует независимо и делится значениями между всеми.",
+  "example": "```kotlin\nval cold: Flow<User> = flow { emit(api.load()) }    // запрос на каждого подписчика\n\nval hot: StateFlow<User?> = cold.stateIn(\n    viewModelScope,\n    SharingStarted.WhileSubscribed(5_000),\n    null,\n)   // один запрос на всех\n```",
   "explanation": "Превратить холодный в горячий позволяют `shareIn` и `stateIn` — им передают скоуп и стратегию старта."
  },
  {
@@ -149,6 +167,7 @@
   "subtopic": "Flow",
   "question": "Что делает `SharingStarted.WhileSubscribed(5000)`?",
   "answer": "Держит поток активным ещё 5 секунд после ухода последнего подписчика — чтобы поворот экрана не приводил к перезапуску загрузки данных.",
+  "example": "```kotlin\nval users = repository.users.stateIn(\n    scope = viewModelScope,\n    started = SharingStarted.WhileSubscribed(5_000),  // переживёт поворот экрана\n    initialValue = emptyList(),\n)\n// Eagerly — всегда активен, Lazily — с первого подписчика и навсегда\n```",
   "explanation": "`Eagerly` работает всегда, `Lazily` стартует с первым подписчиком и не останавливается. Пятисекундная пауза — стандартная рекомендация Google."
  },
  {
@@ -157,6 +176,7 @@
   "subtopic": "Flow",
   "question": "Что делает оператор `flowOn`?",
   "answer": "Меняет контекст **предшествующих** ему операторов (upstream). Контекст сборщика он не трогает — тот определяется скоупом, где вызван `collect`.",
+  "example": "```kotlin\nflow { emit(dao.all()) }\n    .map(::toDomain)\n    .flowOn(Dispatchers.IO)     // относится к тому, что ВЫШЕ\n    .collect { render(it) }     // а это уже в контексте вызывающего\n```",
   "explanation": "Менять контекст внутри `flow { }` через `withContext` запрещено: билдер проверяет это и бросает исключение о нарушении прозрачности контекста."
  },
  {
@@ -165,6 +185,7 @@
   "subtopic": "Flow",
   "question": "Чем `buffer` отличается от `conflate` и `collectLatest`?",
   "answer": "`buffer` даёт производителю бежать вперёд, складывая значения в буфер. `conflate` хранит только последнее, пропуская промежуточные. `collectLatest` отменяет обработку предыдущего значения при появлении нового.",
+  "example": "```kotlin\nsource.buffer().collect { slow(it) }         // производитель бежит вперёд\nsource.conflate().collect { slow(it) }       // берём только самое свежее\nsource.collectLatest { slow(it) }            // отменяем обработку старого\n```",
   "explanation": "Все три решают одну проблему — медленный потребитель, — но по-разному: не потерять, взять свежее, отменить старое."
  },
  {
@@ -173,6 +194,7 @@
   "subtopic": "Flow",
   "question": "Чем `combine` отличается от `zip`?",
   "answer": "`combine` выдаёт результат при изменении **любого** источника, используя последние значения остальных. `zip` строит пары строго по порядку и ждёт оба.",
+  "example": "```kotlin\ncombine(user, settings) { u, s -> UiState(u, s) }   // на изменение любого\n\nuser.zip(settings) { u, s -> u to s }               // строго попарно\n```",
   "explanation": "Для объединения нескольких состояний экрана нужен `combine`; `zip` уместен для попарной обработки."
  },
  {
@@ -181,6 +203,7 @@
   "subtopic": "Flow",
   "question": "Какие есть аналоги `switchMap` во Flow?",
   "answer": "`flatMapLatest` отменяет предыдущий внутренний поток, `flatMapConcat` выполняет последовательно, `flatMapMerge` — параллельно.",
+  "example": "```kotlin\nquery\n    .debounce(300)\n    .distinctUntilChanged()\n    .flatMapLatest { api.search(it) }   // отменяет предыдущий запрос\n    .collect(::show)\n```",
   "explanation": "`flatMapLatest` — стандартное решение для поиска по мере ввода в паре с `debounce`."
  },
  {
@@ -189,6 +212,7 @@
   "subtopic": "Flow",
   "question": "Как обернуть колбэк-API во Flow?",
   "answer": "`callbackFlow`: внутри регистрируется слушатель, значения отправляются через `trySend`, а в обязательном `awaitClose` слушатель снимается.",
+  "example": "```kotlin\nfun locations(): Flow<Location> = callbackFlow {\n    val callback = LocationCallback { trySend(it) }\n    client.requestUpdates(callback)\n\n    awaitClose { client.removeUpdates(callback) }   // без этого — ошибка и утечка\n}\n```",
   "explanation": "Без `awaitClose` билдер бросает исключение — это защита именно от утечки подписки."
  },
  {
@@ -197,6 +221,7 @@
   "subtopic": "интеграция",
   "question": "Как превратить колбэк с одним результатом в suspend-функцию?",
   "answer": "`suspendCancellableCoroutine`: результат отдаётся через `continuation.resume`, а в `invokeOnCancellation` отменяется исходная операция.",
+  "example": "```kotlin\nsuspend fun load(): User = suspendCancellableCoroutine { continuation ->\n    val call = api.enqueue(\n        onSuccess = { continuation.resume(it) },\n        onError = { continuation.resumeWithException(it) },\n    )\n    continuation.invokeOnCancellation { call.cancel() }\n}\n```",
   "explanation": "Обычный `suspendCoroutine` не поддерживает отмену — при отмене корутины запрос продолжит выполняться."
  },
  {
@@ -205,6 +230,7 @@
   "subtopic": "Android",
   "question": "Зачем нужен `repeatOnLifecycle`?",
   "answer": "Он собирает поток только пока экран в нужном состоянии (обычно `STARTED`) и **отменяет** сбор при уходе в фон, возобновляя при возврате.",
+  "example": "```kotlin\nviewLifecycleOwner.lifecycleScope.launch {\n    viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {\n        viewModel.state.collect(::render)   // сбор остановится в фоне\n    }\n}\n```",
   "explanation": "`lifecycleScope.launch { flow.collect { } }` без него продолжает собирать в фоне и обновлять невидимый UI. В Compose ту же роль играет `collectAsStateWithLifecycle`."
  },
  {
@@ -213,6 +239,7 @@
   "subtopic": "Android",
   "question": "Что происходит с `viewModelScope` при закрытии экрана?",
   "answer": "Он отменяется в `onCleared`, а вместе с ним все запущенные корутины. Ради этого его и используют вместо собственного скоупа.",
+  "example": "```kotlin\nclass ProfileViewModel : ViewModel() {\n    init { viewModelScope.launch { load() } }\n\n    override fun onCleared() {\n        // viewModelScope отменяется здесь автоматически\n    }\n}\n```",
   "explanation": "Работу, которая обязана завершиться независимо от экрана (отправка аналитики, сохранение), нужно выносить в скоуп приложения или WorkManager."
  },
  {
@@ -221,6 +248,7 @@
   "subtopic": "многопоточность",
   "question": "Как защитить общее состояние в корутинах?",
   "answer": "`Mutex` с `withLock` — он приостанавливает корутину вместо блокировки потока, в отличие от `synchronized`. Альтернатива — держать состояние в одном потоке через `withContext` или использовать атомарные типы.",
+  "example": "```kotlin\nprivate val mutex = Mutex()\nprivate var balance = 0\n\nsuspend fun deposit(amount: Int) = mutex.withLock {   // приостановка, не блокировка\n    balance += amount\n}\n// synchronized вокруг suspend-вызова недопустим\n```",
   "explanation": "`synchronized` вокруг suspend-вызова недопустим: корутина может возобновиться в другом потоке, и блокировка не снимется."
  },
  {
@@ -229,6 +257,7 @@
   "subtopic": "каналы",
   "question": "Когда нужен `Channel`, а не `Flow`?",
   "answer": "Когда значение должно быть получено ровно один раз одним получателем: события навигации, разовые сообщения. `Flow` рассылает всем подписчикам.",
+  "example": "```kotlin\nprivate val events = Channel<Event>(Channel.BUFFERED)\nval eventsFlow = events.receiveAsFlow()   // получит ровно один подписчик\n\nsuspend fun navigateBack() = events.send(Event.NavigateBack)\n```",
   "explanation": "У канала есть буфер и стратегия переполнения. Для UI-событий сегодня чаще берут `Channel(BUFFERED).receiveAsFlow()`."
  },
  {
@@ -237,6 +266,7 @@
   "subtopic": "тестирование",
   "question": "Как тестировать корутины?",
   "answer": "`runTest` из `kotlinx-coroutines-test` даёт виртуальное время: `delay` проматывается мгновенно. Диспетчеры подменяются через инъекцию или `Dispatchers.setMain`.",
+  "example": "```kotlin\n@Test\nfun `состояние обновляется`() = runTest {\n    val viewModel = ProfileViewModel(FakeRepository(), StandardTestDispatcher(testScheduler))\n\n    viewModel.load()\n    advanceUntilIdle()          // delay проматывается мгновенно\n\n    assertEquals(UiState.Content(user), viewModel.state.value)\n}\n```",
   "explanation": "Прямое обращение к `Dispatchers.IO` внутри класса делает его непроверяемым — диспетчер лучше передавать в конструкторе."
  },
  {
@@ -245,6 +275,7 @@
   "subtopic": "Flow",
   "question": "Как сделать debounce и throttle во Flow?",
   "answer": "`debounce(300)` пропускает значение только после паузы. Готового throttle нет — его собирают из `sample(period)` или пишут вручную.",
+  "example": "```kotlin\nquery\n    .debounce(300)     // сработает после паузы во вводе\n    .collect(::search)\n\nticks.sample(1_000)    // не чаще раза в секунду — заменяет throttle\n```",
   "explanation": "Классическая цепочка поиска: `debounce` → `distinctUntilChanged` → `flatMapLatest`."
  },
  {
@@ -253,6 +284,7 @@
   "subtopic": "Flow",
   "question": "Что делает `distinctUntilChanged`?",
   "answer": "Пропускает подряд идущие одинаковые значения, сравнивая по `equals`. Для data-классов это работает из коробки.",
+  "example": "```kotlin\nflowOf(1, 1, 2, 2, 1)\n    .distinctUntilChanged()\n    .toList()          // [1, 2, 1] — подряд идущие повторы отброшены\n\n// StateFlow делает это сам\n```",
   "explanation": "`StateFlow` делает это сам, поэтому дополнительный оператор ему не нужен."
  },
  {
@@ -261,6 +293,7 @@
   "subtopic": "внутренности",
   "question": "Как компилятор реализует suspend-функции?",
   "answer": "CPS-преобразованием: функция получает скрытый параметр `Continuation` и превращается в конечный автомат, где каждая точка приостановки — отдельное состояние с сохранением локальных переменных.",
+  "example": "```kotlin\n// Что пишем\nsuspend fun load(): User { }\n\n// Во что превращает компилятор (упрощённо)\nfun load(continuation: Continuation<User>): Any   // конечный автомат + продолжение\n```",
   "explanation": "Поэтому корутины не требуют поддержки от JVM и работают на любом Android. Знание автомата объясняет, почему приостановка дёшева, а поток не блокируется."
  },
  {
@@ -269,6 +302,7 @@
   "subtopic": "основы",
   "question": "Чем `delay` отличается от `Thread.sleep`?",
   "answer": "`delay` приостанавливает корутину и освобождает поток для другой работы; `Thread.sleep` блокирует поток целиком.",
+  "example": "```kotlin\nlaunch { delay(1000) }          // поток свободен, отмена работает\n\nlaunch { Thread.sleep(1000) }   // поток занят, отмену не заметит\n```",
   "explanation": "`delay` — точка приостановки, значит через неё работает отмена. `Thread.sleep` отмену не заметит."
  },
  {
@@ -277,6 +311,7 @@
   "subtopic": "основы",
   "question": "Из чего состоит `CoroutineContext`?",
   "answer": "Из набора элементов: `Job`, `CoroutineDispatcher`, `CoroutineName`, `CoroutineExceptionHandler`. Элементы складываются оператором `+`.",
+  "example": "```kotlin\nval context = Dispatchers.IO + CoroutineName(\"sync\") + SupervisorJob()\n\nscope.launch(context) { }\n\n// Ребёнок наследует контекст родителя, но Job у него всегда свой\n```",
   "explanation": "Дочерняя корутина наследует контекст родителя, заменяя указанные элементы, но её `Job` всегда новый и подчинён родительскому."
  },
  {
@@ -285,6 +320,7 @@
   "subtopic": "основы",
   "question": "Чем `coroutineScope { }` отличается от `CoroutineScope(...)`?",
   "answer": "`coroutineScope` — suspend-функция: она создаёт вложенный скоуп, ждёт всех детей и возвращает результат. `CoroutineScope(...)` — конструктор долгоживущего скоупа, за отмену которого отвечаете вы.",
+  "example": "```kotlin\nsuspend fun load() = coroutineScope {     // ждёт детей и возвращает результат\n    val a = async { api.a() }\n    a.await()\n}\n\nval appScope = CoroutineScope(SupervisorJob())   // долгоживущий, отменять вручную\n```",
   "explanation": "Внутри suspend-функции почти всегда нужен первый: он гарантирует, что после выхода из функции не осталось работающих корутин."
  },
  {
@@ -293,6 +329,7 @@
   "subtopic": "основы",
   "question": "Как дождаться нескольких `async` сразу?",
   "answer": "`awaitAll(a, b)` или `listOf(a, b).awaitAll()`. Он бросит первое же исключение, не дожидаясь остальных.",
+  "example": "```kotlin\nval users = listOf(1L, 2L, 3L)\n    .map { id -> async { api.user(id) } }\n    .awaitAll()          // бросит первое же исключение\n\nval (a, b) = awaitAll(deferredA, deferredB)\n```",
   "explanation": "Последовательные `a.await(); b.await()` дадут тот же результат, но ошибку второго вы увидите позже — и только если первый успешен."
  },
  {
@@ -301,6 +338,7 @@
   "subtopic": "основы",
   "question": "Какие режимы запуска есть у корутины?",
   "answer": "`DEFAULT` — поставить в очередь диспетчера; `LAZY` — не запускать до `start()`/`await()`; `ATOMIC` — начать даже при уже отменённом скоупе; `UNDISPATCHED` — выполнить синхронно до первой приостановки.",
+  "example": "```kotlin\nval lazy = scope.async(start = CoroutineStart.LAZY) { expensive() }\n// вычислится только при lazy.await() или lazy.start()\n\nscope.launch(start = CoroutineStart.UNDISPATCHED) {\n    println(\"выполнится синхронно до первой приостановки\")\n}\n```",
   "explanation": "`LAZY` полезен для `async`, результат которого может не понадобиться."
  },
  {
@@ -309,6 +347,7 @@
   "subtopic": "основы",
   "question": "Чем `Job` отличается от `Deferred`?",
   "answer": "`Deferred<T>` — это `Job` с результатом. У `Job` есть `join()`, у `Deferred` — ещё и `await()`, который вернёт значение или бросит исключение.",
+  "example": "```kotlin\nval job: Job = scope.launch { }\njob.join()                    // дождаться; исключение не бросит\n\nval deferred: Deferred<User> = scope.async { load() }\nval user = deferred.await()   // дождаться и получить результат (или исключение)\n```",
   "explanation": "`join` никогда не бросает исключение самой корутины — им можно дождаться завершения, не обрабатывая ошибку."
  },
  {
@@ -317,6 +356,7 @@
   "subtopic": "основы",
   "question": "Что делает `invokeOnCompletion`?",
   "answer": "Регистрирует колбэк на завершение `Job` — с причиной (`null` при успехе, `CancellationException` при отмене, исключение при ошибке).",
+  "example": "```kotlin\njob.invokeOnCompletion { cause ->\n    when (cause) {\n        null -> log(\"успех\")\n        is CancellationException -> log(\"отменено\")\n        else -> report(cause)\n    }\n}\n```",
   "explanation": "Колбэк выполняется синхронно и не может быть suspend-функцией: тяжёлую работу в него класть нельзя."
  },
  {
@@ -325,6 +365,7 @@
   "subtopic": "отмена",
   "question": "Что делает `yield()`?",
   "answer": "Отдаёт поток другим корутинам и проверяет отмену. Это самый дешёвый способ сделать вычислительный цикл кооперативным.",
+  "example": "```kotlin\nlaunch(Dispatchers.Default) {\n    repeat(1_000_000) {\n        compute(it)\n        if (it % 1000 == 0) yield()   // уступить поток и проверить отмену\n    }\n}\n```",
   "explanation": "Альтернатива — `ensureActive()`, который только проверяет отмену, не уступая поток."
  },
  {
@@ -333,6 +374,7 @@
   "subtopic": "отмена",
   "question": "Чем `withTimeout` отличается от `withTimeoutOrNull`?",
   "answer": "Первый бросает `TimeoutCancellationException`, второй возвращает `null`. Оба отменяют вложенную работу по истечении времени.",
+  "example": "```kotlin\nval user = withTimeoutOrNull(3_000) { api.load() } ?: return showTimeout()\n\ntry {\n    withTimeout(3_000) { api.load() }\n} catch (e: TimeoutCancellationException) {\n    showTimeout()\n}\n```",
   "explanation": "`TimeoutCancellationException` — наследник `CancellationException`, поэтому общий `catch (e: CancellationException)` его тоже поймает, что часто неожиданно."
  },
  {
@@ -341,6 +383,7 @@
   "subtopic": "диспетчеры",
   "question": "Зачем нужен `limitedParallelism`?",
   "answer": "Он делает из диспетчера представление с ограниченным числом одновременных задач — например, не больше четырёх запросов к API одновременно.",
+  "example": "```kotlin\nprivate val apiDispatcher = Dispatchers.IO.limitedParallelism(4)\n\nsuspend fun load(id: Long) = withContext(apiDispatcher) { api.user(id) }\n// Не больше четырёх запросов одновременно, потоки — из общего пула\n```",
   "explanation": "Раньше для этого создавали отдельные пулы; `limitedParallelism` переиспользует потоки общего пула и не плодит их."
  },
  {
@@ -349,6 +392,7 @@
   "subtopic": "диспетчеры",
   "question": "Чем `Dispatchers.Main.immediate` отличается от `Dispatchers.Main`?",
   "answer": "`immediate` выполняет блок сразу, если мы уже в главном потоке, без постановки в очередь. Обычный `Main` всегда планирует задачу.",
+  "example": "```kotlin\nwithContext(Dispatchers.Main.immediate) {\n    textView.text = value    // если уже в главном потоке — выполнится сразу\n}\n```",
   "explanation": "Это убирает лишний кадр задержки при обновлении UI и мерцание в тестах."
  },
  {
@@ -357,6 +401,7 @@
   "subtopic": "диспетчеры",
   "question": "Когда нужен собственный однопоточный диспетчер?",
   "answer": "Когда библиотека требует работы строго из одного потока или нужно сериализовать доступ к состоянию без блокировок.",
+  "example": "```kotlin\nval dispatcher = newSingleThreadContext(\"db\")   // поток нужно закрывать\ntry {\n    withContext(dispatcher) { legacyLibrary.call() }\n} finally {\n    dispatcher.close()\n}\n\n// Чаще проще: Dispatchers.IO.limitedParallelism(1)\n```",
   "explanation": "`newSingleThreadContext` создаёт поток, который нужно закрывать (`close()`), иначе он утечёт. Чаще проще `limitedParallelism(1)`."
  },
  {
@@ -365,6 +410,7 @@
   "subtopic": "диспетчеры",
   "question": "Что происходит с `ThreadLocal` в корутинах?",
   "answer": "Корутина может возобновиться в другом потоке, поэтому `ThreadLocal` теряется. Перенести значение позволяет `asContextElement()`.",
+  "example": "```kotlin\nval requestId = ThreadLocal<String>()\n\nwithContext(requestId.asContextElement(\"req-42\")) {\n    // значение переживёт переключение потоков внутри корутины\n    log(requestId.get())\n}\n```",
   "explanation": "На этом ломаются MDC-логирование и трассировка, если их не связать с контекстом корутины."
  },
  {
@@ -373,6 +419,7 @@
   "subtopic": "Flow",
   "question": "Какие есть способы создать `Flow`?",
   "answer": "`flowOf(...)`, `asFlow()` у коллекций и последовательностей, билдер `flow { emit(...) }`, а также `channelFlow`/`callbackFlow` для источников с колбэками.",
+  "example": "```kotlin\nflowOf(1, 2, 3)\nlistOf(1, 2, 3).asFlow()\n\nflow { emit(api.load()) }            // эмитить можно только отсюда\n\nchannelFlow { launch { send(1) } }   // а здесь — из нескольких корутин\n```",
   "explanation": "В обычном `flow { }` нельзя эмитить из другой корутины — за этим следит проверка прозрачности контекста."
  },
  {
@@ -381,6 +428,7 @@
   "subtopic": "Flow",
   "question": "Чем `channelFlow` отличается от `flow` и `callbackFlow`?",
   "answer": "`channelFlow` разрешает эмитить из нескольких корутин через `send`. `callbackFlow` — его частный случай для колбэк-API, требующий `awaitClose`.",
+  "example": "```kotlin\nfun merged(): Flow<Item> = channelFlow {\n    launch { api.a().forEach { send(it) } }\n    launch { api.b().forEach { send(it) } }\n}\n\nfun clicks(): Flow<Unit> = callbackFlow {\n    val listener = View.OnClickListener { trySend(Unit) }\n    view.setOnClickListener(listener)\n    awaitClose { view.setOnClickListener(null) }\n}\n```",
   "explanation": "Плата за многопоточную эмиссию — внутренний канал и чуть большая стоимость по сравнению с `flow`."
  },
  {
@@ -389,6 +437,7 @@
   "subtopic": "Flow",
   "question": "Что делает оператор `catch` и почему он не ловит ошибки коллектора?",
   "answer": "Он перехватывает исключения **выше по потоку** (upstream). Ошибка внутри `collect { }` относится к потребителю и им не ловится — это принцип прозрачности исключений.",
+  "example": "```kotlin\napi.users()\n    .map(::toUi)\n    .catch { emit(UiState.Error) }   // ловит только то, что ВЫШЕ\n    .collect { state ->\n        render(state)                // ошибка отсюда в catch не попадёт\n    }\n```",
   "explanation": "Обернуть потребителя нужно обычным `try/catch` либо перенести логику в `onEach` перед `catch`."
  },
  {
@@ -397,6 +446,7 @@
   "subtopic": "Flow",
   "question": "Как повторить неудачный запрос во Flow?",
   "answer": "`retry(times) { cause -> cause is IOException }` или `retryWhen` с задержкой и счётчиком попыток.",
+  "example": "```kotlin\napi.users()\n    .retryWhen { cause, attempt ->\n        if (cause is IOException && attempt < 3) {\n            delay(1000 * (attempt + 1))\n            true\n        } else false\n    }\n    .collect(::render)\n```",
   "explanation": "Повтор перезапускает весь upstream, поэтому побочные эффекты выше по цепочке выполнятся заново."
  },
  {
@@ -405,6 +455,7 @@
   "subtopic": "Flow",
   "question": "Что делают `onStart`, `onEach` и `onCompletion`?",
   "answer": "`onStart` выполняется перед первым значением (удобно показать загрузку), `onEach` — на каждое значение, `onCompletion` — при завершении или ошибке, с причиной в параметре.",
+  "example": "```kotlin\napi.users()\n    .onStart { emit(UiState.Loading) }\n    .onEach { log(it) }\n    .onCompletion { cause -> if (cause == null) log(\"готово\") }\n    .collect(::render)\n```",
   "explanation": "`onCompletion` вызывается и при отмене, поэтому в нём проверяют тип причины."
  },
  {
@@ -413,6 +464,7 @@
   "subtopic": "Flow",
   "question": "Что произойдёт с бесконечным потоком после `take(1)`?",
   "answer": "Оператор отменит upstream, бросив внутреннее исключение отмены: производство остановится, ресурсы освободятся.",
+  "example": "```kotlin\ninfinite()\n    .take(1)        // отменит upstream после первого значения\n    .collect(::use)\n\nval first = infinite().first()   // то же самое\n```",
   "explanation": "То же делает `first()`. Именно поэтому `callbackFlow` обязан снимать подписку в `awaitClose`."
  },
  {
@@ -421,6 +473,7 @@
   "subtopic": "Flow",
   "question": "Что задают `replay`, `extraBufferCapacity` и `onBufferOverflow` у `MutableSharedFlow`?",
   "answer": "`replay` — сколько последних значений получит новый подписчик; `extraBufferCapacity` — размер буфера сверх replay; `onBufferOverflow` — что делать при переполнении (приостановить, отбросить старое или новое).",
+  "example": "```kotlin\nprivate val _events = MutableSharedFlow<Event>(\n    replay = 0,\n    extraBufferCapacity = 1,\n    onBufferOverflow = BufferOverflow.DROP_OLDEST,\n)\n\n_events.tryEmit(Event.Refresh)   // без буфера вернул бы false\n```",
   "explanation": "`MutableSharedFlow()` без параметров не имеет буфера: `tryEmit` вернёт `false`, если никто не собирает."
  },
  {
@@ -429,6 +482,7 @@
   "subtopic": "Flow",
   "question": "Чем `stateIn` отличается от `shareIn`?",
   "answer": "`stateIn` даёт `StateFlow` с текущим значением (требует начальное), `shareIn` — `SharedFlow` без обязательного значения. Оба превращают холодный поток в горячий.",
+  "example": "```kotlin\nval state: StateFlow<UiState> = repository.users\n    .map(::toUiState)\n    .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), UiState.Loading)\n\nval events: SharedFlow<Event> = source.shareIn(viewModelScope, SharingStarted.Eagerly)\n```",
   "explanation": "Обоим нужен скоуп и стратегия старта — обычно `viewModelScope` и `WhileSubscribed(5000)`."
  },
  {
@@ -437,6 +491,7 @@
   "subtopic": "Flow",
   "question": "Как во Flow решается проблема медленного потребителя?",
   "answer": "Приостановкой производителя: `emit` не вернёт управление, пока значение не обработано. Изменить поведение позволяют `buffer`, `conflate` и `collectLatest`.",
+  "example": "```kotlin\nflow {\n    repeat(100) {\n        emit(it)         // не вернёт управление, пока значение не обработано\n    }\n}.collect { slow(it) }\n\n// Изменить поведение: buffer(), conflate(), collectLatest {}\n```",
   "explanation": "Отдельного механизма backpressure, как в Reactive Streams, не нужно — его роль играет сама приостановка."
  },
  {
@@ -445,6 +500,7 @@
   "subtopic": "продвинутое",
   "question": "Что делает выражение `select`?",
   "answer": "Ждёт первое из нескольких приостанавливаемых событий: результат одного из `Deferred`, получение из канала, таймаут.",
+  "example": "```kotlin\nval result = select<String> {\n    deferredA.onAwait { \"первым пришёл A\" }\n    deferredB.onAwait { \"первым пришёл B\" }\n    onTimeout(1_000) { \"не дождались\" }\n}\n```",
   "explanation": "Это способ реализовать гонку без ручной синхронизации; API помечено как экспериментальное и применяется редко."
  },
  {
@@ -453,6 +509,7 @@
   "subtopic": "каналы",
   "question": "Что такое `produce` и модель актора?",
   "answer": "`produce` запускает корутину, отдающую значения в канал. Актор — корутина, владеющая состоянием и принимающая команды через канал: состояние меняется в одном месте, блокировки не нужны.",
+  "example": "```kotlin\nval numbers = produce {          // корутина отдаёт значения в канал\n    repeat(3) { send(it) }\n}\n\n// Актор: состояние живёт в одной корутине, снаружи — только команды\nval counter = actor<Command> {\n    var count = 0\n    for (command in channel) count += command.delta\n}\n```",
   "explanation": "Оба builder'а экспериментальны; для состояния в UI сегодня чаще берут `MutableStateFlow`."
  },
  {
@@ -461,6 +518,7 @@
   "subtopic": "Android",
   "question": "Чем `StateFlow` лучше `LiveData` и чего у него нет?",
   "answer": "`StateFlow` не привязан к Android, работает в общем коде, имеет операторы и требует явного начального значения. У `LiveData` встроен учёт жизненного цикла, у `StateFlow` его нужно добавлять через `repeatOnLifecycle`.",
+  "example": "```kotlin\nval state: StateFlow<UiState> = ...          // работает и в общем коде KMP\nval legacy: LiveData<UiState> = state.asLiveData()\n\n// StateFlow сам про жизненный цикл не знает — нужен repeatOnLifecycle\n```",
   "explanation": "Мост в обе стороны есть: `asLiveData()` и `asFlow()`."
  },
  {
@@ -469,6 +527,7 @@
   "subtopic": "Android",
   "question": "Почему `lifecycleScope.launchWhenStarted` считается устаревшим?",
   "answer": "Он только приостанавливает корутину в фоне, но upstream продолжает работать и тратить ресурсы. `repeatOnLifecycle` полностью отменяет сбор и запускает заново.",
+  "example": "```kotlin\n// Устарело: корутина приостановлена, но upstream продолжает работать\nlifecycleScope.launchWhenStarted { flow.collect(::render) }\n\n// Правильно: сбор полностью отменяется в фоне\nlifecycleScope.launch {\n    repeatOnLifecycle(Lifecycle.State.STARTED) { flow.collect(::render) }\n}\n```",
   "explanation": "Разница особенно заметна с горячими потоками: приостановленный сборщик всё равно удерживает подписку."
  },
  {
@@ -477,6 +536,7 @@
   "subtopic": "тестирование",
   "question": "Чем `StandardTestDispatcher` отличается от `UnconfinedTestDispatcher`?",
   "answer": "`Standard` ставит корутины в очередь — их нужно продвигать вручную (`advanceUntilIdle`), что делает порядок явным. `Unconfined` выполняет их немедленно, что удобно, но скрывает гонки.",
+  "example": "```kotlin\n@Test fun standard() = runTest {\n    launch { println(\"вторым\") }\n    println(\"первым\")\n    advanceUntilIdle()          // порядок явный\n}\n\n@Test fun unconfined() = runTest(UnconfinedTestDispatcher()) {\n    launch { println(\"первым\") }   // выполнится сразу\n}\n```",
   "explanation": "`runTest` по умолчанию использует `StandardTestDispatcher` и виртуальное время."
  },
  {
@@ -485,6 +545,7 @@
   "subtopic": "тестирование",
   "question": "Почему диспетчер нужно внедрять, а не вызывать напрямую?",
   "answer": "Жёсткий `Dispatchers.IO` внутри класса невозможно подменить в тесте: время станет реальным, а порядок недетерминированным.",
+  "example": "```kotlin\nclass UserRepository(\n    private val io: CoroutineDispatcher = Dispatchers.IO,   // подменяется в тесте\n) {\n    suspend fun load() = withContext(io) { dao.all() }\n}\n\nUserRepository(StandardTestDispatcher(testScheduler))\n```",
   "explanation": "Диспетчер передают конструктором со значением по умолчанию — это дёшево и делает класс тестируемым."
  },
  {
@@ -493,6 +554,7 @@
   "subtopic": "отмена",
   "question": "Почему `try/catch(Exception)` вокруг suspend-вызова опасен?",
   "answer": "Он ловит `CancellationException`, и корутина, которую попросили остановиться, продолжает работу — структурированный параллелизм ломается.",
+  "example": "```kotlin\n// Плохо: проглатывает отмену\ntry { api.load() } catch (e: Exception) { report(e) }\n\n// Хорошо\ntry {\n    api.load()\n} catch (e: CancellationException) {\n    throw e\n} catch (e: IOException) {\n    report(e)\n}\n```",
   "explanation": "Правильный шаблон: перехватывать конкретные типы либо перебрасывать `CancellationException` явно."
  },
  {
@@ -501,6 +563,7 @@
   "subtopic": "скоупы",
   "question": "Чем именно плох `GlobalScope`?",
   "answer": "Его корутины не привязаны ни к чему: их никто не отменит при закрытии экрана, ошибки не всплывут к родителю, а в тестах они переживут сам тест.",
+  "example": "```kotlin\n// Никто не отменит и не дождётся:\n// GlobalScope.launch { sync() }\n\n// Работа, переживающая экран, — у явного владельца\n@Singleton\nclass AppScope @Inject constructor() : CoroutineScope by CoroutineScope(SupervisorJob())\n```",
   "explanation": "Если работа обязана пережить экран, ей место в скоупе приложения (`CoroutineScope(SupervisorJob())` в DI) или в WorkManager — с явным владельцем."
  }
 ]

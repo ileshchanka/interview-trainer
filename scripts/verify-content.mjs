@@ -70,6 +70,16 @@ for (const card of cards) {
     problems.push(`${where}: повторяющийся id — прогресс двух карточек слился бы в один`);
   }
   seen.add(card.id);
+
+  // Пример обязан быть блоком кода: без ограждения из трёх обратных кавычек
+  // Markdown склеит его в абзац, и отступы с переводами строк потеряются.
+  if (card.example !== undefined) {
+    if (typeof card.example !== 'string' || !card.example.includes('```')) {
+      problems.push(`${where}: пример не оформлен блоком кода`);
+    } else if ((card.example.match(/```/g) ?? []).length % 2 !== 0) {
+      problems.push(`${where}: в примере незакрытый блок кода`);
+    }
+  }
 }
 
 // ── кодовые задачи ──────────────────────────────────────────────────────────
