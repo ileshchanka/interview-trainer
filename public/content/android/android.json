@@ -1,0 +1,346 @@
+[
+ {
+  "id": "and-activity-lifecycle",
+  "topic": "android",
+  "subtopic": "жизненный цикл",
+  "question": "Перечислите колбэки жизненного цикла Activity по порядку.",
+  "answer": "`onCreate` → `onStart` → `onResume` → (работа) → `onPause` → `onStop` → `onDestroy`. При возврате из фона — `onRestart` → `onStart` → `onResume`.",
+  "explanation": "`onStart`/`onStop` — про видимость, `onResume`/`onPause` — про фокус ввода. `onPause` обязан быть быстрым: пока он выполняется, следующая Activity не отрисуется."
+ },
+ {
+  "id": "and-rotation",
+  "topic": "android",
+  "subtopic": "жизненный цикл",
+  "question": "Что происходит с Activity при повороте экрана и как это пережить?",
+  "answer": "По умолчанию она уничтожается и создаётся заново с новой конфигурацией. Состояние сохраняют `ViewModel` (переживает пересоздание) и `onSaveInstanceState`/`SavedStateHandle` (переживает и убийство процесса).",
+  "explanation": "Разница принципиальна: ViewModel живёт в памяти процесса и умирает вместе с ним, а `SavedStateHandle` сериализуется в Bundle. Пароль в Bundle класть нельзя — он попадёт на диск."
+ },
+ {
+  "id": "and-saved-instance-state",
+  "topic": "android",
+  "subtopic": "жизненный цикл",
+  "question": "Когда вызывается `onSaveInstanceState` и каков лимит Bundle?",
+  "answer": "Перед возможным уничтожением Activity — при повороте, уходе в фон, нехватке памяти. Bundle передаётся через Binder, и на транзакцию есть лимит около 1 МБ (`TransactionTooLargeException`).",
+  "explanation": "Поэтому в Bundle кладут идентификаторы и позицию списка, а не сами данные."
+ },
+ {
+  "id": "and-fragment-lifecycle",
+  "topic": "android",
+  "subtopic": "жизненный цикл",
+  "question": "Чем жизненный цикл Fragment отличается от Activity?",
+  "answer": "У фрагмента два жизненных цикла: самого фрагмента и его View (`onCreateView` → `onViewCreated` → `onDestroyView`). View может пересоздаваться, пока фрагмент жив.",
+  "explanation": "Отсюда правило подписок: `viewLifecycleOwner`, а не `this` — иначе после возврата по бэкстеку получится вторая подписка на ту же View. По той же причине ссылку на binding обнуляют в `onDestroyView`."
+ },
+ {
+  "id": "and-configuration-changes",
+  "topic": "android",
+  "subtopic": "жизненный цикл",
+  "question": "Что делает `android:configChanges` и почему это не решение?",
+  "answer": "Отменяет пересоздание Activity и вызывает `onConfigurationChanged`. Не решение, потому что ресурсы (макеты, строки, размеры) для новой конфигурации не перечитаются — их придётся применять руками.",
+  "explanation": "Смена конфигурации — это не только поворот: язык, тема, размер шрифта, многооконный режим."
+ },
+ {
+  "id": "and-process-death",
+  "topic": "android",
+  "subtopic": "жизненный цикл",
+  "question": "Что такое process death и как его воспроизвести?",
+  "answer": "Система убивает процесс приложения в фоне ради памяти, но сохраняет стек задач: при возврате Activity воссоздаётся с сохранённым Bundle, а вся память (включая ViewModel и синглтоны) пуста.",
+  "explanation": "Проверяется в Developer options → «Don't keep activities» или командой `adb shell am kill <package>`. Самая частая причина «у меня всё работает, а у пользователя падает»."
+ },
+ {
+  "id": "and-four-components",
+  "topic": "android",
+  "subtopic": "компоненты",
+  "question": "Какие есть основные компоненты приложения?",
+  "answer": "Activity, Service, BroadcastReceiver и ContentProvider. Все объявляются в манифесте, все могут быть точкой входа.",
+  "explanation": "Каждый из них создаётся системой, а не приложением, — поэтому у них нет конструкторов с параметрами и им нельзя передать зависимости напрямую."
+ },
+ {
+  "id": "and-intent",
+  "topic": "android",
+  "subtopic": "компоненты",
+  "question": "Чем явный Intent отличается от неявного?",
+  "answer": "Явный называет конкретный класс-получатель, неявный описывает действие (`action`, `data`, `category`), а получателя выбирает система по intent-фильтрам.",
+  "explanation": "С Android 11 видимость чужих пакетов ограничена: чтобы проверить наличие обработчика, нужен раздел `<queries>` в манифесте."
+ },
+ {
+  "id": "and-pending-intent",
+  "topic": "android",
+  "subtopic": "компоненты",
+  "question": "Что такое PendingIntent и почему он требует флаг изменяемости?",
+  "answer": "Токен, позволяющий другому приложению выполнить действие от имени вашего. С Android 12 обязателен явный `FLAG_IMMUTABLE` или `FLAG_MUTABLE`.",
+  "explanation": "Изменяемый PendingIntent позволяет получателю подменить содержимое — отсюда требование указывать намерение явно."
+ },
+ {
+  "id": "and-launch-modes",
+  "topic": "android",
+  "subtopic": "компоненты",
+  "question": "Какие есть режимы запуска Activity?",
+  "answer": "`standard` — новый экземпляр всегда; `singleTop` — переиспользование, если Activity уже наверху; `singleTask` — единственный экземпляр в задаче, поверх него стек очищается; `singleInstance` — в отдельной задаче.",
+  "explanation": "При переиспользовании вместо `onCreate` вызывается `onNewIntent` — забытый override здесь даёт «экран не обновляется по пушу»."
+ },
+ {
+  "id": "and-service-types",
+  "topic": "android",
+  "subtopic": "компоненты",
+  "question": "Чем Foreground Service отличается от обычного и когда он нужен?",
+  "answer": "Он показывает постоянное уведомление и почти не подлежит убийству системой. Нужен для видимой пользователю длительной работы: навигация, плеер, запись трека.",
+  "explanation": "С Android 8 фоновые сервисы запускать из фона нельзя, с Android 14 требуется объявить тип foreground-сервиса. Для отложенной работы — WorkManager."
+ },
+ {
+  "id": "and-workmanager",
+  "topic": "android",
+  "subtopic": "компоненты",
+  "question": "Когда использовать WorkManager?",
+  "answer": "Для работы, которая должна выполниться гарантированно и переживать перезапуск приложения и устройства: синхронизация, отправка логов, загрузка файлов.",
+  "explanation": "Он умеет ограничения (сеть, зарядка), повторы с backoff и цепочки задач. Для немедленной работы, привязанной к экрану, — корутины в `viewModelScope`."
+ },
+ {
+  "id": "and-broadcast-receiver",
+  "topic": "android",
+  "subtopic": "компоненты",
+  "question": "Какие ограничения у BroadcastReceiver?",
+  "answer": "С Android 8 большинство неявных broadcast'ов нельзя объявлять в манифесте — только регистрировать в рантайме. Метод `onReceive` выполняется в главном потоке и ограничен примерно 10 секундами.",
+  "explanation": "С Android 13 при регистрации требуется явно указать `RECEIVER_EXPORTED`/`RECEIVER_NOT_EXPORTED`."
+ },
+ {
+  "id": "and-content-provider",
+  "topic": "android",
+  "subtopic": "компоненты",
+  "question": "Зачем нужен ContentProvider, если есть Room?",
+  "answer": "Он нужен для передачи данных **другим приложениям** и для системных интеграций (контакты, файлы, SAF). Внутри приложения он избыточен.",
+  "explanation": "Побочный эффект: провайдер инициализируется до `Application.onCreate` — на этом построен App Startup и автоинициализация библиотек."
+ },
+ {
+  "id": "and-context-types",
+  "topic": "android",
+  "subtopic": "контекст",
+  "question": "Чем Application Context отличается от Activity Context?",
+  "answer": "Application живёт всё время работы процесса, Activity — до её уничтожения. Activity-контекст знает про тему и оформление, Application — нет.",
+  "explanation": "Правило: для UI (диалоги, инфляция макета, темы) — контекст Activity; для долгоживущих объектов (синглтоны, БД) — Application. Диалог с Application-контекстом упадёт."
+ },
+ {
+  "id": "and-memory-leaks",
+  "topic": "android",
+  "subtopic": "контекст",
+  "question": "Какие типичные источники утечек памяти в Android?",
+  "answer": "Ссылка на Activity или View из объекта, живущего дольше: статическое поле, синглтон, нестатический внутренний класс, незакрытый слушатель, Handler с отложенным сообщением, RxJava-подписка без dispose.",
+  "explanation": "Ловятся LeakCanary и Memory Profiler. Корутины в `viewModelScope`/`lifecycleScope` отменяются сами — в этом их главное практическое преимущество."
+ },
+ {
+  "id": "and-anr",
+  "topic": "android",
+  "subtopic": "производительность",
+  "question": "Что такое ANR и при каких условиях он возникает?",
+  "answer": "Application Not Responding: главный поток заблокирован дольше примерно 5 секунд при обработке ввода (или 10 для BroadcastReceiver, 20 для сервиса).",
+  "explanation": "Причины — сеть или диск в главном потоке, тяжёлые вычисления, синхронный `Binder`-вызов, deadlock. Кадр должен укладываться в 16 мс при 60 Гц."
+ },
+ {
+  "id": "and-main-thread",
+  "topic": "android",
+  "subtopic": "производительность",
+  "question": "Почему UI можно трогать только из главного потока?",
+  "answer": "Иерархия View не потокобезопасна: она проверяет поток при обращении и бросает `CalledFromWrongThreadException`. Синхронизация каждого обращения стоила бы дороже, чем даёт.",
+  "explanation": "Переключение обратно — `Dispatchers.Main`, `Handler(Looper.getMainLooper())` или `View.post`."
+ },
+ {
+  "id": "and-looper-handler",
+  "topic": "android",
+  "subtopic": "многопоточность",
+  "question": "Как устроены Looper, Handler и MessageQueue?",
+  "answer": "`Looper` крутит цикл, вынимая сообщения из `MessageQueue`; `Handler` кладёт в очередь сообщения и Runnable для конкретного Looper.",
+  "explanation": "Это тот же event loop, что в браузере: главный поток Android — цикл обработки сообщений. Отложенные сообщения удерживают ссылку на Handler и через него на Activity."
+ },
+ {
+  "id": "and-recyclerview",
+  "topic": "android",
+  "subtopic": "UI",
+  "question": "Как RecyclerView переиспользует элементы и зачем нужен DiffUtil?",
+  "answer": "ViewHolder хранит найденные `findViewById`, а сам View переиспользуется при прокрутке через пул. `DiffUtil` считает минимальный набор изменений между списками, чтобы не звать `notifyDataSetChanged`.",
+  "explanation": "`notifyDataSetChanged` перерисовывает всё и убивает анимации. `ListAdapter` считает разницу в фоновом потоке. `getItemId` со стабильными id помогает анимациям."
+ },
+ {
+  "id": "and-viewbinding",
+  "topic": "android",
+  "subtopic": "UI",
+  "question": "Чем ViewBinding отличается от findViewById и от DataBinding?",
+  "answer": "ViewBinding генерирует типобезопасные ссылки на View без разметки в XML. DataBinding дополнительно умеет выражения и двустороннюю привязку прямо в макете, но замедляет сборку.",
+  "explanation": "Во фрагменте ссылку на binding обязательно обнулять в `onDestroyView` — иначе утечка View."
+ },
+ {
+  "id": "and-constraint-layout",
+  "topic": "android",
+  "subtopic": "UI",
+  "question": "Зачем нужен ConstraintLayout?",
+  "answer": "Он позволяет описать сложный экран одним плоским уровнем вложенности: глубокая иерархия View замедляет измерение и отрисовку.",
+  "explanation": "Вложенные `LinearLayout` с весами измеряются дважды на каждом уровне — отсюда экспоненциальная стоимость."
+ },
+ {
+  "id": "and-measure-layout-draw",
+  "topic": "android",
+  "subtopic": "UI",
+  "question": "Из каких фаз состоит отрисовка View?",
+  "answer": "`measure` (сколько места нужно), `layout` (расположение), `draw` (рисование). Кастомная View переопределяет `onMeasure`, `onLayout`, `onDraw`.",
+  "explanation": "В `onDraw` нельзя создавать объекты: он вызывается каждый кадр, и аллокации порождают паузы GC."
+ },
+ {
+  "id": "and-density-dp",
+  "topic": "android",
+  "subtopic": "UI",
+  "question": "Чем dp отличается от px, а sp от dp?",
+  "answer": "`dp` — независимая от плотности единица, `px` — физический пиксель. `sp` — то же, что dp, но масштабируется настройкой размера шрифта пользователя.",
+  "explanation": "Для шрифтов всегда `sp`: иначе приложение игнорирует настройки доступности."
+ },
+ {
+  "id": "and-resource-qualifiers",
+  "topic": "android",
+  "subtopic": "UI",
+  "question": "Как работают квалификаторы ресурсов?",
+  "answer": "Каталоги вида `values-ru`, `layout-sw600dp`, `drawable-hdpi`, `values-night` — система сама выбирает подходящие под текущую конфигурацию.",
+  "explanation": "Именно поэтому отмена пересоздания Activity через `configChanges` ломает поддержку локали и тёмной темы."
+ },
+ {
+  "id": "and-room",
+  "topic": "android",
+  "subtopic": "данные",
+  "question": "Что даёт Room поверх SQLite?",
+  "answer": "Проверку SQL на этапе компиляции, маппинг в объекты, миграции и наблюдаемые запросы, возвращающие `Flow` или `LiveData`.",
+  "explanation": "Запросы Room обязаны быть асинхронными: синхронный вызов в главном потоке он запрещает сам. Забытая миграция роняет приложение при обновлении."
+ },
+ {
+  "id": "and-datastore",
+  "topic": "android",
+  "subtopic": "данные",
+  "question": "Чем DataStore лучше SharedPreferences?",
+  "answer": "Он асинхронный (`Flow`), транзакционный и не блокирует главный поток. У SharedPreferences `apply` пишет в фоне, но `commit` блокирует, а чтение при первом обращении синхронное.",
+  "explanation": "Preferences DataStore хранит пары ключ-значение, Proto DataStore — типизированную схему."
+ },
+ {
+  "id": "and-scoped-storage",
+  "topic": "android",
+  "subtopic": "данные",
+  "question": "Что изменило Scoped Storage?",
+  "answer": "С Android 10–11 приложение имеет свободный доступ только к своему каталогу и к медиа через MediaStore; произвольный доступ к файловой системе требует SAF или особого разрешения.",
+  "explanation": "Свой каталог (`getExternalFilesDir`) не требует разрешений вообще и удаляется вместе с приложением."
+ },
+ {
+  "id": "and-keystore",
+  "topic": "android",
+  "subtopic": "безопасность",
+  "question": "Где хранить токены и ключи?",
+  "answer": "В Android Keystore: ключи не покидают защищённое хранилище, а на устройствах с TEE/StrongBox их нельзя извлечь даже с root.",
+  "explanation": "SharedPreferences и Bundle для секретов не годятся. Хардкод ключей в коде обходится декомпиляцией за минуты."
+ },
+ {
+  "id": "and-viewmodel",
+  "topic": "android",
+  "subtopic": "архитектура",
+  "question": "Что такое ViewModel и почему она переживает поворот?",
+  "answer": "Держатель состояния экрана, привязанный к `ViewModelStoreOwner`. При пересоздании Activity store сохраняется, и та же ViewModel отдаётся новой Activity.",
+  "explanation": "В ViewModel нельзя держать ссылку на View или Context Activity — она переживёт их. Для контекста есть `AndroidViewModel` с Application."
+ },
+ {
+  "id": "and-unidirectional-flow",
+  "topic": "android",
+  "subtopic": "архитектура",
+  "question": "Что такое однонаправленный поток данных (UDF)?",
+  "answer": "Состояние течёт сверху вниз (ViewModel → UI), события — снизу вверх (UI → ViewModel). Состояние имеет единственный источник истины.",
+  "explanation": "Так устроены MVI и рекомендации Google. Ключевая выгода — воспроизводимость: по состоянию всегда понятно, что нарисовано на экране."
+ },
+ {
+  "id": "and-repository",
+  "topic": "android",
+  "subtopic": "архитектура",
+  "question": "Зачем нужен слой Repository?",
+  "answer": "Он скрывает происхождение данных (сеть, кэш, база) за одним интерфейсом и определяет источник истины — обычно локальную базу.",
+  "explanation": "Это делает ViewModel независимой от сети и позволяет подменить репозиторий в тестах."
+ },
+ {
+  "id": "and-hilt",
+  "topic": "android",
+  "subtopic": "DI",
+  "question": "Что даёт Hilt поверх Dagger?",
+  "answer": "Готовые компоненты, привязанные к жизненным циклам Android (`SingletonComponent`, `ActivityComponent`, `ViewModelComponent`), и генерацию их связывания — вместо ручного описания графа.",
+  "explanation": "Проверка графа происходит на этапе компиляции: ошибка внедрения — это ошибка сборки, а не падение в рантайме."
+ },
+ {
+  "id": "and-modularization",
+  "topic": "android",
+  "subtopic": "сборка",
+  "question": "Зачем разбивать приложение на модули?",
+  "answer": "Ради скорости инкрементальной сборки (перекомпилируется только затронутый модуль), явных границ между слоями и возможности параллельной работы команд.",
+  "explanation": "Цена — усложнение навигации и графа зависимостей. Разбиение по слоям (`data`/`domain`/`ui`) обычно уступает разбиению по фичам."
+ },
+ {
+  "id": "and-r8",
+  "topic": "android",
+  "subtopic": "сборка",
+  "question": "Что делает R8 и как не сломать приложение?",
+  "answer": "Минифицирует, обфусцирует и удаляет неиспользуемый код в релизной сборке. Ломается всё, что находится рефлексией: модели для Gson/Moshi, имена классов в коде, сериализация.",
+  "explanation": "Лечится правилами `-keep` в `proguard-rules.pro`. Обязательно проверять именно релизную сборку — в debug R8 выключен."
+ },
+ {
+  "id": "and-gradle-variants",
+  "topic": "android",
+  "subtopic": "сборка",
+  "question": "Чем buildType отличается от productFlavor?",
+  "answer": "`buildType` — как собрано (debug/release: минификация, подпись, отладка). `productFlavor` — что собрано (free/paid, dev/prod). Их произведение даёт варианты сборки.",
+  "explanation": "`applicationIdSuffix` в debug позволяет держать обе сборки на одном устройстве."
+ },
+ {
+  "id": "and-permissions",
+  "topic": "android",
+  "subtopic": "безопасность",
+  "question": "Как устроены разрешения в рантайме?",
+  "answer": "Опасные разрешения запрашиваются во время работы, ответ пользователя может быть «отказать навсегда». Запрос делается через `ActivityResultContracts.RequestPermission`.",
+  "explanation": "После двух отказов система больше не показывает диалог — приложение обязано работать без разрешения и объяснять, зачем оно нужно."
+ },
+ {
+  "id": "and-activity-result",
+  "topic": "android",
+  "subtopic": "компоненты",
+  "question": "Что пришло на смену `startActivityForResult`?",
+  "answer": "Activity Result API: `registerForActivityResult` с контрактом. Регистрация обязана происходить до `onStart` — обычно в поле фрагмента.",
+  "explanation": "Старый API ломался при process death: результат приходил в пересозданную Activity без сохранённого requestCode."
+ },
+ {
+  "id": "and-app-startup-time",
+  "topic": "android",
+  "subtopic": "производительность",
+  "question": "Из чего складывается время холодного старта?",
+  "answer": "Создание процесса, инициализация `Application`, первый кадр первой Activity. Всё, что делается в `Application.onCreate`, откладывает показ экрана.",
+  "explanation": "Библиотеки, инициализирующиеся через ContentProvider, стартуют ещё раньше. Помогают ленивая инициализация, App Startup и Baseline Profiles."
+ },
+ {
+  "id": "and-baseline-profiles",
+  "topic": "android",
+  "subtopic": "производительность",
+  "question": "Что такое Baseline Profiles?",
+  "answer": "Список горячих методов, поставляемый с приложением: ART компилирует их заранее (AOT) вместо интерпретации при первом запуске.",
+  "explanation": "Даёт заметное ускорение холодного старта и прокрутки без единой правки в коде."
+ },
+ {
+  "id": "and-strict-mode",
+  "topic": "android",
+  "subtopic": "производительность",
+  "question": "Зачем нужен StrictMode?",
+  "answer": "Он ловит в debug-сборке дисковые и сетевые операции в главном потоке и утечки ресурсов, сообщая о них логом или падением.",
+  "explanation": "Включается в `Application.onCreate` только для debug: в релизе это лишние проверки."
+ },
+ {
+  "id": "and-testing-layers",
+  "topic": "android",
+  "subtopic": "тестирование",
+  "question": "Чем unit-тесты отличаются от инструментальных?",
+  "answer": "Unit выполняются на JVM разработчика и не видят Android SDK (все методы возвращают null без Robolectric). Инструментальные идут на устройстве или эмуляторе и видят реальный фреймворк.",
+  "explanation": "Отсюда правило: логика без Android-типов — в чистые классы, там она тестируется быстро и без эмулятора."
+ },
+ {
+  "id": "and-idling-espresso",
+  "topic": "android",
+  "subtopic": "тестирование",
+  "question": "Как Espresso синхронизируется с приложением?",
+  "answer": "Он ждёт, пока очередь сообщений главного потока опустеет, а фоновые задачи не завершатся через IdlingResource. Собственные пулы потоков ему не видны.",
+  "explanation": "Отсюда флейки: асинхронная работа мимо главного Looper требует явного IdlingResource или подмены диспетчера в тестах."
+ }
+]

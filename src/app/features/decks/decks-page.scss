@@ -11,6 +11,12 @@
   }
 }
 
+.track-line {
+  margin: 0 0 6px;
+  font-size: 0.85rem;
+  color: var(--mat-sys-on-surface-variant);
+}
+
 .muted {
   color: var(--mat-sys-on-surface-variant);
   margin: 0;

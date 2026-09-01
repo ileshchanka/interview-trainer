@@ -1,8 +1,6 @@
 <header class="head">
   <h1>Кодовые задачи</h1>
-  <p class="muted">
-    Прочитайте код и предскажите вывод. Затем запустите — результат сверится построчно.
-  </p>
+  <p class="muted">{{ blurb() }}</p>
 </header>
 
 <mat-chip-listbox
@@ -11,7 +9,7 @@
   (change)="setFilter($any($event).value ?? 'all')"
 >
   <mat-chip-option value="all" [selected]="filter() === 'all'">Все</mat-chip-option>
-  @for (topic of topics; track topic) {
+  @for (topic of topics(); track topic) {
     <mat-chip-option [value]="topic" [selected]="filter() === topic">{{
       titles[topic]
     }}</mat-chip-option>
@@ -33,7 +31,7 @@
               <div class="title">{{ task.title }}</div>
               <div class="meta">{{ titles[task.topic] }} · {{ task.subtopic }}</div>
             </div>
-            <span class="lang">{{ task.language === 'ts' ? 'TS' : 'JS' }}</span>
+            <span class="lang">{{ languages[task.language] }}</span>
           </div>
         </mat-card-content>
       </mat-card>

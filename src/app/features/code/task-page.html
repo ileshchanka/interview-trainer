@@ -14,8 +14,17 @@
     class="editor"
     [code]="task.code"
     [language]="editorLanguage()"
+    [readOnly]="!runnable()"
     (codeChange)="onCodeChange($event)"
   />
+
+  @if (!runnable()) {
+    <p class="not-runnable">
+      <span class="material-symbols-outlined">info</span>
+      Kotlin в браузере не выполняется: ответ сверяется с записанным в задаче — он проверен на
+      настоящем компиляторе при сборке. Редактор только для чтения.
+    </p>
+  }
 
   <mat-form-field appearance="outline" class="prediction">
     <mat-label>Что выведет? По строке на каждый вывод</mat-label>
@@ -34,7 +43,7 @@
       @if (running()) {
         <mat-spinner diameter="18" />
       }
-      Проверить
+      {{ runnable() ? 'Проверить' : 'Показать ответ' }}
     </button>
     <!-- «Ещё раз» нужна и после сорвавшегося запуска: именно ею предлагается
          вернуть исходный код, и прятать её в этот момент нельзя. -->
@@ -85,7 +94,7 @@
             <pre class="output">{{ verdict.actual.join('\n') || '—' }}</pre>
           </div>
           <div>
-            <h3>Фактический вывод</h3>
+            <h3>{{ runnable() ? 'Фактический вывод' : 'Правильный ответ' }}</h3>
             <pre class="output">{{ verdict.expected.join('\n') || '—' }}</pre>
           </div>
         </div>

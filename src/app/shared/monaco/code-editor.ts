@@ -39,7 +39,8 @@ import { loadMonaco } from './monaco-loader';
 })
 export class CodeEditor {
   readonly code = input.required<string>();
-  readonly language = input<'javascript' | 'typescript'>('javascript');
+  /** Идентификатор языка Monaco. Kotlin у него подсвечивается «из коробки». */
+  readonly language = input<'javascript' | 'typescript' | 'kotlin'>('javascript');
   readonly readOnly = input(false);
   readonly codeChange = output<string>();
 

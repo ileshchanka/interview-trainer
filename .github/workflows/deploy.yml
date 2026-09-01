@@ -24,6 +24,16 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
+      # Kotlin нужен только проверке контента: андроид-задачи в браузере не
+      # исполняются, поэтому записанный в JSON вывод — единственный источник
+      # вердикта, и он обязан совпадать с настоящим компилятором.
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: fwilhe2/setup-kotlin@main
+        with:
+          version: 2.1.0
       - run: npm run verify:content
       - run: npx ng test --watch=false
       # base-href нужен для GitHub Pages: сайт живёт в подкаталоге репозитория,

@@ -5,7 +5,9 @@ import { MatChipsModule } from '@angular/material/chips';
 import { RouterLink } from '@angular/router';
 import { ContentService } from '../../core/content/content.service';
 import { ProgressStore } from '../../core/storage/progress.store';
-import { CodeTask, TOPICS, TOPIC_TITLES, Topic } from '../../domain/models';
+import { CodeTask, LANGUAGE_LABELS, TOPIC_TITLES, Topic } from '../../domain/models';
+import { TRACK_TASKS_BLURB } from '../../domain/tracks';
+import { TrackService } from '../../shared/track.service';
 
 @Component({
   selector: 'app-tasks-page',
@@ -17,9 +19,12 @@ import { CodeTask, TOPICS, TOPIC_TITLES, Topic } from '../../domain/models';
 export class TasksPage {
   private readonly content = inject(ContentService);
   private readonly progress = inject(ProgressStore);
+  private readonly tracks = inject(TrackService);
 
-  protected readonly topics = TOPICS;
+  protected readonly topics = this.tracks.topics;
+  protected readonly blurb = computed(() => TRACK_TASKS_BLURB[this.tracks.track()]);
   protected readonly titles = TOPIC_TITLES;
+  protected readonly languages = LANGUAGE_LABELS;
   protected readonly filter = signal<Topic | 'all'>('all');
 
   protected readonly solved = this.progress.solvedTasks;

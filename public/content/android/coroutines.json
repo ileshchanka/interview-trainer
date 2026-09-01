@@ -1,0 +1,282 @@
+[
+ {
+  "id": "co-suspend",
+  "topic": "coroutines",
+  "subtopic": "основы",
+  "question": "Что делает модификатор `suspend`?",
+  "answer": "Позволяет функции приостанавливаться, не блокируя поток, и вызываться только из корутины или другой suspend-функции.",
+  "explanation": "Под капотом компилятор превращает её в конечный автомат и добавляет скрытый параметр `Continuation` (CPS-преобразование). Сам по себе `suspend` не переключает поток и ничего не распараллеливает."
+ },
+ {
+  "id": "co-coroutine-vs-thread",
+  "topic": "coroutines",
+  "subtopic": "основы",
+  "question": "Чем корутина отличается от потока?",
+  "answer": "Корутина — объект в памяти, а не ресурс ОС: их можно создать сотни тысяч. Приостановка корутины освобождает поток для другой работы, а блокировка потока — нет.",
+  "explanation": "Отсюда правило: внутри корутины нельзя звать блокирующие API (`Thread.sleep`, синхронный HTTP) на диспетчере, не рассчитанном на блокировки."
+ },
+ {
+  "id": "co-structured-concurrency",
+  "topic": "coroutines",
+  "subtopic": "основы",
+  "question": "Что такое структурированный параллелизм?",
+  "answer": "Каждая корутина принадлежит скоупу, и скоуп не завершается, пока не завершатся все его дети. Отмена родителя отменяет детей, ошибка ребёнка отменяет родителя.",
+  "explanation": "Главная выгода — не бывает потерянных задач: нельзя «забыть» корутину, работающую после закрытия экрана."
+ },
+ {
+  "id": "co-scope",
+  "topic": "coroutines",
+  "subtopic": "скоупы",
+  "question": "Какие скоупы есть в Android и когда какой?",
+  "answer": "`viewModelScope` — жизнь ViewModel, `lifecycleScope` — жизнь Activity/Fragment, `rememberCoroutineScope` — жизнь composable. `GlobalScope` не следует использовать почти никогда.",
+  "explanation": "`GlobalScope` живёт всё время процесса, не отменяется и ломает структурированный параллелизм — прямой путь к утечкам."
+ },
+ {
+  "id": "co-launch-async",
+  "topic": "coroutines",
+  "subtopic": "основы",
+  "question": "Чем `launch` отличается от `async`?",
+  "answer": "`launch` запускает работу и возвращает `Job` — «сделай и забудь». `async` возвращает `Deferred<T>`, у которого запрашивают результат через `await`.",
+  "explanation": "Исключение из `async` доставляется в момент `await`, а из `launch` — сразу вверх по иерархии. Поэтому необработанный `Deferred` может тихо проглотить ошибку."
+ },
+ {
+  "id": "co-runblocking",
+  "topic": "coroutines",
+  "subtopic": "основы",
+  "question": "Где допустим `runBlocking`?",
+  "answer": "В `main`-функции консольного приложения и в тестах. В Android-коде он блокирует поток и в главном потоке приводит к ANR.",
+  "explanation": "Для тестов сегодня правильнее `runTest` из `kotlinx-coroutines-test`: он умеет виртуальное время и мгновенно проматывает `delay`."
+ },
+ {
+  "id": "co-dispatchers",
+  "topic": "coroutines",
+  "subtopic": "диспетчеры",
+  "question": "Какие бывают диспетчеры и для чего каждый?",
+  "answer": "`Main` — UI-поток, `Default` — вычисления (пул по числу ядер), `IO` — блокирующие операции (пул до 64 потоков), `Unconfined` — без переключения, почти всегда не нужен.",
+  "explanation": "`IO` и `Default` делят потоки: `withContext(IO)` из `Default` часто обходится без реального переключения потока."
+ },
+ {
+  "id": "co-withcontext",
+  "topic": "coroutines",
+  "subtopic": "диспетчеры",
+  "question": "Как правильно выбирать поток в suspend-функции?",
+  "answer": "Функция сама отвечает за свой контекст: она оборачивает тяжёлую часть в `withContext(Dispatchers.IO)`. Вызывающий не должен знать, на каком потоке она работает.",
+  "explanation": "Это принцип main-safety: любую suspend-функцию должно быть безопасно вызвать из главного потока."
+ },
+ {
+  "id": "co-job",
+  "topic": "coroutines",
+  "subtopic": "отмена",
+  "question": "Что такое `Job` и какие у него состояния?",
+  "answer": "Хендл корутины с жизненным циклом: New → Active → Completing → Completed, и отдельная ветка Cancelling → Cancelled. `join()` ждёт завершения, `cancel()` запрашивает отмену.",
+  "explanation": "`Job` образует иерархию: у скоупа есть родительский Job, у каждой корутины — свой, привязанный к родителю."
+ },
+ {
+  "id": "co-cancellation-cooperative",
+  "topic": "coroutines",
+  "subtopic": "отмена",
+  "question": "Почему отмена корутины кооперативная?",
+  "answer": "`cancel` только выставляет флаг. Корутина завершится, когда дойдёт до точки приостановки (все suspend-функции из kotlinx проверяют отмену) или сама проверит `isActive`.",
+  "explanation": "Вычислительный цикл без точек приостановки продолжит работу. Спасают `ensureActive()`, `yield()` или проверка `isActive` в цикле."
+ },
+ {
+  "id": "co-cancellation-exception",
+  "topic": "coroutines",
+  "subtopic": "отмена",
+  "question": "Как обрабатывать `CancellationException`?",
+  "answer": "Никак — её нужно пробрасывать. Она означает штатную отмену, а не ошибку, и перехват общим `catch (e: Exception)` ломает механизм отмены.",
+  "explanation": "Опасны `try/catch (Exception)` и `runCatching`: оба проглатывают отмену. Проверяйте тип и перебрасывайте `CancellationException`."
+ },
+ {
+  "id": "co-noncancellable",
+  "topic": "coroutines",
+  "subtopic": "отмена",
+  "question": "Как выполнить suspend-код при отмене?",
+  "answer": "Обернуть в `withContext(NonCancellable)` внутри `finally`. В отменённой корутине обычные suspend-вызовы немедленно бросают `CancellationException`.",
+  "explanation": "Используется для закрытия ресурсов и записи финального состояния — но блок должен быть коротким."
+ },
+ {
+  "id": "co-exception-propagation",
+  "topic": "coroutines",
+  "subtopic": "ошибки",
+  "question": "Как распространяются исключения в корутинах?",
+  "answer": "Ошибка в `launch` идёт вверх и отменяет родителя и всех его детей. Ошибка в `async` хранится в `Deferred` и всплывает при `await`.",
+  "explanation": "Прервать распространение можно `SupervisorJob` или `supervisorScope`."
+ },
+ {
+  "id": "co-supervisor",
+  "topic": "coroutines",
+  "subtopic": "ошибки",
+  "question": "Чем `supervisorScope` отличается от `coroutineScope`?",
+  "answer": "В `coroutineScope` падение любого ребёнка отменяет остальных. В `supervisorScope` дети независимы: один упал — другие продолжают.",
+  "explanation": "Первый нужен, когда результат нужен целиком (загрузить всё или ничего), второй — для независимых операций, где частичный результат допустим."
+ },
+ {
+  "id": "co-exception-handler",
+  "topic": "coroutines",
+  "subtopic": "ошибки",
+  "question": "Где работает `CoroutineExceptionHandler`?",
+  "answer": "Только для корневой корутины скоупа, запущенной через `launch`. Для `async` и для дочерних корутин он игнорируется.",
+  "explanation": "Это последний рубеж, а не замена `try/catch`: локальную ошибку правильнее обработать там, где она случилась."
+ },
+ {
+  "id": "co-flow-basics",
+  "topic": "coroutines",
+  "subtopic": "Flow",
+  "question": "Что такое `Flow` и чем он отличается от последовательности?",
+  "answer": "Асинхронный поток значений: он может приостанавливаться между элементами. `Sequence` синхронна и блокирует поток.",
+  "explanation": "Flow холодный: тело билдера выполняется заново на каждый сбор. Терминальные операторы — `collect`, `toList`, `first`."
+ },
+ {
+  "id": "co-statyflow-sharedflow",
+  "topic": "coroutines",
+  "subtopic": "Flow",
+  "question": "Чем `StateFlow` отличается от `SharedFlow`?",
+  "answer": "`StateFlow` — состояние: всегда имеет текущее значение, отдаёт его новому подписчику, склеивает быстрые обновления и пропускает повторы по `equals`. `SharedFlow` — события: настраиваемый буфер, повторы не отбрасываются.",
+  "explanation": "Правило: состояние экрана — `StateFlow`, разовые события (навигация, снекбар) — `SharedFlow` или канал."
+ },
+ {
+  "id": "co-hot-cold",
+  "topic": "coroutines",
+  "subtopic": "Flow",
+  "question": "Чем холодный поток отличается от горячего?",
+  "answer": "Холодный запускается на каждого подписчика отдельно (два сборщика — два сетевых запроса). Горячий существует независимо и делится значениями между всеми.",
+  "explanation": "Превратить холодный в горячий позволяют `shareIn` и `stateIn` — им передают скоуп и стратегию старта."
+ },
+ {
+  "id": "co-sharing-started",
+  "topic": "coroutines",
+  "subtopic": "Flow",
+  "question": "Что делает `SharingStarted.WhileSubscribed(5000)`?",
+  "answer": "Держит поток активным ещё 5 секунд после ухода последнего подписчика — чтобы поворот экрана не приводил к перезапуску загрузки данных.",
+  "explanation": "`Eagerly` работает всегда, `Lazily` стартует с первым подписчиком и не останавливается. Пятисекундная пауза — стандартная рекомендация Google."
+ },
+ {
+  "id": "co-flowon",
+  "topic": "coroutines",
+  "subtopic": "Flow",
+  "question": "Что делает оператор `flowOn`?",
+  "answer": "Меняет контекст **предшествующих** ему операторов (upstream). Контекст сборщика он не трогает — тот определяется скоупом, где вызван `collect`.",
+  "explanation": "Менять контекст внутри `flow { }` через `withContext` запрещено: билдер проверяет это и бросает исключение о нарушении прозрачности контекста."
+ },
+ {
+  "id": "co-buffer-conflate",
+  "topic": "coroutines",
+  "subtopic": "Flow",
+  "question": "Чем `buffer` отличается от `conflate` и `collectLatest`?",
+  "answer": "`buffer` даёт производителю бежать вперёд, складывая значения в буфер. `conflate` хранит только последнее, пропуская промежуточные. `collectLatest` отменяет обработку предыдущего значения при появлении нового.",
+  "explanation": "Все три решают одну проблему — медленный потребитель, — но по-разному: не потерять, взять свежее, отменить старое."
+ },
+ {
+  "id": "co-combine-zip",
+  "topic": "coroutines",
+  "subtopic": "Flow",
+  "question": "Чем `combine` отличается от `zip`?",
+  "answer": "`combine` выдаёт результат при изменении **любого** источника, используя последние значения остальных. `zip` строит пары строго по порядку и ждёт оба.",
+  "explanation": "Для объединения нескольких состояний экрана нужен `combine`; `zip` уместен для попарной обработки."
+ },
+ {
+  "id": "co-flatmap-operators",
+  "topic": "coroutines",
+  "subtopic": "Flow",
+  "question": "Какие есть аналоги `switchMap` во Flow?",
+  "answer": "`flatMapLatest` отменяет предыдущий внутренний поток, `flatMapConcat` выполняет последовательно, `flatMapMerge` — параллельно.",
+  "explanation": "`flatMapLatest` — стандартное решение для поиска по мере ввода в паре с `debounce`."
+ },
+ {
+  "id": "co-callbackflow",
+  "topic": "coroutines",
+  "subtopic": "Flow",
+  "question": "Как обернуть колбэк-API во Flow?",
+  "answer": "`callbackFlow`: внутри регистрируется слушатель, значения отправляются через `trySend`, а в обязательном `awaitClose` слушатель снимается.",
+  "explanation": "Без `awaitClose` билдер бросает исключение — это защита именно от утечки подписки."
+ },
+ {
+  "id": "co-suspendcancellable",
+  "topic": "coroutines",
+  "subtopic": "интеграция",
+  "question": "Как превратить колбэк с одним результатом в suspend-функцию?",
+  "answer": "`suspendCancellableCoroutine`: результат отдаётся через `continuation.resume`, а в `invokeOnCancellation` отменяется исходная операция.",
+  "explanation": "Обычный `suspendCoroutine` не поддерживает отмену — при отмене корутины запрос продолжит выполняться."
+ },
+ {
+  "id": "co-repeat-on-lifecycle",
+  "topic": "coroutines",
+  "subtopic": "Android",
+  "question": "Зачем нужен `repeatOnLifecycle`?",
+  "answer": "Он собирает поток только пока экран в нужном состоянии (обычно `STARTED`) и **отменяет** сбор при уходе в фон, возобновляя при возврате.",
+  "explanation": "`lifecycleScope.launch { flow.collect { } }` без него продолжает собирать в фоне и обновлять невидимый UI. В Compose ту же роль играет `collectAsStateWithLifecycle`."
+ },
+ {
+  "id": "co-viewmodelscope",
+  "topic": "coroutines",
+  "subtopic": "Android",
+  "question": "Что происходит с `viewModelScope` при закрытии экрана?",
+  "answer": "Он отменяется в `onCleared`, а вместе с ним все запущенные корутины. Ради этого его и используют вместо собственного скоупа.",
+  "explanation": "Работу, которая обязана завершиться независимо от экрана (отправка аналитики, сохранение), нужно выносить в скоуп приложения или WorkManager."
+ },
+ {
+  "id": "co-mutex",
+  "topic": "coroutines",
+  "subtopic": "многопоточность",
+  "question": "Как защитить общее состояние в корутинах?",
+  "answer": "`Mutex` с `withLock` — он приостанавливает корутину вместо блокировки потока, в отличие от `synchronized`. Альтернатива — держать состояние в одном потоке через `withContext` или использовать атомарные типы.",
+  "explanation": "`synchronized` вокруг suspend-вызова недопустим: корутина может возобновиться в другом потоке, и блокировка не снимется."
+ },
+ {
+  "id": "co-channel",
+  "topic": "coroutines",
+  "subtopic": "каналы",
+  "question": "Когда нужен `Channel`, а не `Flow`?",
+  "answer": "Когда значение должно быть получено ровно один раз одним получателем: события навигации, разовые сообщения. `Flow` рассылает всем подписчикам.",
+  "explanation": "У канала есть буфер и стратегия переполнения. Для UI-событий сегодня чаще берут `Channel(BUFFERED).receiveAsFlow()`."
+ },
+ {
+  "id": "co-testing-coroutines",
+  "topic": "coroutines",
+  "subtopic": "тестирование",
+  "question": "Как тестировать корутины?",
+  "answer": "`runTest` из `kotlinx-coroutines-test` даёт виртуальное время: `delay` проматывается мгновенно. Диспетчеры подменяются через инъекцию или `Dispatchers.setMain`.",
+  "explanation": "Прямое обращение к `Dispatchers.IO` внутри класса делает его непроверяемым — диспетчер лучше передавать в конструкторе."
+ },
+ {
+  "id": "co-debounce-throttle",
+  "topic": "coroutines",
+  "subtopic": "Flow",
+  "question": "Как сделать debounce и throttle во Flow?",
+  "answer": "`debounce(300)` пропускает значение только после паузы. Готового throttle нет — его собирают из `sample(period)` или пишут вручную.",
+  "explanation": "Классическая цепочка поиска: `debounce` → `distinctUntilChanged` → `flatMapLatest`."
+ },
+ {
+  "id": "co-distinct",
+  "topic": "coroutines",
+  "subtopic": "Flow",
+  "question": "Что делает `distinctUntilChanged`?",
+  "answer": "Пропускает подряд идущие одинаковые значения, сравнивая по `equals`. Для data-классов это работает из коробки.",
+  "explanation": "`StateFlow` делает это сам, поэтому дополнительный оператор ему не нужен."
+ },
+ {
+  "id": "co-continuation",
+  "topic": "coroutines",
+  "subtopic": "внутренности",
+  "question": "Как компилятор реализует suspend-функции?",
+  "answer": "CPS-преобразованием: функция получает скрытый параметр `Continuation` и превращается в конечный автомат, где каждая точка приостановки — отдельное состояние с сохранением локальных переменных.",
+  "explanation": "Поэтому корутины не требуют поддержки от JVM и работают на любом Android. Знание автомата объясняет, почему приостановка дёшева, а поток не блокируется."
+ },
+ {
+  "id": "co-delay-vs-sleep",
+  "topic": "coroutines",
+  "subtopic": "основы",
+  "question": "Чем `delay` отличается от `Thread.sleep`?",
+  "answer": "`delay` приостанавливает корутину и освобождает поток для другой работы; `Thread.sleep` блокирует поток целиком.",
+  "explanation": "`delay` — точка приостановки, значит через неё работает отмена. `Thread.sleep` отмену не заметит."
+ },
+ {
+  "id": "co-coroutine-context",
+  "topic": "coroutines",
+  "subtopic": "основы",
+  "question": "Из чего состоит `CoroutineContext`?",
+  "answer": "Из набора элементов: `Job`, `CoroutineDispatcher`, `CoroutineName`, `CoroutineExceptionHandler`. Элементы складываются оператором `+`.",
+  "explanation": "Дочерняя корутина наследует контекст родителя, заменяя указанные элементы, но её `Job` всегда новый и подчинён родительскому."
+ }
+]

@@ -4,6 +4,33 @@
     <span class="brand-text">Interview&nbsp;Trainer</span>
   </a>
 
+  <button
+    mat-button
+    type="button"
+    class="track-button"
+    [matMenuTriggerFor]="trackMenu"
+    aria-label="Направление подготовки"
+  >
+    {{ trackTitles[track()] }}
+    <span class="material-symbols-outlined">expand_more</span>
+  </button>
+
+  <mat-menu #trackMenu="matMenu">
+    @for (item of allTracks; track item) {
+      <button mat-menu-item type="button" (click)="selectTrack(item)">
+        <span class="track-item">
+          <span class="track-title">
+            {{ trackTitles[item] }}
+            @if (item === track()) {
+              <span class="material-symbols-outlined selected">check</span>
+            }
+          </span>
+          <span class="track-subtitle">{{ trackSubtitles[item] }}</span>
+        </span>
+      </button>
+    }
+  </mat-menu>
+
   <nav class="nav">
     <a mat-button routerLink="/decks" routerLinkActive="active">Колоды</a>
     <a mat-button routerLink="/code" routerLinkActive="active">Задачи</a>

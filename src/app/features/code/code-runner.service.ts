@@ -14,6 +14,10 @@ export class CodeRunner {
    */
   private readonly timeoutMs = 3000;
 
+  /**
+   * Запускает исполняемый код. Проверять `isRunnable` — обязанность
+   * вызывающего: для Kotlin здесь нет ни движка, ни осмысленного ответа.
+   */
   async run(code: string, language: 'js' | 'ts'): Promise<RunResult> {
     const javascript = language === 'ts' ? await transpile(code) : code;
     return this.execute(javascript);

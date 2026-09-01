@@ -1,0 +1,338 @@
+[
+ {
+  "id": "task-kt-launch-order",
+  "topic": "coroutines",
+  "subtopic": "структурированный параллелизм",
+  "title": "Порядок запуска корутин",
+  "language": "kotlin",
+  "prompt": "`launch` не выполняет тело немедленно.",
+  "code": "import kotlinx.coroutines.*\n\nfun main() = runBlocking {\n    println(\"1\")\n    launch {\n        println(\"3\")\n    }\n    println(\"2\")\n    delay(50)\n    println(\"4\")\n}",
+  "expectedOutput": [
+   "1",
+   "2",
+   "3",
+   "4"
+  ],
+  "explanation": "`launch` создаёт корутину и по умолчанию (`CoroutineStart.DEFAULT`) ставит её в очередь диспетчера, а не выполняет сразу. Текущая корутина продолжает работу до первой точки приостановки — печатает `2`, и только на `delay` управление уходит к запущенной. С `start = CoroutineStart.UNDISPATCHED` порядок был бы `1 3 2 4`."
+ },
+ {
+  "id": "task-kt-async-await",
+  "topic": "coroutines",
+  "subtopic": "launch и async",
+  "title": "async и параллельность",
+  "language": "kotlin",
+  "prompt": "Два запроса по 100 мс — сколько займут вместе?",
+  "code": "import kotlinx.coroutines.*\n\nsuspend fun load(name: String): String {\n    delay(100)\n    return name\n}\n\nfun main() = runBlocking {\n    val start = System.currentTimeMillis()\n\n    val a = async { load(\"A\") }\n    val b = async { load(\"B\") }\n    println(a.await() + b.await())\n\n    val slow = load(\"C\") + load(\"D\")\n    println(slow)\n\n    println(System.currentTimeMillis() - start >= 300)\n}",
+  "expectedOutput": [
+   "AB",
+   "CD",
+   "true"
+  ],
+  "explanation": "Два `async` стартуют одновременно, и `await` ждёт уже идущие вычисления — вместе около 100 мс. Последовательные вызовы `load` складываются в 200 мс, поэтому суммарно набегает больше 300 мс. Именно так `async` отличается от простого вызова suspend-функции: сам по себе `suspend` ничего не распараллеливает."
+ },
+ {
+  "id": "task-kt-cancel-finally",
+  "topic": "coroutines",
+  "subtopic": "отмена",
+  "title": "Отмена и finally",
+  "language": "kotlin",
+  "prompt": "Что успеет напечататься при отмене.",
+  "code": "import kotlinx.coroutines.*\n\nfun main() = runBlocking {\n    val job = launch {\n        try {\n            repeat(100) { i ->\n                println(\"тик $i\")\n                delay(50)\n            }\n        } finally {\n            println(\"очистка\")\n        }\n    }\n    delay(120)\n    job.cancelAndJoin()\n    println(\"готово\")\n}",
+  "expectedOutput": [
+   "тик 0",
+   "тик 1",
+   "тик 2",
+   "очистка",
+   "готово"
+  ],
+  "explanation": "Отмена в корутинах кооперативная: `delay` — точка приостановки, она проверяет отмену и бросает `CancellationException`. Блок `finally` выполняется, поэтому ресурсы закрыть можно. Но вызвать в нём ещё одну suspend-функцию нельзя — корутина уже отменена; для этого нужен `withContext(NonCancellable)`."
+ },
+ {
+  "id": "task-kt-cooperative-cancel",
+  "topic": "coroutines",
+  "subtopic": "отмена",
+  "title": "Некооперативная отмена",
+  "language": "kotlin",
+  "prompt": "Отмена вычислительного цикла без точек приостановки.",
+  "code": "import kotlinx.coroutines.*\n\nfun main() = runBlocking {\n    val job = launch(Dispatchers.Default) {\n        var i = 0\n        while (i < 3) {\n            // Нет ни одной точки приостановки: отмену проверять негде.\n            Thread.sleep(60)\n            println(\"считаю $i\")\n            i++\n        }\n        println(\"досчитал\")\n    }\n    delay(80)\n    job.cancelAndJoin()\n    println(\"отменил\")\n}",
+  "expectedOutput": [
+   "считаю 0",
+   "считаю 1",
+   "считаю 2",
+   "досчитал",
+   "отменил"
+  ],
+  "explanation": "`cancel` только выставляет флаг: остановить поток силой нельзя. Код без точек приостановки этот флаг не видит и доходит до конца — «отменённая» корутина продолжает жечь процессор. Лечится проверкой `isActive`, вызовом `ensureActive()` или `yield()` внутри цикла."
+ },
+ {
+  "id": "task-kt-supervisor",
+  "topic": "coroutines",
+  "subtopic": "обработка ошибок",
+  "title": "SupervisorJob и падение потомка",
+  "language": "kotlin",
+  "prompt": "Как ошибка одной корутины влияет на соседнюю.",
+  "code": "import kotlinx.coroutines.*\n\nfun main() = runBlocking {\n    val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)\n    val handler = CoroutineExceptionHandler { _, e -> println(\"поймал: ${e.message}\") }\n\n    scope.launch(handler) { throw RuntimeException(\"упал\") }\n    val alive = scope.launch { delay(100); println(\"выжил\") }\n\n    alive.join()\n    println(\"конец\")\n}",
+  "expectedOutput": [
+   "поймал: упал",
+   "выжил",
+   "конец"
+  ],
+  "explanation": "С обычным `Job` падение любого потомка отменяет родителя и всех остальных потомков. `SupervisorJob` изолирует детей друг от друга: соседняя корутина доживает до конца. `CoroutineExceptionHandler` работает только для `launch` в корне скоупа — у `async` ошибка достаётся тому, кто вызовет `await`."
+ },
+ {
+  "id": "task-kt-withcontext",
+  "topic": "coroutines",
+  "subtopic": "диспетчеры",
+  "title": "withContext и возвращаемое значение",
+  "language": "kotlin",
+  "prompt": "Чем `withContext` отличается от `launch`.",
+  "code": "import kotlinx.coroutines.*\n\nsuspend fun compute(): Int = withContext(Dispatchers.Default) {\n    (1..10).sum()\n}\n\nfun main() = runBlocking {\n    println(\"до\")\n    val result = compute()\n    println(\"результат: $result\")\n\n    val job = launch(Dispatchers.Default) { println(\"внутри launch\") }\n    job.join()\n    println(\"после\")\n}",
+  "expectedOutput": [
+   "до",
+   "результат: 55",
+   "внутри launch",
+   "после"
+  ],
+  "explanation": "`withContext` переключает контекст, **дожидается** результата и возвращает его — это обычный последовательный вызов, просто на другом диспетчере. `launch` возвращает `Job` и ничего не ждёт. Отсюда правило: за результатом — `withContext`, за фоновой задачей — `launch`."
+ },
+ {
+  "id": "task-kt-stateflow-conflate",
+  "topic": "coroutines",
+  "subtopic": "Flow",
+  "title": "StateFlow пропускает промежуточные значения",
+  "language": "kotlin",
+  "prompt": "Все ли значения увидит подписчик.",
+  "code": "import kotlinx.coroutines.*\nimport kotlinx.coroutines.flow.*\n\nfun main() = runBlocking {\n    val state = MutableStateFlow(0)\n\n    val job = launch {\n        state.collect { println(\"получено $it\") }\n    }\n    delay(50)\n\n    state.value = 1\n    state.value = 2\n    state.value = 3\n    delay(50)\n\n    job.cancel()\n    println(\"итог ${state.value}\")\n}",
+  "expectedOutput": [
+   "получено 0",
+   "получено 3",
+   "итог 3"
+  ],
+  "explanation": "`StateFlow` хранит только последнее значение и склеивает быстрые обновления: подписчик получает начальное `0` и актуальное `3`, а `1` и `2` теряются. Это правильно для состояния экрана и неправильно для событий — для них берут `SharedFlow` или канал. Ещё `StateFlow` отбрасывает повтор того же значения по `equals`."
+ },
+ {
+  "id": "task-kt-collect-latest",
+  "topic": "coroutines",
+  "subtopic": "Flow",
+  "title": "collectLatest против collect",
+  "language": "kotlin",
+  "prompt": "Что происходит с медленным обработчиком.",
+  "code": "import kotlinx.coroutines.*\nimport kotlinx.coroutines.flow.*\n\nfun main() = runBlocking {\n    val source = flow {\n        emit(1)\n        delay(30)\n        emit(2)\n    }\n\n    source.collectLatest { value ->\n        println(\"начал $value\")\n        delay(100)\n        println(\"закончил $value\")\n    }\n    println(\"готово\")\n}",
+  "expectedOutput": [
+   "начал 1",
+   "начал 2",
+   "закончил 2",
+   "готово"
+  ],
+  "explanation": "`collectLatest` отменяет предыдущий обработчик, как только приходит новое значение: обработка `1` не доходит до «закончил». Обычный `collect` дождался бы каждого и напечатал все четыре строки, задерживая поток. Это аналог `switchMap` из RxJS."
+ },
+ {
+  "id": "task-kt-flow-cold",
+  "topic": "coroutines",
+  "subtopic": "Flow",
+  "title": "Холодный поток",
+  "language": "kotlin",
+  "prompt": "Сколько раз выполнится тело `flow { }`.",
+  "code": "import kotlinx.coroutines.*\nimport kotlinx.coroutines.flow.*\n\nfun main() = runBlocking {\n    var builds = 0\n    val numbers = flow {\n        builds++\n        emit(1)\n        emit(2)\n    }\n\n    println(numbers.toList())\n    println(numbers.toList())\n    println(\"тело выполнено раз: $builds\")\n}",
+  "expectedOutput": [
+   "[1, 2]",
+   "[1, 2]",
+   "тело выполнено раз: 2"
+  ],
+  "explanation": "`Flow` холодный: тело билдера выполняется заново на каждый терминальный оператор. Два `toList` — два независимых прогона, а значит и два запроса к сети, если внутри был запрос. Разделить один источник между подписчиками позволяет `shareIn`/`stateIn`."
+ },
+ {
+  "id": "task-kt-extension-dispatch",
+  "topic": "kotlin",
+  "subtopic": "extension-функции",
+  "title": "Статическая диспетчеризация расширений",
+  "language": "kotlin",
+  "prompt": "Расширение выбирается по объявленному типу, а не по фактическому.",
+  "code": "open class Animal\nclass Dog : Animal()\n\nfun Animal.name() = \"животное\"\nfun Dog.name() = \"собака\"\n\nopen class Base {\n    open fun speak() = \"база\"\n}\nclass Child : Base() {\n    override fun speak() = \"потомок\"\n}\n\nfun main() {\n    val pet: Animal = Dog()\n    println(pet.name())\n\n    val obj: Base = Child()\n    println(obj.speak())\n}",
+  "expectedOutput": [
+   "животное",
+   "потомок"
+  ],
+  "explanation": "Extension-функции не виртуальные: компилятор выбирает их по **статическому** типу переменной, поэтому `pet.name()` даёт «животное», хотя внутри лежит `Dog`. Обычные методы разрешаются динамически, и `obj.speak()` печатает «потомок». Расширение никогда не переопределяет метод класса: при совпадении сигнатур выигрывает метод."
+ },
+ {
+  "id": "task-kt-data-copy",
+  "topic": "kotlin",
+  "subtopic": "data-классы",
+  "title": "copy и вложенная ссылка",
+  "language": "kotlin",
+  "prompt": "Насколько глубока копия у `data class`.",
+  "code": "data class Address(var city: String)\ndata class User(val name: String, val address: Address)\n\nfun main() {\n    val original = User(\"Аня\", Address(\"Минск\"))\n    val copy = original.copy(name = \"Борис\")\n\n    copy.address.city = \"Вильнюс\"\n\n    println(original)\n    println(copy)\n    println(original.address === copy.address)\n}",
+  "expectedOutput": [
+   "User(name=Аня, address=Address(city=Вильнюс))",
+   "User(name=Борис, address=Address(city=Вильнюс))",
+   "true"
+  ],
+  "explanation": "`copy` поверхностный: он копирует ссылки на вложенные объекты, а не сами объекты. Изменение через копию видно в оригинале — ровно как со spread в JavaScript. Отсюда правило: поля data-класса лучше делать `val` и неизменяемыми типами, иначе «неизменяемая модель» окажется мнимой."
+ },
+ {
+  "id": "task-kt-data-equals-array",
+  "topic": "kotlin",
+  "subtopic": "data-классы",
+  "title": "equals у data-класса с массивом",
+  "language": "kotlin",
+  "prompt": "Сравнение сгенерированным `equals`.",
+  "code": "data class WithArray(val items: IntArray)\ndata class WithList(val items: List<Int>)\n\nfun main() {\n    println(WithArray(intArrayOf(1, 2)) == WithArray(intArrayOf(1, 2)))\n    println(WithList(listOf(1, 2)) == WithList(listOf(1, 2)))\n    println(intArrayOf(1, 2).contentEquals(intArrayOf(1, 2)))\n}",
+  "expectedOutput": [
+   "false",
+   "true",
+   "true"
+  ],
+  "explanation": "Сгенерированный `equals` сравнивает поля через их собственный `equals`, а у массива он ссылочный — два разных массива с одинаковым содержимым не равны. `List` сравнивается по содержимому. Для массивов нужен `contentEquals`, а в data-классе — ручные `equals`/`hashCode`; компилятор про это даже предупреждает."
+ },
+ {
+  "id": "task-kt-lazy-init",
+  "topic": "kotlin",
+  "subtopic": "делегаты",
+  "title": "by lazy и порядок инициализации",
+  "language": "kotlin",
+  "prompt": "Когда на самом деле вычисляется `lazy`.",
+  "code": "class Config {\n    init {\n        println(\"конструктор\")\n    }\n\n    val eager = log(\"eager\")\n    val lazyValue: String by lazy { log(\"lazy\") }\n\n    private fun log(name: String): String {\n        println(\"вычисляю $name\")\n        return name\n    }\n}\n\nfun main() {\n    val config = Config()\n    println(\"создан\")\n    println(config.lazyValue)\n    println(config.lazyValue)\n}",
+  "expectedOutput": [
+   "конструктор",
+   "вычисляю eager",
+   "создан",
+   "вычисляю lazy",
+   "lazy",
+   "lazy"
+  ],
+  "explanation": "Инициализаторы полей и блоки `init` выполняются в порядке объявления при создании объекта — `eager` вычисляется сразу, хотя объявлен после `init`. `by lazy` откладывает вычисление до первого обращения и запоминает результат: второе чтение уже ничего не считает. По умолчанию `lazy` потокобезопасен (`SYNCHRONIZED`)."
+ },
+ {
+  "id": "task-kt-scope-functions",
+  "topic": "kotlin",
+  "subtopic": "scope-функции",
+  "title": "Что возвращают scope-функции",
+  "language": "kotlin",
+  "prompt": "`let`, `run`, `apply`, `also` — разница в возвращаемом значении.",
+  "code": "data class Box(var value: Int)\n\nfun main() {\n    val box = Box(1)\n\n    val fromLet = box.let { it.value + 1 }\n    val fromRun = box.run { value + 10 }\n    val fromApply = box.apply { value = 100 }\n    val fromAlso = box.also { it.value += 1 }\n\n    println(fromLet)\n    println(fromRun)\n    println(fromApply)\n    println(fromAlso === box)\n}",
+  "expectedOutput": [
+   "2",
+   "11",
+   "Box(value=101)",
+   "true"
+  ],
+  "explanation": "`let` и `run` возвращают результат лямбды и различаются только способом обращения к объекту (`it` против `this`). `apply` и `also` возвращают сам объект и нужны для настройки и побочных действий. Здесь `apply` присвоил 100, затем `also` добавил единицу — печатается уже 101, и это тот же самый объект."
+ },
+ {
+  "id": "task-kt-nullable-let",
+  "topic": "kotlin",
+  "subtopic": "null-safety",
+  "title": "let на nullable",
+  "language": "kotlin",
+  "prompt": "Идиома `?.let` и что она возвращает.",
+  "code": "fun describe(text: String?): String {\n    return text?.let { \"длина ${it.length}\" } ?: \"нет значения\"\n}\n\nfun main() {\n    println(describe(\"привет\"))\n    println(describe(null))\n    println(describe(\"\"))\n\n    val list: List<String>? = null\n    println(list?.size ?: -1)\n    println(list.orEmpty().size)\n}",
+  "expectedOutput": [
+   "длина 6",
+   "нет значения",
+   "длина 0",
+   "-1",
+   "0"
+  ],
+  "explanation": "`?.let` выполняет блок только для не-null значения, а `?:` подставляет запасное. Пустая строка — вполне значение, поэтому она проходит внутрь `let`: это отличие от JavaScript, где `||` перехватил бы и её. `orEmpty()` — короткая форма `?: emptyList()`."
+ },
+ {
+  "id": "task-kt-sealed-when",
+  "topic": "kotlin",
+  "subtopic": "sealed-классы",
+  "title": "when по sealed-иерархии",
+  "language": "kotlin",
+  "prompt": "Почему `when` по sealed не требует `else`.",
+  "code": "sealed interface Result\ndata class Ok(val value: Int) : Result\ndata class Failure(val message: String) : Result\ndata object Loading : Result\n\nfun render(result: Result): String = when (result) {\n    is Ok -> \"ок: ${result.value}\"\n    is Failure -> \"ошибка: ${result.message}\"\n    Loading -> \"загрузка\"\n}\n\nfun main() {\n    println(render(Ok(42)))\n    println(render(Failure(\"нет сети\")))\n    println(render(Loading))\n    println(Loading.toString())\n}",
+  "expectedOutput": [
+   "ок: 42",
+   "ошибка: нет сети",
+   "загрузка",
+   "Loading"
+  ],
+  "explanation": "Компилятор знает все прямые наследники sealed-типа, поэтому проверяет полноту `when` сам: добавите новый вариант — компиляция сломается там, где его забыли. Это то же, что проверка полноты через `never` в TypeScript, только встроенная. `data object` даёт осмысленный `toString` вместо адреса."
+ },
+ {
+  "id": "task-kt-inline-return",
+  "topic": "kotlin",
+  "subtopic": "inline",
+  "title": "Нелокальный return из inline-функции",
+  "language": "kotlin",
+  "prompt": "Из какой функции выйдет `return`.",
+  "code": "inline fun repeatTwice(action: () -> Unit) {\n    action()\n    action()\n}\n\nfun findFirst(numbers: List<Int>): Int? {\n    numbers.forEach { n ->\n        if (n > 1) return n\n    }\n    return null\n}\n\nfun run(): String {\n    repeatTwice {\n        println(\"шаг\")\n        return \"вышли из run\"\n    }\n    return \"не дойдём\"\n}\n\nfun main() {\n    println(findFirst(listOf(1, 2, 3)))\n    println(run())\n}",
+  "expectedOutput": [
+   "2",
+   "шаг",
+   "вышли из run"
+  ],
+  "explanation": "Лямбда в `inline`-функции подставляется в место вызова, поэтому `return` в ней выходит из **внешней** функции, а не из лямбды: «шаг» печатается один раз, до второго вызова `action()` дело не доходит. Именно поэтому `return` работает и внутри `forEach` — он тоже `inline`. Запретить такое поведение позволяет `crossinline`."
+ },
+ {
+  "id": "task-kt-string-template-null",
+  "topic": "kotlin",
+  "subtopic": "null-safety",
+  "title": "Платформенные типы и !!",
+  "language": "kotlin",
+  "prompt": "Чем `!!` отличается от `?:` и когда падает.",
+  "code": "fun main() {\n    val values: List<String?> = listOf(\"a\", null, \"c\")\n\n    println(values.filterNotNull())\n    println(values.map { it ?: \"-\" })\n    println(values.mapNotNull { it?.uppercase() })\n\n    try {\n        val broken: String? = null\n        println(broken!!.length)\n    } catch (e: NullPointerException) {\n        println(\"NPE\")\n    }\n}",
+  "expectedOutput": [
+   "[a, c]",
+   "[a, -, c]",
+   "[A, C]",
+   "NPE"
+  ],
+  "explanation": "`filterNotNull` убирает null и сужает тип до `List<String>`, `?:` подставляет замену, `mapNotNull` совмещает преобразование с фильтрацией. `!!` — единственный оператор, который сознательно бросает `NullPointerException`: он говорит «я отвечаю, что здесь не null», и когда автор ошибается, падение происходит именно на этой строке."
+ },
+ {
+  "id": "task-kt-list-mutability",
+  "topic": "kotlin",
+  "subtopic": "коллекции",
+  "title": "List только на чтение — не immutable",
+  "language": "kotlin",
+  "prompt": "Что на самом деле гарантирует `List`.",
+  "code": "fun main() {\n    val mutable = mutableListOf(1, 2, 3)\n    val readOnly: List<Int> = mutable\n\n    mutable.add(4)\n    println(readOnly)\n\n    val copy = readOnly.toList()\n    mutable.add(5)\n    println(copy)\n    println(readOnly)\n}",
+  "expectedOutput": [
+   "[1, 2, 3, 4]",
+   "[1, 2, 3, 4]",
+   "[1, 2, 3, 4, 5]"
+  ],
+  "explanation": "`List` — интерфейс только для чтения, а не неизменяемая коллекция: если под ним лежит `MutableList`, содержимое поменяется у всех, кто держит ссылку. Это ровно то же обещание, что `readonly` в TypeScript. Настоящий снимок даёт `toList()`."
+ },
+ {
+  "id": "task-kt-sequence-lazy",
+  "topic": "kotlin",
+  "subtopic": "коллекции",
+  "title": "Sequence против List",
+  "language": "kotlin",
+  "prompt": "Порядок вызовов при ленивой обработке.",
+  "code": "fun main() {\n    println(\"список:\")\n    listOf(1, 2, 3)\n        .map { println(\"map $it\"); it * 2 }\n        .first { it > 2 }\n\n    println(\"последовательность:\")\n    listOf(1, 2, 3)\n        .asSequence()\n        .map { println(\"map $it\"); it * 2 }\n        .first { it > 2 }\n}",
+  "expectedOutput": [
+   "список:",
+   "map 1",
+   "map 2",
+   "map 3",
+   "последовательность:",
+   "map 1",
+   "map 2"
+  ],
+  "explanation": "Операции над `List` промежуточные и жадные: `map` строит новый список целиком, и только потом `first` ищет по нему. `Sequence` вычисляет по элементу и останавливается, как только результат найден — на больших коллекциях это разница в разы. На коротких списках последовательность, наоборот, медленнее из-за накладных расходов."
+ },
+ {
+  "id": "task-kt-companion-static",
+  "topic": "kotlin",
+  "subtopic": "объекты",
+  "title": "companion object и его момент инициализации",
+  "language": "kotlin",
+  "prompt": "Когда создаётся companion.",
+  "code": "class Repository private constructor(val name: String) {\n    companion object {\n        init {\n            println(\"companion инициализирован\")\n        }\n\n        val DEFAULT_NAME = \"repo\"\n\n        fun create(): Repository {\n            println(\"создаю\")\n            return Repository(DEFAULT_NAME)\n        }\n    }\n}\n\nobject Singleton {\n    init {\n        println(\"singleton инициализирован\")\n    }\n\n    fun hello() = \"привет\"\n}\n\nfun main() {\n    println(\"старт\")\n    println(Repository.create().name)\n    println(Singleton.hello())\n}",
+  "expectedOutput": [
+   "старт",
+   "companion инициализирован",
+   "создаю",
+   "repo",
+   "singleton инициализирован",
+   "привет"
+  ],
+  "explanation": "И `companion object`, и `object` инициализируются лениво — при первом обращении, а не при старте программы. Приватный конструктор плюс фабрика в companion — стандартная замена статическим методам Java. В байткоде companion остаётся вложенным классом, поэтому для настоящей статики нужна аннотация `@JvmStatic`."
+ }
+]

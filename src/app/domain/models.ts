@@ -6,14 +6,27 @@
  * переформулировка вопроса не сбрасывает накопленный прогресс.
  */
 
-export type Topic = 'js' | 'ts' | 'angular';
+export type Topic = 'js' | 'ts' | 'angular' | 'kotlin' | 'android' | 'compose' | 'coroutines';
 
-export const TOPICS: readonly Topic[] = ['js', 'ts', 'angular'] as const;
+/** Все темы разом. Разбиение по трекам живёт в `tracks.ts`. */
+export const TOPICS: readonly Topic[] = [
+  'js',
+  'ts',
+  'angular',
+  'kotlin',
+  'android',
+  'compose',
+  'coroutines',
+] as const;
 
 export const TOPIC_TITLES: Record<Topic, string> = {
   js: 'JavaScript',
   ts: 'TypeScript',
   angular: 'Angular',
+  kotlin: 'Kotlin',
+  android: 'Android SDK',
+  compose: 'Compose',
+  coroutines: 'Корутины и Flow',
 };
 
 /** Самооценка после показа ответа — четыре градации, как в Anki. */
@@ -34,17 +47,48 @@ export interface Card {
   readonly explanation?: string;
 }
 
+/**
+ * Язык кодовой задачи. От него зависит не только подсветка: JavaScript и
+ * TypeScript браузер выполняет по-настоящему, а Kotlin выполнить нечем —
+ * см. `isRunnable`.
+ */
+export type TaskLanguage = 'js' | 'ts' | 'kotlin';
+
+/**
+ * Можно ли выполнить код задачи прямо в браузере.
+ *
+ * Единственное место, где живёт знание «Kotlin не запускается». Экраны и
+ * скрипты проверки обязаны спрашивать здесь, а не сравнивать язык со строкой:
+ * иначе при добавлении Swift или Java условие придётся искать по всему коду.
+ */
+/** Короткая подпись языка для списка задач. */
+export const LANGUAGE_LABELS: Record<TaskLanguage, string> = {
+  js: 'JS',
+  ts: 'TS',
+  kotlin: 'Kotlin',
+};
+
+export function isRunnable(language: TaskLanguage): boolean {
+  return language === 'js' || language === 'ts';
+}
+
 export interface CodeTask {
   readonly id: string;
   readonly topic: Topic;
   readonly subtopic: string;
   readonly title: string;
-  readonly language: 'js' | 'ts';
+  readonly language: TaskLanguage;
   /** Что именно спрашивается — обычно «что выведет этот код». */
   readonly prompt: string;
   /** Код, который открывается в редакторе. */
   readonly code: string;
-  /** Ожидаемый вывод построчно: одна строка на один вызов console.log. */
+  /**
+   * Ожидаемый вывод построчно: одна строка на один вызов печати.
+   *
+   * Для исполняемых языков это справочное значение (истину даёт запуск),
+   * для Kotlin — единственный источник вердикта, поэтому он сверяется
+   * с реальностью скриптом `scripts/verify-content.mjs`.
+   */
   readonly expectedOutput: readonly string[];
   readonly explanation: string;
 }

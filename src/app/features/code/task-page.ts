@@ -18,7 +18,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { Router, RouterLink } from '@angular/router';
 import { ContentService } from '../../core/content/content.service';
 import { ProgressStore } from '../../core/storage/progress.store';
-import { TOPIC_TITLES } from '../../domain/models';
+import { TOPIC_TITLES, isRunnable } from '../../domain/models';
 import { Verdict, compareOutput } from '../../domain/verdict';
 import { CodeEditor } from '../../shared/monaco/code-editor';
 import { MarkdownPipe } from '../../shared/markdown.pipe';
@@ -63,9 +63,27 @@ export class TaskPage {
   /** Код в редакторе: правки нужны, чтобы можно было поэкспериментировать. */
   protected readonly code = signal<string | null>(null);
 
-  protected readonly editorLanguage = computed(() =>
-    this.task()?.language === 'ts' ? ('typescript' as const) : ('javascript' as const),
-  );
+  protected readonly editorLanguage = computed(() => {
+    switch (this.task()?.language) {
+      case 'ts':
+        return 'typescript';
+      case 'kotlin':
+        return 'kotlin';
+      default:
+        return 'javascript';
+    }
+  });
+
+  /**
+   * Исполняется ли код задачи прямо в браузере. Для Kotlin — нет, и экран
+   * говорит об этом прямо: редактор только для чтения, кнопка называется
+   * «Показать ответ», а вердикт сверяется с ответом, записанным в задаче
+   * и проверенным `npm run verify:content` на настоящем компиляторе.
+   */
+  protected readonly runnable = computed(() => {
+    const task = this.task();
+    return task === undefined || isRunnable(task.language);
+  });
 
   protected readonly nextTaskId = computed(() => {
     const tasks = this.content.tasks();
@@ -107,7 +125,19 @@ export class TaskPage {
     this.running.set(true);
     this.runError.set(null);
 
-    const result = await this.runner.run(this.code() ?? task.code, task.language);
+    if (!isRunnable(task.language)) {
+      // Запускать нечем: сверяем предсказание с записанным выводом.
+      const verdict = compareOutput(task.expectedOutput, splitLines(this.prediction()));
+      this.verdict.set(verdict);
+      this.revealed.set(true);
+      this.progress.recordAttempt(task.id, verdict.passed);
+      this.running.set(false);
+      return;
+    }
+
+    // Ветка выше гарантирует исполняемый язык, но компилятор об этом не знает.
+    const language = task.language === 'ts' ? 'ts' : 'js';
+    const result = await this.runner.run(this.code() ?? task.code, language);
     this.runError.set(result.error);
 
     if (result.error !== null && result.output.length === 0) {

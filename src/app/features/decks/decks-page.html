@@ -1,6 +1,9 @@
 <header class="head">
   <div>
     <h1>Что повторяем сегодня</h1>
+    <p class="track-line">
+      Направление: <b>{{ trackTitle() }}</b>
+    </p>
     <p class="muted">
       Карточки показываются по интервальному алгоритму: чем увереннее ответ, тем дольше карточка не
       вернётся.
@@ -60,10 +63,7 @@
 <mat-card appearance="outlined" class="tasks-card">
   <mat-card-content>
     <h2>Кодовые задачи</h2>
-    <p class="muted">
-      «Что выведет этот код» — event loop, <code>this</code>, замыкания, приведение типов и
-      дженерики. Код запускается прямо в браузере, вывод сверяется с ожидаемым.
-    </p>
+    <p class="muted">{{ tasksBlurb() }}</p>
     <p class="muted small">Нерешённых задач: {{ tasksLeft() }}</p>
   </mat-card-content>
   <mat-card-actions align="end">
