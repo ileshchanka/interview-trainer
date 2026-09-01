@@ -278,5 +278,229 @@
   "question": "Из чего состоит `CoroutineContext`?",
   "answer": "Из набора элементов: `Job`, `CoroutineDispatcher`, `CoroutineName`, `CoroutineExceptionHandler`. Элементы складываются оператором `+`.",
   "explanation": "Дочерняя корутина наследует контекст родителя, заменяя указанные элементы, но её `Job` всегда новый и подчинён родительскому."
+ },
+ {
+  "id": "co-coroutine-scope-builder",
+  "topic": "coroutines",
+  "subtopic": "основы",
+  "question": "Чем `coroutineScope { }` отличается от `CoroutineScope(...)`?",
+  "answer": "`coroutineScope` — suspend-функция: она создаёт вложенный скоуп, ждёт всех детей и возвращает результат. `CoroutineScope(...)` — конструктор долгоживущего скоупа, за отмену которого отвечаете вы.",
+  "explanation": "Внутри suspend-функции почти всегда нужен первый: он гарантирует, что после выхода из функции не осталось работающих корутин."
+ },
+ {
+  "id": "co-await-all",
+  "topic": "coroutines",
+  "subtopic": "основы",
+  "question": "Как дождаться нескольких `async` сразу?",
+  "answer": "`awaitAll(a, b)` или `listOf(a, b).awaitAll()`. Он бросит первое же исключение, не дожидаясь остальных.",
+  "explanation": "Последовательные `a.await(); b.await()` дадут тот же результат, но ошибку второго вы увидите позже — и только если первый успешен."
+ },
+ {
+  "id": "co-coroutine-start",
+  "topic": "coroutines",
+  "subtopic": "основы",
+  "question": "Какие режимы запуска есть у корутины?",
+  "answer": "`DEFAULT` — поставить в очередь диспетчера; `LAZY` — не запускать до `start()`/`await()`; `ATOMIC` — начать даже при уже отменённом скоупе; `UNDISPATCHED` — выполнить синхронно до первой приостановки.",
+  "explanation": "`LAZY` полезен для `async`, результат которого может не понадобиться."
+ },
+ {
+  "id": "co-job-vs-deferred",
+  "topic": "coroutines",
+  "subtopic": "основы",
+  "question": "Чем `Job` отличается от `Deferred`?",
+  "answer": "`Deferred<T>` — это `Job` с результатом. У `Job` есть `join()`, у `Deferred` — ещё и `await()`, который вернёт значение или бросит исключение.",
+  "explanation": "`join` никогда не бросает исключение самой корутины — им можно дождаться завершения, не обрабатывая ошибку."
+ },
+ {
+  "id": "co-invoke-on-completion",
+  "topic": "coroutines",
+  "subtopic": "основы",
+  "question": "Что делает `invokeOnCompletion`?",
+  "answer": "Регистрирует колбэк на завершение `Job` — с причиной (`null` при успехе, `CancellationException` при отмене, исключение при ошибке).",
+  "explanation": "Колбэк выполняется синхронно и не может быть suspend-функцией: тяжёлую работу в него класть нельзя."
+ },
+ {
+  "id": "co-yield",
+  "topic": "coroutines",
+  "subtopic": "отмена",
+  "question": "Что делает `yield()`?",
+  "answer": "Отдаёт поток другим корутинам и проверяет отмену. Это самый дешёвый способ сделать вычислительный цикл кооперативным.",
+  "explanation": "Альтернатива — `ensureActive()`, который только проверяет отмену, не уступая поток."
+ },
+ {
+  "id": "co-with-timeout",
+  "topic": "coroutines",
+  "subtopic": "отмена",
+  "question": "Чем `withTimeout` отличается от `withTimeoutOrNull`?",
+  "answer": "Первый бросает `TimeoutCancellationException`, второй возвращает `null`. Оба отменяют вложенную работу по истечении времени.",
+  "explanation": "`TimeoutCancellationException` — наследник `CancellationException`, поэтому общий `catch (e: CancellationException)` его тоже поймает, что часто неожиданно."
+ },
+ {
+  "id": "co-limited-parallelism",
+  "topic": "coroutines",
+  "subtopic": "диспетчеры",
+  "question": "Зачем нужен `limitedParallelism`?",
+  "answer": "Он делает из диспетчера представление с ограниченным числом одновременных задач — например, не больше четырёх запросов к API одновременно.",
+  "explanation": "Раньше для этого создавали отдельные пулы; `limitedParallelism` переиспользует потоки общего пула и не плодит их."
+ },
+ {
+  "id": "co-main-immediate",
+  "topic": "coroutines",
+  "subtopic": "диспетчеры",
+  "question": "Чем `Dispatchers.Main.immediate` отличается от `Dispatchers.Main`?",
+  "answer": "`immediate` выполняет блок сразу, если мы уже в главном потоке, без постановки в очередь. Обычный `Main` всегда планирует задачу.",
+  "explanation": "Это убирает лишний кадр задержки при обновлении UI и мерцание в тестах."
+ },
+ {
+  "id": "co-single-thread-context",
+  "topic": "coroutines",
+  "subtopic": "диспетчеры",
+  "question": "Когда нужен собственный однопоточный диспетчер?",
+  "answer": "Когда библиотека требует работы строго из одного потока или нужно сериализовать доступ к состоянию без блокировок.",
+  "explanation": "`newSingleThreadContext` создаёт поток, который нужно закрывать (`close()`), иначе он утечёт. Чаще проще `limitedParallelism(1)`."
+ },
+ {
+  "id": "co-thread-local",
+  "topic": "coroutines",
+  "subtopic": "диспетчеры",
+  "question": "Что происходит с `ThreadLocal` в корутинах?",
+  "answer": "Корутина может возобновиться в другом потоке, поэтому `ThreadLocal` теряется. Перенести значение позволяет `asContextElement()`.",
+  "explanation": "На этом ломаются MDC-логирование и трассировка, если их не связать с контекстом корутины."
+ },
+ {
+  "id": "co-flow-builders",
+  "topic": "coroutines",
+  "subtopic": "Flow",
+  "question": "Какие есть способы создать `Flow`?",
+  "answer": "`flowOf(...)`, `asFlow()` у коллекций и последовательностей, билдер `flow { emit(...) }`, а также `channelFlow`/`callbackFlow` для источников с колбэками.",
+  "explanation": "В обычном `flow { }` нельзя эмитить из другой корутины — за этим следит проверка прозрачности контекста."
+ },
+ {
+  "id": "co-channel-flow",
+  "topic": "coroutines",
+  "subtopic": "Flow",
+  "question": "Чем `channelFlow` отличается от `flow` и `callbackFlow`?",
+  "answer": "`channelFlow` разрешает эмитить из нескольких корутин через `send`. `callbackFlow` — его частный случай для колбэк-API, требующий `awaitClose`.",
+  "explanation": "Плата за многопоточную эмиссию — внутренний канал и чуть большая стоимость по сравнению с `flow`."
+ },
+ {
+  "id": "co-flow-catch",
+  "topic": "coroutines",
+  "subtopic": "Flow",
+  "question": "Что делает оператор `catch` и почему он не ловит ошибки коллектора?",
+  "answer": "Он перехватывает исключения **выше по потоку** (upstream). Ошибка внутри `collect { }` относится к потребителю и им не ловится — это принцип прозрачности исключений.",
+  "explanation": "Обернуть потребителя нужно обычным `try/catch` либо перенести логику в `onEach` перед `catch`."
+ },
+ {
+  "id": "co-flow-retry",
+  "topic": "coroutines",
+  "subtopic": "Flow",
+  "question": "Как повторить неудачный запрос во Flow?",
+  "answer": "`retry(times) { cause -> cause is IOException }` или `retryWhen` с задержкой и счётчиком попыток.",
+  "explanation": "Повтор перезапускает весь upstream, поэтому побочные эффекты выше по цепочке выполнятся заново."
+ },
+ {
+  "id": "co-flow-lifecycle-ops",
+  "topic": "coroutines",
+  "subtopic": "Flow",
+  "question": "Что делают `onStart`, `onEach` и `onCompletion`?",
+  "answer": "`onStart` выполняется перед первым значением (удобно показать загрузку), `onEach` — на каждое значение, `onCompletion` — при завершении или ошибке, с причиной в параметре.",
+  "explanation": "`onCompletion` вызывается и при отмене, поэтому в нём проверяют тип причины."
+ },
+ {
+  "id": "co-flow-take",
+  "topic": "coroutines",
+  "subtopic": "Flow",
+  "question": "Что произойдёт с бесконечным потоком после `take(1)`?",
+  "answer": "Оператор отменит upstream, бросив внутреннее исключение отмены: производство остановится, ресурсы освободятся.",
+  "explanation": "То же делает `first()`. Именно поэтому `callbackFlow` обязан снимать подписку в `awaitClose`."
+ },
+ {
+  "id": "co-shared-flow-config",
+  "topic": "coroutines",
+  "subtopic": "Flow",
+  "question": "Что задают `replay`, `extraBufferCapacity` и `onBufferOverflow` у `MutableSharedFlow`?",
+  "answer": "`replay` — сколько последних значений получит новый подписчик; `extraBufferCapacity` — размер буфера сверх replay; `onBufferOverflow` — что делать при переполнении (приостановить, отбросить старое или новое).",
+  "explanation": "`MutableSharedFlow()` без параметров не имеет буфера: `tryEmit` вернёт `false`, если никто не собирает."
+ },
+ {
+  "id": "co-state-in",
+  "topic": "coroutines",
+  "subtopic": "Flow",
+  "question": "Чем `stateIn` отличается от `shareIn`?",
+  "answer": "`stateIn` даёт `StateFlow` с текущим значением (требует начальное), `shareIn` — `SharedFlow` без обязательного значения. Оба превращают холодный поток в горячий.",
+  "explanation": "Обоим нужен скоуп и стратегия старта — обычно `viewModelScope` и `WhileSubscribed(5000)`."
+ },
+ {
+  "id": "co-flow-backpressure",
+  "topic": "coroutines",
+  "subtopic": "Flow",
+  "question": "Как во Flow решается проблема медленного потребителя?",
+  "answer": "Приостановкой производителя: `emit` не вернёт управление, пока значение не обработано. Изменить поведение позволяют `buffer`, `conflate` и `collectLatest`.",
+  "explanation": "Отдельного механизма backpressure, как в Reactive Streams, не нужно — его роль играет сама приостановка."
+ },
+ {
+  "id": "co-select",
+  "topic": "coroutines",
+  "subtopic": "продвинутое",
+  "question": "Что делает выражение `select`?",
+  "answer": "Ждёт первое из нескольких приостанавливаемых событий: результат одного из `Deferred`, получение из канала, таймаут.",
+  "explanation": "Это способ реализовать гонку без ручной синхронизации; API помечено как экспериментальное и применяется редко."
+ },
+ {
+  "id": "co-actor-produce",
+  "topic": "coroutines",
+  "subtopic": "каналы",
+  "question": "Что такое `produce` и модель актора?",
+  "answer": "`produce` запускает корутину, отдающую значения в канал. Актор — корутина, владеющая состоянием и принимающая команды через канал: состояние меняется в одном месте, блокировки не нужны.",
+  "explanation": "Оба builder'а экспериментальны; для состояния в UI сегодня чаще берут `MutableStateFlow`."
+ },
+ {
+  "id": "co-live-data-flow",
+  "topic": "coroutines",
+  "subtopic": "Android",
+  "question": "Чем `StateFlow` лучше `LiveData` и чего у него нет?",
+  "answer": "`StateFlow` не привязан к Android, работает в общем коде, имеет операторы и требует явного начального значения. У `LiveData` встроен учёт жизненного цикла, у `StateFlow` его нужно добавлять через `repeatOnLifecycle`.",
+  "explanation": "Мост в обе стороны есть: `asLiveData()` и `asFlow()`."
+ },
+ {
+  "id": "co-launch-when-started",
+  "topic": "coroutines",
+  "subtopic": "Android",
+  "question": "Почему `lifecycleScope.launchWhenStarted` считается устаревшим?",
+  "answer": "Он только приостанавливает корутину в фоне, но upstream продолжает работать и тратить ресурсы. `repeatOnLifecycle` полностью отменяет сбор и запускает заново.",
+  "explanation": "Разница особенно заметна с горячими потоками: приостановленный сборщик всё равно удерживает подписку."
+ },
+ {
+  "id": "co-test-dispatchers",
+  "topic": "coroutines",
+  "subtopic": "тестирование",
+  "question": "Чем `StandardTestDispatcher` отличается от `UnconfinedTestDispatcher`?",
+  "answer": "`Standard` ставит корутины в очередь — их нужно продвигать вручную (`advanceUntilIdle`), что делает порядок явным. `Unconfined` выполняет их немедленно, что удобно, но скрывает гонки.",
+  "explanation": "`runTest` по умолчанию использует `StandardTestDispatcher` и виртуальное время."
+ },
+ {
+  "id": "co-injecting-dispatchers",
+  "topic": "coroutines",
+  "subtopic": "тестирование",
+  "question": "Почему диспетчер нужно внедрять, а не вызывать напрямую?",
+  "answer": "Жёсткий `Dispatchers.IO` внутри класса невозможно подменить в тесте: время станет реальным, а порядок недетерминированным.",
+  "explanation": "Диспетчер передают конструктором со значением по умолчанию — это дёшево и делает класс тестируемым."
+ },
+ {
+  "id": "co-cancellation-leak",
+  "topic": "coroutines",
+  "subtopic": "отмена",
+  "question": "Почему `try/catch(Exception)` вокруг suspend-вызова опасен?",
+  "answer": "Он ловит `CancellationException`, и корутина, которую попросили остановиться, продолжает работу — структурированный параллелизм ломается.",
+  "explanation": "Правильный шаблон: перехватывать конкретные типы либо перебрасывать `CancellationException` явно."
+ },
+ {
+  "id": "co-global-scope-danger",
+  "topic": "coroutines",
+  "subtopic": "скоупы",
+  "question": "Чем именно плох `GlobalScope`?",
+  "answer": "Его корутины не привязаны ни к чему: их никто не отменит при закрытии экрана, ошибки не всплывут к родителю, а в тестах они переживут сам тест.",
+  "explanation": "Если работа обязана пережить экран, ей место в скоупе приложения (`CoroutineScope(SupervisorJob())` в DI) или в WorkManager — с явным владельцем."
  }
 ]

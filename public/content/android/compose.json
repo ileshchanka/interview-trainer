@@ -278,5 +278,261 @@
   "question": "Что назвать главным преимуществом Compose на собеседовании?",
   "answer": "Единственный источник истины: экран — функция от состояния. Исчезает целый класс багов «состояние поменялось, а View забыли обновить», меньше кода, проще переиспользование.",
   "explanation": "Честные минусы тоже стоит назвать: размер APK, стоимость обучения, необходимость понимать стабильность типов ради производительности."
+ },
+ {
+  "id": "cmp-slot-api",
+  "topic": "compose",
+  "subtopic": "паттерны",
+  "question": "Что такое slot API в Compose?",
+  "answer": "Приём, когда composable принимает не данные, а лямбду-содержимое (`content: @Composable () -> Unit`) и решает только, где его разместить.",
+  "explanation": "Так устроены `Scaffold`, `Card`, `Button`. Это аналог контент-проекции: компонент отвечает за расположение, вызывающий — за содержимое."
+ },
+ {
+  "id": "cmp-scaffold",
+  "topic": "compose",
+  "subtopic": "паттерны",
+  "question": "Что даёт `Scaffold`?",
+  "answer": "Готовый каркас экрана Material: слоты для топ-бара, нижней панели, FAB и снекбара, а также корректные отступы через `PaddingValues` в `content`.",
+  "explanation": "Игнорирование переданного `paddingValues` — самая частая ошибка: контент уезжает под топ-бар."
+ },
+ {
+  "id": "cmp-state-in-viewmodel",
+  "topic": "compose",
+  "subtopic": "состояние",
+  "question": "Где держать состояние экрана — в `remember` или в ViewModel?",
+  "answer": "Состояние UI-элемента (раскрыт ли блок, позиция прокрутки) — в `remember`. Состояние экрана, переживающее поворот и связанное с данными, — в ViewModel.",
+  "explanation": "Признак: если состояние нужно восстановить после смены конфигурации или оно приходит из репозитория, ему место в ViewModel."
+ },
+ {
+  "id": "cmp-produce-state",
+  "topic": "compose",
+  "subtopic": "состояние",
+  "question": "Что делает `produceState`?",
+  "answer": "Превращает не-Compose источник (колбэк, suspend-функцию) в `State`: запускает корутину и позволяет писать в значение по мере поступления данных.",
+  "explanation": "Это `LaunchedEffect` + `remember { mutableStateOf(...) }` в одном вызове."
+ },
+ {
+  "id": "cmp-snapshot-flow",
+  "topic": "compose",
+  "subtopic": "состояние",
+  "question": "Зачем нужен `snapshotFlow`?",
+  "answer": "Он превращает чтение состояния Compose в `Flow` — чтобы применить к нему операторы (`debounce`, `distinctUntilChanged`) или собрать в корутине.",
+  "explanation": "Типичный случай: реагировать на `listState.firstVisibleItemIndex` для подгрузки следующей страницы."
+ },
+ {
+  "id": "cmp-remember-updated-state",
+  "topic": "compose",
+  "subtopic": "эффекты",
+  "question": "Для чего нужен `rememberUpdatedState`?",
+  "answer": "Чтобы долгоживущий эффект видел актуальное значение, не перезапускаясь. `LaunchedEffect(Unit)` захватывает лямбду один раз, и без него будет вызвана устаревшая.",
+  "explanation": "Классический пример — таймер, по истечении которого нужно вызвать самый свежий `onTimeout`."
+ },
+ {
+  "id": "cmp-key-composable",
+  "topic": "compose",
+  "subtopic": "рекомпозиция",
+  "question": "Что делает функция `key()` в композиции?",
+  "answer": "Задаёт явную идентичность куску композиции: при изменении ключа Compose считает его новым и пересоздаёт состояние вместо переиспользования.",
+  "explanation": "Нужна там, где элементы одного типа идут подряд и позиционная идентичность вводит в заблуждение."
+ },
+ {
+  "id": "cmp-movable-content",
+  "topic": "compose",
+  "subtopic": "рекомпозиция",
+  "question": "Зачем нужен `movableContentOf`?",
+  "answer": "Он позволяет перенести кусок композиции в другое место дерева, сохранив его состояние — например, при переходе списка из одной колонки в две.",
+  "explanation": "Без него перемещение содержимого сбрасывает `remember` и анимации."
+ },
+ {
+  "id": "cmp-custom-layout",
+  "topic": "compose",
+  "subtopic": "макет",
+  "question": "Как написать собственный макет?",
+  "answer": "Composable `Layout(content) { measurables, constraints -> }`: измерить детей, вычислить размер, разместить в `layout(w, h) { placeable.place(x, y) }`.",
+  "explanation": "Правило: каждого ребёнка измеряют ровно один раз, иначе Compose бросит исключение — так гарантируется однопроходность."
+ },
+ {
+  "id": "cmp-subcompose-layout",
+  "topic": "compose",
+  "subtopic": "макет",
+  "question": "Когда нужен `SubcomposeLayout` и чем он плох?",
+  "answer": "Когда состав детей зависит от результата измерения других (`LazyColumn`, `BoxWithConstraints`). Плох тем, что композиция происходит во время измерения и стоит дороже обычной.",
+  "explanation": "Использовать его в горячем месте — верный способ получить просадку кадров."
+ },
+ {
+  "id": "cmp-box-with-constraints",
+  "topic": "compose",
+  "subtopic": "макет",
+  "question": "Что даёт `BoxWithConstraints`?",
+  "answer": "Доступ к ограничениям родителя (`maxWidth`, `maxHeight`) в момент композиции — можно выбрать разную вёрстку под ширину.",
+  "explanation": "Внутри он использует `SubcomposeLayout`, поэтому для адаптивности лучше опираться на window size classes на уровне экрана."
+ },
+ {
+  "id": "cmp-window-size-classes",
+  "topic": "compose",
+  "subtopic": "макет",
+  "question": "Что такое window size classes?",
+  "answer": "Стандартные категории ширины и высоты окна (compact / medium / expanded), по которым выбирают вёрстку — вместо проверки диагонали или ориентации.",
+  "explanation": "Они корректно работают с многооконным режимом и складными устройствами, где «планшет» и «телефон» перестают быть надёжными понятиями."
+ },
+ {
+  "id": "cmp-modifier-node",
+  "topic": "compose",
+  "subtopic": "модификаторы",
+  "question": "Чем `Modifier.Node` лучше `Modifier.composed`?",
+  "answer": "`composed` создаёт композицию для каждого применения модификатора и мешает его переиспользованию. `Modifier.Node` — низкоуровневый API без композиции, заметно дешевле.",
+  "explanation": "Актуально для библиотек и для модификаторов, применяемых в списках."
+ },
+ {
+  "id": "cmp-draw-modifiers",
+  "topic": "compose",
+  "subtopic": "рендеринг",
+  "question": "Чем `drawBehind` отличается от `drawWithContent` и `graphicsLayer`?",
+  "answer": "`drawBehind` рисует под содержимым, `drawWithContent` даёт контроль над порядком (`drawContent()`), `graphicsLayer` меняет трансформации и альфу на отдельном слое.",
+  "explanation": "Анимировать через `graphicsLayer` с лямбдой выгодно: состояние читается в фазе отрисовки, и рекомпозиции не происходит вовсе."
+ },
+ {
+  "id": "cmp-animate-as-state",
+  "topic": "compose",
+  "subtopic": "анимация",
+  "question": "Какие есть уровни API анимации в Compose?",
+  "answer": "`animate*AsState` — одно значение; `updateTransition` — несколько значений одного перехода; `Animatable` — императивный контроль с отменой; `AnimatedVisibility` и `animateContentSize` — готовые сценарии.",
+  "explanation": "Для анимации между экранами есть `AnimatedContent`, для списков — `animateItem` в Lazy-компонентах."
+ },
+ {
+  "id": "cmp-gestures",
+  "topic": "compose",
+  "subtopic": "жесты",
+  "question": "Как обрабатывать жесты в Compose?",
+  "answer": "Готовыми модификаторами (`clickable`, `draggable`, `scrollable`, `transformable`) либо низкоуровневым `pointerInput` с `detectTapGestures`/`detectDragGestures`.",
+  "explanation": "`pointerInput` принимает ключи, как `LaunchedEffect`: без них лямбда захватит устаревшие значения."
+ },
+ {
+  "id": "cmp-nested-scroll",
+  "topic": "compose",
+  "subtopic": "жесты",
+  "question": "Что решает `nestedScroll`?",
+  "answer": "Согласование прокрутки вложенных областей: например, сворачивающийся топ-бар должен «съедать» часть прокрутки списка.",
+  "explanation": "Без него вложенный список и внешний контейнер прокручиваются независимо и конфликтуют."
+ },
+ {
+  "id": "cmp-focus",
+  "topic": "compose",
+  "subtopic": "ввод",
+  "question": "Как управлять фокусом и клавиатурой?",
+  "answer": "`FocusRequester` для перевода фокуса, `focusable`/`onFocusChanged` для реакции, `LocalSoftwareKeyboardController` и `LocalFocusManager` — чтобы скрыть клавиатуру или уйти с поля.",
+  "explanation": "`FocusRequester.requestFocus()` до присоединения к дереву бросает исключение — поэтому его зовут из `LaunchedEffect`."
+ },
+ {
+  "id": "cmp-text-field-state",
+  "topic": "compose",
+  "subtopic": "ввод",
+  "question": "В чём подвох состояния у `TextField`?",
+  "answer": "Он полностью управляемый: показывает то, что передали в `value`. Если не сохранять изменение из `onValueChange`, поле будет выглядеть «не набирающим текст».",
+  "explanation": "Асинхронное обновление значения (через сеть или debounce) ломает позицию курсора — для этого есть варианты с `TextFieldValue` и state-объектом поля."
+ },
+ {
+  "id": "cmp-compose-lifecycle",
+  "topic": "compose",
+  "subtopic": "основы",
+  "question": "Каков жизненный цикл композиции?",
+  "answer": "Вход в композицию → рекомпозиции при изменении входных данных → выход из композиции. Это не жизненный цикл Activity: composable может выйти и вернуться много раз.",
+  "explanation": "Привязать работу к этому циклу позволяют `LaunchedEffect` и `DisposableEffect`."
+ },
+ {
+  "id": "cmp-readonly-composable",
+  "topic": "compose",
+  "subtopic": "производительность",
+  "question": "Что означает `@ReadOnlyComposable`?",
+  "answer": "Функция читает композицию (например, `CompositionLocal`), но ничего в неё не добавляет — компилятор может сгенерировать более дешёвый код.",
+  "explanation": "Так помечены `MaterialTheme.colorScheme` и подобные аксессоры."
+ },
+ {
+  "id": "cmp-compose-metrics",
+  "topic": "compose",
+  "subtopic": "производительность",
+  "question": "Как понять, почему composable перерисовывается?",
+  "answer": "Отчёты компилятора Compose (`compiler metrics`) показывают, какие функции пропускаемы и какие параметры нестабильны. Layout Inspector считает число рекомпозиций в реальном времени.",
+  "explanation": "Обычные причины: нестабильные параметры (`List`, интерфейсы), новые лямбды и чтение состояния слишком высоко по дереву."
+ },
+ {
+  "id": "cmp-strong-skipping",
+  "topic": "compose",
+  "subtopic": "производительность",
+  "question": "Что изменил режим strong skipping?",
+  "answer": "Compose стал пропускать composable даже с нестабильными параметрами, сравнивая их по ссылке, и автоматически запоминать лямбды.",
+  "explanation": "Это снимает часть боли со стабильностью, но не отменяет её: неизменяемые модели по-прежнему предсказуемее."
+ },
+ {
+  "id": "cmp-lazy-layouts",
+  "topic": "compose",
+  "subtopic": "списки",
+  "question": "Какие ещё ленивые контейнеры есть, кроме `LazyColumn`?",
+  "answer": "`LazyRow`, `LazyVerticalGrid`, `LazyHorizontalGrid`, `LazyVerticalStaggeredGrid`, а также `stickyHeader` внутри Lazy-скоупа.",
+  "explanation": "У всех тот же контракт: `key` для идентичности и `contentType` для переиспользования."
+ },
+ {
+  "id": "cmp-lazy-scope",
+  "topic": "compose",
+  "subtopic": "списки",
+  "question": "Почему нельзя обернуть `items` в обычный `if` с циклом?",
+  "answer": "`LazyListScope` — не composable-контекст: его блок вызывается для описания элементов, а не для их отрисовки. Внутри нельзя вызывать composable-функции и использовать `remember`.",
+  "explanation": "Состояние элемента объявляется внутри `item { }`, где уже действует композиция."
+ },
+ {
+  "id": "cmp-padding-values",
+  "topic": "compose",
+  "subtopic": "макет",
+  "question": "Чем `contentPadding` отличается от `Modifier.padding` у списка?",
+  "answer": "`contentPadding` добавляет отступ внутри области прокрутки — элементы уезжают под него при скролле. `Modifier.padding` обрезает саму область.",
+  "explanation": "Для списков под системными панелями правильный вариант — `contentPadding`."
+ },
+ {
+  "id": "cmp-composition-local-provider",
+  "topic": "compose",
+  "subtopic": "DI",
+  "question": "Как передать своё значение через `CompositionLocal`?",
+  "answer": "Создать `compositionLocalOf`/`staticCompositionLocalOf` и обернуть поддерево в `CompositionLocalProvider(Local provides value)`.",
+  "explanation": "`staticCompositionLocalOf` не отслеживает чтения: при изменении перекомпонуется всё поддерево, зато чтение бесплатно. Для редко меняющихся значений он предпочтительнее."
+ },
+ {
+  "id": "cmp-compose-events",
+  "topic": "compose",
+  "subtopic": "паттерны",
+  "question": "Как показать разовое событие (снекбар, переход) в Compose?",
+  "answer": "Либо частью состояния с последующим «потреблением», либо каналом/`SharedFlow`, который собирается в `LaunchedEffect`.",
+  "explanation": "Хранить разовое событие в `StateFlow` опасно: после поворота оно придёт снова и снекбар покажется повторно."
+ },
+ {
+  "id": "cmp-compose-multiplatform",
+  "topic": "compose",
+  "subtopic": "экосистема",
+  "question": "Чем Compose Multiplatform отличается от Jetpack Compose?",
+  "answer": "Jetpack Compose — Android-реализация от Google. Compose Multiplatform — надстройка JetBrains, переносящая тот же API на iOS, десктоп и web.",
+  "explanation": "Общими остаются UI-код и логика; платформенные API по-прежнему требуют `expect/actual`."
+ },
+ {
+  "id": "cmp-compose-bom",
+  "topic": "compose",
+  "subtopic": "экосистема",
+  "question": "Зачем нужен Compose BOM?",
+  "answer": "Он задаёт согласованный набор версий всех артефактов Compose одной строкой — версии рантайма, UI, Material и компилятора должны быть совместимы.",
+  "explanation": "Ручное указание разных версий — типичная причина падений вида `NoSuchMethodError` при запуске."
+ },
+ {
+  "id": "cmp-compose-testing-sync",
+  "topic": "compose",
+  "subtopic": "тестирование",
+  "question": "Почему тест Compose зависает на анимации?",
+  "answer": "Тестовые правила синхронизируются с композицией и ждут её простоя; бесконечная анимация никогда не даёт состояния покоя.",
+  "explanation": "Лечится `mainClock.autoAdvance = false` с ручным продвижением времени."
+ },
+ {
+  "id": "cmp-recomposition-loop",
+  "topic": "compose",
+  "subtopic": "рекомпозиция",
+  "question": "Откуда берётся бесконечная рекомпозиция?",
+  "answer": "Из записи в состояние прямо в теле composable: запись вызывает рекомпозицию, та снова выполняет запись.",
+  "explanation": "Изменять состояние можно только в эффектах и обработчиках событий. То же правило, что «не менять сигнал внутри computed» в Angular."
  }
 ]
