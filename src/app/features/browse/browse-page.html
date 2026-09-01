@@ -1,0 +1,67 @@
+<header class="head">
+  <a mat-button routerLink="/decks">
+    <span class="material-symbols-outlined">arrow_back</span>
+    Колоды
+  </a>
+  <span class="title">{{ title() }}</span>
+  <span class="counter">{{ total() === 0 ? 0 : index() + 1 }} / {{ total() }}</span>
+</header>
+
+<mat-progress-bar mode="determinate" [value]="percent()" />
+
+@if (current(); as card) {
+  <div class="jump">
+    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+      <mat-label>Перейти к вопросу</mat-label>
+      <mat-select [value]="index()" (selectionChange)="go($event.value)">
+        @for (item of jumpItems(); track item.index) {
+          <mat-option [value]="item.index">{{ item.label }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+  </div>
+
+  <mat-card appearance="outlined" class="card">
+    <mat-card-content>
+      <div class="subtopic">{{ card.subtopic }}</div>
+      <div class="question md" [innerHTML]="card.question | md"></div>
+
+      @if (revealed()) {
+        <hr />
+        <div class="answer md" [innerHTML]="card.answer | md"></div>
+        @if (card.explanation) {
+          <div class="explanation md" [innerHTML]="card.explanation | md"></div>
+        }
+      }
+    </mat-card-content>
+  </mat-card>
+
+  @if (!revealed()) {
+    <button mat-flat-button class="reveal" type="button" (click)="reveal()">
+      Показать ответ
+      <span class="hotkey">пробел</span>
+    </button>
+  }
+
+  <nav class="nav">
+    <button mat-stroked-button type="button" (click)="previous()" [disabled]="!hasPrevious()">
+      <span class="material-symbols-outlined">chevron_left</span>
+      Назад
+    </button>
+
+    <span class="hint">Стрелки листают, пробел показывает ответ</span>
+
+    @if (hasNext()) {
+      <button mat-flat-button type="button" (click)="next()">
+        Далее
+        <span class="material-symbols-outlined">chevron_right</span>
+      </button>
+    } @else {
+      <a mat-flat-button routerLink="/decks">Колода пройдена</a>
+    }
+  </nav>
+} @else {
+  <p class="muted">
+    В этой колоде пока нет карточек. <a routerLink="/decks">Вернуться к колодам</a>
+  </p>
+}

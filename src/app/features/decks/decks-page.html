@@ -48,6 +48,8 @@
       </mat-card-content>
 
       <mat-card-actions align="end">
+        <!-- Просмотр доступен всегда: он не зависит от расписания повторений. -->
+        <a mat-button [routerLink]="['/browse', deck.topic]">Все вопросы</a>
         <a
           mat-button
           [routerLink]="['/review', deck.topic]"

@@ -22,6 +22,12 @@ export const routes: Routes = [
     loadComponent: () => import('./features/review/review-page').then((m) => m.ReviewPage),
   },
   {
+    // Просмотр колоды подряд, без оценок и расписания.
+    path: 'browse/:topic',
+    title: 'Все вопросы — Interview Trainer',
+    loadComponent: () => import('./features/browse/browse-page').then((m) => m.BrowsePage),
+  },
+  {
     path: 'code',
     title: 'Задачи — Interview Trainer',
     loadComponent: () => import('./features/code/tasks-page').then((m) => m.TasksPage),
