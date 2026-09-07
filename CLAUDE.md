@@ -50,7 +50,9 @@ TypeScript strict. Бэкенда нет: контент — статическ�
   источника истины здесь заводить нельзя — с ним «назад» в браузере расходится
   с тем, что на экране. В `localStorage` при этом хранится `id` карточки, а не
   номер: номер съезжает при перестановке корпуса.
-- **`shared/`** — обёртка Monaco, markdown-pipe, `ThemeService`, `TrackService`,
+- **`shared/`** — обёртка Monaco, markdown-pipe с подсветкой кода (`highlight.ts`:
+  highlight.js, языки регистрируются поштучно ради веса бандла; цвета — токены
+  `--code-*` в `src/styles.scss` на `light-dark()`), `ThemeService`, `TrackService`,
   `LanguageService` со словарём в `shared/i18n/`, гварды треков.
 
 ### Треки

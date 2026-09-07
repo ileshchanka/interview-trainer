@@ -39,6 +39,25 @@ body {
   font-family: Roboto, 'Helvetica Neue', system-ui, sans-serif;
 }
 
+/**
+ * Палитра подсветки кода (highlight.js) — в духе GitHub light/dark, подогнана
+ * под фиолетовую primary M3. `light-dark()` берёт значение из `color-scheme`,
+ * который переключают и система, и `[data-theme]` в шапке, поэтому второго
+ * набора правил под тёмную тему не нужно.
+ */
+html {
+  --code-keyword: light-dark(#8250df, #d2a8ff);
+  --code-string: light-dark(#0a7c42, #7ee787);
+  --code-number: light-dark(#0550ae, #79c0ff);
+  --code-comment: light-dark(#6a737d, #8b949e);
+  --code-title: light-dark(#6f42c1, #c9a0ff);
+  --code-type: light-dark(#953800, #ffa657);
+  --code-attr: light-dark(#0550ae, #79c0ff);
+  --code-tag: light-dark(#116329, #7ee787);
+  --code-meta: light-dark(#6a737d, #a5a5b5);
+  --code-variable: light-dark(#953800, #ffa657);
+}
+
 /* Иконка в строке текста (не в кнопке) должна стоять по центру строки:
    у mat-icon фиксированная коробка 24×24, и по базовой линии она уезжает вниз. */
 .icon-inline mat-icon,
@@ -89,6 +108,79 @@ mat-icon.icon-inline {
       padding: 0;
       font-size: 0.85rem;
       line-height: 1.5;
+    }
+
+    /* Классы highlight.js. Готовая тема из пакета не подключается: она задаёт
+       и фон, и цвет — фон здесь свой, из токенов Material. */
+    .hljs-keyword,
+    .hljs-built_in,
+    .hljs-selector-tag,
+    .hljs-operator {
+      color: var(--code-keyword);
+    }
+
+    .hljs-string,
+    .hljs-char,
+    .hljs-regexp,
+    .hljs-template-tag {
+      color: var(--code-string);
+    }
+
+    .hljs-number,
+    .hljs-literal,
+    .hljs-symbol {
+      color: var(--code-number);
+    }
+
+    .hljs-comment,
+    .hljs-quote {
+      color: var(--code-comment);
+      font-style: italic;
+    }
+
+    .hljs-title,
+    .hljs-title.function_,
+    .hljs-section {
+      color: var(--code-title);
+    }
+
+    .hljs-type,
+    .hljs-title.class_,
+    .hljs-params {
+      color: var(--code-type);
+    }
+
+    .hljs-attr,
+    .hljs-attribute,
+    .hljs-property,
+    .hljs-selector-attr,
+    .hljs-selector-class {
+      color: var(--code-attr);
+    }
+
+    .hljs-tag,
+    .hljs-name {
+      color: var(--code-tag);
+    }
+
+    /* Аннотации Kotlin, директивы препроцессора, `use strict`. */
+    .hljs-meta,
+    .hljs-meta .hljs-string {
+      color: var(--code-meta);
+    }
+
+    .hljs-variable,
+    .hljs-template-variable,
+    .hljs-subst {
+      color: var(--code-variable);
+    }
+
+    .hljs-emphasis {
+      font-style: italic;
+    }
+
+    .hljs-strong {
+      font-weight: 600;
     }
   }
 
