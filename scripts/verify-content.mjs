@@ -117,6 +117,7 @@ for (const [lang, set] of corpus) {
   // Уникальность id проверяется внутри языка, а не по всему корпусу: перевод
   // намеренно несёт те же id, что оригинал, — на них завязан прогресс.
   const seen = set.ids;
+  const numbers = new Map();
   const label = lang === ORIGIN ? '' : ` [${lang}]`;
 
   for (const card of set.cards) {
@@ -133,6 +134,21 @@ for (const [lang, set] of corpus) {
       problems.push(`${where}: повторяющийся id — прогресс двух карточек слился бы в один`);
     }
     seen.add(card.id);
+
+    // Номер стоит в адресе и обязан быть постоянным: он назначается один раз
+    // и не переиспользуется. Проверяем, что он есть и уникален внутри темы —
+    // съехавшая нумерация означала бы, что присланная ссылка открывает
+    // не тот вопрос.
+    if (!Number.isInteger(card.number) || card.number < 1) {
+      problems.push(`${where}: номер вопроса отсутствует или не целое положительное число`);
+    } else {
+      const key = `${card.topic}/${card.number}`;
+      if (numbers.has(key)) {
+        problems.push(`${where}: номер ${card.number} уже занят карточкой ${numbers.get(key)}`);
+      } else {
+        numbers.set(key, card.id);
+      }
+    }
 
     // Многооператорный код в вопросе обязан быть блоком, а не инлайном:
     // вытянутый в строку внутри предложения, он и не читается, и не
@@ -164,6 +180,7 @@ for (const [lang, set] of corpus) {
 // с новым id в переводе — это молча потерянный прогресс, и поймать её можно
 // только здесь.
 const originIds = corpus.get(ORIGIN).ids;
+const originNumbers = new Map(corpus.get(ORIGIN).cards.map((card) => [card.id, card.number]));
 for (const [lang, set] of corpus) {
   if (lang === ORIGIN) {
     continue;
@@ -171,6 +188,17 @@ for (const [lang, set] of corpus) {
   for (const id of set.ids) {
     if (!originIds.has(id)) {
       problems.push(`перевод [${lang}]: id «${id}» не встречается в оригинале`);
+    }
+  }
+
+  // Номер тоже общий для языков: адрес /browse/js/42 обязан открывать один
+  // и тот же вопрос независимо от выбранного языка.
+  for (const card of set.cards) {
+    const origin = originNumbers.get(card.id);
+    if (origin !== undefined && origin !== card.number) {
+      problems.push(
+        `перевод [${lang}]: у карточки «${card.id}» номер ${card.number}, а в оригинале ${origin}`,
+      );
     }
   }
 }

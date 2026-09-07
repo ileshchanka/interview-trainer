@@ -6,7 +6,7 @@ import { advance, buildSession, dueCount, newCount } from './session';
 const NOW = Date.parse('2026-09-01T12:00:00Z');
 
 function card(id: string, topic: Card['topic'] = 'js'): Card {
-  return { id, topic, subtopic: 'основы', question: id, answer: id };
+  return { id, number: 1, topic, subtopic: 'основы', question: id, answer: id };
 }
 
 function statesOf(...entries: ReviewState[]): Map<string, ReviewState> {

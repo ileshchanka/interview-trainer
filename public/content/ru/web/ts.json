@@ -1,6 +1,7 @@
 [
  {
   "id": "ts-structural-typing",
+  "number": 1,
   "topic": "ts",
   "subtopic": "система типов",
   "question": "Типизация в TypeScript структурная или номинальная?",
@@ -10,6 +11,7 @@
  },
  {
   "id": "ts-any-unknown-never",
+  "number": 2,
   "topic": "ts",
   "subtopic": "система типов",
   "question": "Чем различаются `any`, `unknown` и `never`?",
@@ -19,6 +21,7 @@
  },
  {
   "id": "ts-exhaustiveness",
+  "number": 3,
   "topic": "ts",
   "subtopic": "система типов",
   "question": "Как заставить компилятор проверять полноту разбора union?",
@@ -28,6 +31,7 @@
  },
  {
   "id": "ts-union-intersection",
+  "number": 4,
   "topic": "ts",
   "subtopic": "система типов",
   "question": "Чем `A | B` отличается от `A & B`?",
@@ -37,6 +41,7 @@
  },
  {
   "id": "ts-discriminated-union",
+  "number": 5,
   "topic": "ts",
   "subtopic": "система типов",
   "question": "Что такое дискриминированное объединение?",
@@ -46,6 +51,7 @@
  },
  {
   "id": "ts-literal-types",
+  "number": 6,
   "topic": "ts",
   "subtopic": "система типов",
   "question": "Что такое литеральный тип и когда он выводится?",
@@ -55,6 +61,7 @@
  },
  {
   "id": "ts-as-const",
+  "number": 7,
   "topic": "ts",
   "subtopic": "система типов",
   "question": "Что делает `as const`?",
@@ -64,6 +71,7 @@
  },
  {
   "id": "ts-template-literal-types",
+  "number": 8,
   "topic": "ts",
   "subtopic": "система типов",
   "question": "Что такое шаблонные литеральные типы?",
@@ -73,6 +81,7 @@
  },
  {
   "id": "ts-variance",
+  "number": 9,
   "topic": "ts",
   "subtopic": "система типов",
   "question": "Что такое ковариантность и контравариантность на примере функций?",
@@ -82,6 +91,7 @@
  },
  {
   "id": "ts-type-inference-widening",
+  "number": 10,
   "topic": "ts",
   "subtopic": "система типов",
   "question": "Почему `let x = 'a'` имеет тип `string`, а `const x = 'a'` — тип `'a'`?",
@@ -91,6 +101,7 @@
  },
  {
   "id": "ts-keyof-typeof",
+  "number": 11,
   "topic": "ts",
   "subtopic": "система типов",
   "question": "Что делает связка `keyof typeof`?",
@@ -100,6 +111,7 @@
  },
  {
   "id": "ts-indexed-access",
+  "number": 12,
   "topic": "ts",
   "subtopic": "система типов",
   "question": "Что означает запись `T[K]` в позиции типа?",
@@ -109,6 +121,7 @@
  },
  {
   "id": "ts-excess-property-check",
+  "number": 13,
   "topic": "ts",
   "subtopic": "система типов",
   "question": "Почему литерал с лишним свойством не проходит, а та же переменная — проходит?",
@@ -118,6 +131,7 @@
  },
  {
   "id": "ts-object-empty-types",
+  "number": 14,
   "topic": "ts",
   "subtopic": "система типов",
   "question": "Чем различаются `object`, `{}`, `Object` и `unknown`?",
@@ -127,6 +141,7 @@
  },
  {
   "id": "ts-branded-types",
+  "number": 15,
   "topic": "ts",
   "subtopic": "система типов",
   "question": "Как добиться номинальной типизации в TypeScript?",
@@ -136,6 +151,7 @@
  },
  {
   "id": "ts-runtime-validation",
+  "number": 16,
   "topic": "ts",
   "subtopic": "система типов",
   "question": "Почему типы не защищают от неверных данных с сервера?",
@@ -145,6 +161,7 @@
  },
  {
   "id": "ts-tuples",
+  "number": 17,
   "topic": "ts",
   "subtopic": "система типов",
   "question": "Чем кортеж отличается от массива и что такое вариадический кортеж?",
@@ -154,6 +171,7 @@
  },
  {
   "id": "ts-never-usage",
+  "number": 18,
   "topic": "ts",
   "subtopic": "система типов",
   "question": "Где на практике встречается тип `never`?",
@@ -163,6 +181,7 @@
  },
  {
   "id": "ts-typed-object-keys",
+  "number": 19,
   "topic": "ts",
   "subtopic": "система типов",
   "question": "Почему `Object.keys(user)` возвращает `string[]`, а не union ключей?",
@@ -172,6 +191,7 @@
  },
  {
   "id": "ts-narrowing",
+  "number": 20,
   "topic": "ts",
   "subtopic": "сужение типов",
   "question": "Какие конструкции сужают тип?",
@@ -181,6 +201,7 @@
  },
  {
   "id": "ts-type-guard",
+  "number": 21,
   "topic": "ts",
   "subtopic": "сужение типов",
   "question": "Как написать пользовательский type guard?",
@@ -190,6 +211,7 @@
  },
  {
   "id": "ts-assertion-function",
+  "number": 22,
   "topic": "ts",
   "subtopic": "сужение типов",
   "question": "Что такое assertion-функция и чем она отличается от type guard?",
@@ -199,6 +221,7 @@
  },
  {
   "id": "ts-inferred-predicates",
+  "number": 23,
   "topic": "ts",
   "subtopic": "сужение типов",
   "question": "Обязательно ли писать `arg is Type`, чтобы функция сужала тип?",
@@ -208,6 +231,7 @@
  },
  {
   "id": "ts-narrowing-limits",
+  "number": 24,
   "topic": "ts",
   "subtopic": "сужение типов",
   "question": "Почему сужение типа иногда «теряется»?",
@@ -217,6 +241,7 @@
  },
  {
   "id": "ts-generics-why",
+  "number": 25,
   "topic": "ts",
   "subtopic": "дженерики",
   "question": "Зачем нужны дженерики, если есть `any`?",
@@ -226,6 +251,7 @@
  },
  {
   "id": "ts-generic-constraints",
+  "number": 26,
   "topic": "ts",
   "subtopic": "дженерики",
   "question": "Что означает `T extends { id: string }`?",
@@ -235,6 +261,7 @@
  },
  {
   "id": "ts-generic-default",
+  "number": 27,
   "topic": "ts",
   "subtopic": "дженерики",
   "question": "Можно ли задать дженерику значение по умолчанию?",
@@ -244,6 +271,7 @@
  },
  {
   "id": "ts-generic-inference",
+  "number": 28,
   "topic": "ts",
   "subtopic": "дженерики",
   "question": "Как компилятор выводит параметр типа и когда его нужно указывать явно?",
@@ -253,6 +281,7 @@
  },
  {
   "id": "ts-const-type-parameter",
+  "number": 29,
   "topic": "ts",
   "subtopic": "дженерики",
   "question": "Что делает модификатор `const` у параметра типа?",
@@ -262,6 +291,7 @@
  },
  {
   "id": "ts-generic-class",
+  "number": 30,
   "topic": "ts",
   "subtopic": "дженерики",
   "question": "Как работают дженерик-классы и в чём их отличие от дженерик-функций?",
@@ -271,6 +301,7 @@
  },
  {
   "id": "ts-conditional-types",
+  "number": 31,
   "topic": "ts",
   "subtopic": "условные типы",
   "question": "Как читается `T extends U ? X : Y`?",
@@ -280,6 +311,7 @@
  },
  {
   "id": "ts-infer",
+  "number": 32,
   "topic": "ts",
   "subtopic": "условные типы",
   "question": "Что делает `infer`?",
@@ -289,6 +321,7 @@
  },
  {
   "id": "ts-recursive-types",
+  "number": 33,
   "topic": "ts",
   "subtopic": "условные типы",
   "question": "Как написать рекурсивный тип и где предел рекурсии?",
@@ -298,6 +331,7 @@
  },
  {
   "id": "ts-distributive-conditional",
+  "number": 34,
   "topic": "ts",
   "subtopic": "условные типы",
   "question": "Что значит «условный тип распределяется по union» и как это отключить?",
@@ -307,6 +341,7 @@
  },
  {
   "id": "ts-mapped-types",
+  "number": 35,
   "topic": "ts",
   "subtopic": "mapped types",
   "question": "Как устроен mapped type?",
@@ -316,6 +351,7 @@
  },
  {
   "id": "ts-key-remapping",
+  "number": 36,
   "topic": "ts",
   "subtopic": "mapped types",
   "question": "Что даёт `as` внутри mapped type?",
@@ -325,6 +361,7 @@
  },
  {
   "id": "ts-utility-types",
+  "number": 37,
   "topic": "ts",
   "subtopic": "утилитные типы",
   "question": "Что делают `Partial`, `Required`, `Readonly`, `Pick`, `Omit`, `Record`?",
@@ -334,6 +371,7 @@
  },
  {
   "id": "ts-returntype-parameters",
+  "number": 38,
   "topic": "ts",
   "subtopic": "утилитные типы",
   "question": "Что делают `ReturnType`, `Parameters` и `Awaited`?",
@@ -343,6 +381,7 @@
  },
  {
   "id": "ts-omit-vs-exclude",
+  "number": 39,
   "topic": "ts",
   "subtopic": "утилитные типы",
   "question": "Чем `Omit` отличается от `Exclude`?",
@@ -352,6 +391,7 @@
  },
  {
   "id": "ts-partial-danger",
+  "number": 40,
   "topic": "ts",
   "subtopic": "утилитные типы",
   "question": "Чем опасен `Partial` в аргументах функции?",
@@ -361,6 +401,7 @@
  },
  {
   "id": "ts-interface-vs-type",
+  "number": 41,
   "topic": "ts",
   "subtopic": "интерфейсы",
   "question": "Чем `interface` отличается от `type`?",
@@ -370,6 +411,7 @@
  },
  {
   "id": "ts-optional-vs-undefined",
+  "number": 42,
   "topic": "ts",
   "subtopic": "интерфейсы",
   "question": "Чем `a?: string` отличается от `a: string | undefined`?",
@@ -379,6 +421,7 @@
  },
  {
   "id": "ts-index-signature",
+  "number": 43,
   "topic": "ts",
   "subtopic": "интерфейсы",
   "question": "Что такое индексная сигнатура и чем она рискованна?",
@@ -388,6 +431,7 @@
  },
  {
   "id": "ts-readonly",
+  "number": 44,
   "topic": "ts",
   "subtopic": "интерфейсы",
   "question": "Что на самом деле гарантирует `readonly`?",
@@ -397,6 +441,7 @@
  },
  {
   "id": "ts-function-overloads",
+  "number": 45,
   "topic": "ts",
   "subtopic": "функции",
   "question": "Как работают перегрузки функций в TypeScript?",
@@ -406,6 +451,7 @@
  },
  {
   "id": "ts-this-parameter",
+  "number": 46,
   "topic": "ts",
   "subtopic": "функции",
   "question": "Как типизировать `this` в функции?",
@@ -415,6 +461,7 @@
  },
  {
   "id": "ts-generic-vs-overload",
+  "number": 47,
   "topic": "ts",
   "subtopic": "функции",
   "question": "Когда дженерик лучше перегрузки?",
@@ -424,6 +471,7 @@
  },
  {
   "id": "ts-async-types",
+  "number": 48,
   "topic": "ts",
   "subtopic": "функции",
   "question": "Как типизируются асинхронные функции и что такое «плавающий» промис?",
@@ -433,6 +481,7 @@
  },
  {
   "id": "ts-void-vs-undefined",
+  "number": 49,
   "topic": "ts",
   "subtopic": "функции",
   "question": "Чем `void` отличается от `undefined` в позиции возвращаемого типа?",
@@ -442,6 +491,7 @@
  },
  {
   "id": "ts-enum-problems",
+  "number": 50,
   "topic": "ts",
   "subtopic": "enum",
   "question": "Почему `enum` в TypeScript спорен и что вместо него?",
@@ -451,6 +501,7 @@
  },
  {
   "id": "ts-isolated-modules",
+  "number": 51,
   "topic": "ts",
   "subtopic": "компиляция",
   "question": "Что означает флаг `isolatedModules`?",
@@ -460,6 +511,7 @@
  },
  {
   "id": "ts-import-type",
+  "number": 52,
   "topic": "ts",
   "subtopic": "компиляция",
   "question": "Зачем нужен `import type`?",
@@ -469,6 +521,7 @@
  },
  {
   "id": "ts-declaration-files",
+  "number": 53,
   "topic": "ts",
   "subtopic": "компиляция",
   "question": "Что такое `.d.ts` и откуда берутся типы для чужих библиотек?",
@@ -478,6 +531,7 @@
  },
  {
   "id": "ts-tsconfig-paths",
+  "number": 54,
   "topic": "ts",
   "subtopic": "компиляция",
   "question": "Что делают `paths` и `baseUrl` в tsconfig?",
@@ -487,6 +541,7 @@
  },
  {
   "id": "ts-module-resolution",
+  "number": 55,
   "topic": "ts",
   "subtopic": "компиляция",
   "question": "Что делает `moduleResolution` и почему в импортах иногда требуется расширение `.js`?",
@@ -496,6 +551,7 @@
  },
  {
   "id": "ts-target-lib",
+  "number": 56,
   "topic": "ts",
   "subtopic": "компиляция",
   "question": "Чем `target` отличается от `lib` и зачем нужен `skipLibCheck`?",
@@ -505,6 +561,7 @@
  },
  {
   "id": "ts-strict-flags",
+  "number": 57,
   "topic": "ts",
   "subtopic": "строгость",
   "question": "Что включает флаг `strict`?",
@@ -514,6 +571,7 @@
  },
  {
   "id": "ts-strict-null-checks",
+  "number": 58,
   "topic": "ts",
   "subtopic": "строгость",
   "question": "Что меняет `strictNullChecks`?",
@@ -523,6 +581,7 @@
  },
  {
   "id": "ts-non-null-assertion",
+  "number": 59,
   "topic": "ts",
   "subtopic": "строгость",
   "question": "Что делает оператор `!` после выражения и чем он опасен?",
@@ -532,6 +591,7 @@
  },
  {
   "id": "ts-as-vs-satisfies",
+  "number": 60,
   "topic": "ts",
   "subtopic": "строгость",
   "question": "Чем `satisfies` отличается от `as`?",
@@ -541,6 +601,7 @@
  },
  {
   "id": "ts-unknown-in-catch",
+  "number": 61,
   "topic": "ts",
   "subtopic": "строгость",
   "question": "Какой тип у переменной в `catch`?",
@@ -550,6 +611,7 @@
  },
  {
   "id": "ts-class-modifiers",
+  "number": 62,
   "topic": "ts",
   "subtopic": "классы",
   "question": "Чем `private` из TypeScript отличается от `#field`?",
@@ -559,6 +621,7 @@
  },
  {
   "id": "ts-abstract-class",
+  "number": 63,
   "topic": "ts",
   "subtopic": "классы",
   "question": "Когда нужен `abstract`-класс, а когда достаточно интерфейса?",
@@ -568,6 +631,7 @@
  },
  {
   "id": "ts-decorators",
+  "number": 64,
   "topic": "ts",
   "subtopic": "классы",
   "question": "Чем стандартные декораторы отличаются от экспериментальных?",
@@ -577,6 +641,7 @@
  },
  {
   "id": "ts-module-augmentation",
+  "number": 65,
   "topic": "ts",
   "subtopic": "модули",
   "question": "Как добавить свойство в тип из чужой библиотеки?",

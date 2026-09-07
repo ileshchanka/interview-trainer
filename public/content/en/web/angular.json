@@ -1,6 +1,7 @@
 [
  {
   "id": "ng-standalone",
+  "number": 1,
   "topic": "angular",
   "subtopic": "components",
   "question": "What is a standalone component, and what did it change?",
@@ -10,6 +11,7 @@
  },
  {
   "id": "ng-component-lifecycle",
+  "number": 2,
   "topic": "angular",
   "subtopic": "components",
   "question": "List the main lifecycle hooks in the order they are called.",
@@ -19,6 +21,7 @@
  },
  {
   "id": "ng-constructor-vs-ngoninit",
+  "number": 3,
   "topic": "angular",
   "subtopic": "components",
   "question": "How does the constructor differ from `ngOnInit`?",
@@ -28,6 +31,7 @@
  },
  {
   "id": "ng-input-signal",
+  "number": 4,
   "topic": "angular",
   "subtopic": "components",
   "question": "How does `input()` differ from `@Input()`?",
@@ -37,6 +41,7 @@
  },
  {
   "id": "ng-output-function",
+  "number": 5,
   "topic": "angular",
   "subtopic": "components",
   "question": "How does a component emit an event to the outside?",
@@ -46,6 +51,7 @@
  },
  {
   "id": "ng-content-projection",
+  "number": 6,
   "topic": "angular",
   "subtopic": "components",
   "question": "What is content projection, and how do you project into several slots?",
@@ -55,6 +61,7 @@
  },
  {
   "id": "ng-viewchild-contentchild",
+  "number": 7,
   "topic": "angular",
   "subtopic": "components",
   "question": "How does `viewChild` differ from `contentChild`?",
@@ -64,6 +71,7 @@
  },
  {
   "id": "ng-model-signal",
+  "number": 8,
   "topic": "angular",
   "subtopic": "components",
   "question": "What does `model()` do, and how does it differ from an `input()` + `output()` pair?",
@@ -73,6 +81,7 @@
  },
  {
   "id": "ng-destroy-ref",
+  "number": 9,
   "topic": "angular",
   "subtopic": "components",
   "question": "What is `DestroyRef`, and when is it handier than `ngOnDestroy`?",
@@ -82,6 +91,7 @@
  },
  {
   "id": "ng-ngprojectas",
+  "number": 10,
   "topic": "angular",
   "subtopic": "components",
   "question": "What is `ngProjectAs` for?",
@@ -91,6 +101,7 @@
  },
  {
   "id": "ng-dynamic-components",
+  "number": 11,
   "topic": "angular",
   "subtopic": "components",
   "question": "How do you create a component programmatically?",
@@ -100,6 +111,7 @@
  },
  {
   "id": "ng-ng-template-container",
+  "number": 12,
   "topic": "angular",
   "subtopic": "templates",
   "question": "How does `ng-template` differ from `ng-container`?",
@@ -109,6 +121,7 @@
  },
  {
   "id": "ng-defer",
+  "number": 13,
   "topic": "angular",
   "subtopic": "templates",
   "question": "What does a `@defer` block do?",
@@ -118,6 +131,7 @@
  },
  {
   "id": "ng-control-flow",
+  "number": 14,
   "topic": "angular",
   "subtopic": "templates",
   "question": "Why is the built-in `@if`/`@for` better than `*ngIf`/`*ngFor`?",
@@ -127,6 +141,7 @@
  },
  {
   "id": "ng-trackby",
+  "number": 15,
   "topic": "angular",
   "subtopic": "templates",
   "question": "What is `track` in `@for` for?",
@@ -136,6 +151,7 @@
  },
  {
   "id": "ng-template-context-typing",
+  "number": 16,
   "topic": "angular",
   "subtopic": "templates",
   "question": "How do you type the context of an `ng-template`?",
@@ -145,6 +161,7 @@
  },
  {
   "id": "ng-ngtemplateoutlet",
+  "number": 17,
   "topic": "angular",
   "subtopic": "templates",
   "question": "How do you pass a component a piece of markup with parameters?",
@@ -154,6 +171,7 @@
  },
  {
   "id": "ng-change-detection",
+  "number": 18,
   "topic": "angular",
   "subtopic": "change detection",
   "question": "How does change detection work in Angular?",
@@ -163,6 +181,7 @@
  },
  {
   "id": "ng-onpush",
+  "number": 19,
   "topic": "angular",
   "subtopic": "change detection",
   "question": "What does `ChangeDetectionStrategy.OnPush` change?",
@@ -172,6 +191,7 @@
  },
  {
   "id": "ng-expression-changed",
+  "number": 20,
   "topic": "angular",
   "subtopic": "change detection",
   "question": "Where does `ExpressionChangedAfterItHasBeenCheckedError` come from?",
@@ -181,6 +201,7 @@
  },
  {
   "id": "ng-zone-js",
+  "number": 21,
   "topic": "angular",
   "subtopic": "change detection",
   "question": "What does zone.js do, and why is it being moved away from?",
@@ -190,6 +211,7 @@
  },
  {
   "id": "ng-markforcheck-vs-detectchanges",
+  "number": 22,
   "topic": "angular",
   "subtopic": "change detection",
   "question": "How does `markForCheck` differ from `detectChanges`?",
@@ -199,6 +221,7 @@
  },
  {
   "id": "ng-after-render",
+  "number": 23,
   "topic": "angular",
   "subtopic": "change detection",
   "question": "What are `afterRenderEffect` and `afterNextRender` for?",
@@ -208,6 +231,7 @@
  },
  {
   "id": "ng-signals-basics",
+  "number": 24,
   "topic": "angular",
   "subtopic": "signals",
   "question": "What is a signal, and how does it differ from an Observable?",
@@ -217,6 +241,7 @@
  },
  {
   "id": "ng-computed",
+  "number": 25,
   "topic": "angular",
   "subtopic": "signals",
   "question": "How does `computed` work?",
@@ -226,6 +251,7 @@
  },
  {
   "id": "ng-effect",
+  "number": 26,
   "topic": "angular",
   "subtopic": "signals",
   "question": "What is `effect` for, and what should you avoid doing in it?",
@@ -235,6 +261,7 @@
  },
  {
   "id": "ng-untracked",
+  "number": 27,
   "topic": "angular",
   "subtopic": "signals",
   "question": "What is `untracked` for?",
@@ -244,6 +271,7 @@
  },
  {
   "id": "ng-signal-update-set",
+  "number": 28,
   "topic": "angular",
   "subtopic": "signals",
   "question": "How does `set` differ from `update`?",
@@ -253,6 +281,7 @@
  },
  {
   "id": "ng-tosignal",
+  "number": 29,
   "topic": "angular",
   "subtopic": "signals",
   "question": "What does `toSignal` do, and what is important to remember about it?",
@@ -262,6 +291,7 @@
  },
  {
   "id": "ng-linked-signal",
+  "number": 30,
   "topic": "angular",
   "subtopic": "signals",
   "question": "What does `linkedSignal` do, and how does it differ from `computed`?",
@@ -271,6 +301,7 @@
  },
  {
   "id": "ng-resource",
+  "number": 31,
   "topic": "angular",
   "subtopic": "signals",
   "question": "What do `resource()` and `httpResource()` give you?",
@@ -280,6 +311,7 @@
  },
  {
   "id": "ng-di-basics",
+  "number": 32,
   "topic": "angular",
   "subtopic": "DI",
   "question": "How does Angular know what to inject into a constructor?",
@@ -289,6 +321,7 @@
  },
  {
   "id": "ng-injector-hierarchy",
+  "number": 33,
   "topic": "angular",
   "subtopic": "DI",
   "question": "How is the injector hierarchy arranged?",
@@ -298,6 +331,7 @@
  },
  {
   "id": "ng-provided-in-root",
+  "number": 34,
   "topic": "angular",
   "subtopic": "DI",
   "question": "What does `providedIn: 'root'` give you?",
@@ -307,6 +341,7 @@
  },
  {
   "id": "ng-provider-types",
+  "number": 35,
   "topic": "angular",
   "subtopic": "DI",
   "question": "What kinds of providers are there?",
@@ -316,6 +351,7 @@
  },
  {
   "id": "ng-injection-token",
+  "number": 36,
   "topic": "angular",
   "subtopic": "DI",
   "question": "What is an `InjectionToken` for?",
@@ -325,6 +361,7 @@
  },
  {
   "id": "ng-inject-flags",
+  "number": 37,
   "topic": "angular",
   "subtopic": "DI",
   "question": "What do the `optional`, `self`, `skipSelf` and `host` modifiers do?",
@@ -334,6 +371,7 @@
  },
  {
   "id": "ng-app-initializer",
+  "number": 38,
   "topic": "angular",
   "subtopic": "DI",
   "question": "How do you run asynchronous work before the application starts?",
@@ -343,6 +381,7 @@
  },
  {
   "id": "ng-environment-injector",
+  "number": 39,
   "topic": "angular",
   "subtopic": "DI",
   "question": "What are `runInInjectionContext` and `EnvironmentInjector` for?",
@@ -352,6 +391,7 @@
  },
  {
   "id": "ng-forward-ref",
+  "number": 40,
   "topic": "angular",
   "subtopic": "DI",
   "question": "When do you need `forwardRef`?",
@@ -361,6 +401,7 @@
  },
  {
   "id": "ng-lazy-loading",
+  "number": 41,
   "topic": "angular",
   "subtopic": "routing",
   "question": "How do you make a route lazy?",
@@ -370,6 +411,7 @@
  },
  {
   "id": "ng-route-guards",
+  "number": 42,
   "topic": "angular",
   "subtopic": "routing",
   "question": "What kinds of guard functions are there, and when does each one run?",
@@ -379,6 +421,7 @@
  },
  {
   "id": "ng-route-params",
+  "number": 43,
   "topic": "angular",
   "subtopic": "routing",
   "question": "How do you read a route parameter, and why is `snapshot` sometimes not enough?",
@@ -388,6 +431,7 @@
  },
  {
   "id": "ng-router-outlet-nested",
+  "number": 44,
   "topic": "angular",
   "subtopic": "routing",
   "question": "How do nested routes work?",
@@ -397,6 +441,7 @@
  },
  {
   "id": "ng-query-params",
+  "number": 45,
   "topic": "angular",
   "subtopic": "routing",
   "question": "How do you work with query parameters and keep them across navigations?",
@@ -406,6 +451,7 @@
  },
  {
   "id": "ng-router-events",
+  "number": 46,
   "topic": "angular",
   "subtopic": "routing",
   "question": "How do you track navigation and show a loading indicator?",
@@ -415,6 +461,7 @@
  },
  {
   "id": "ng-forms-comparison",
+  "number": 47,
   "topic": "angular",
   "subtopic": "forms",
   "question": "How do reactive forms differ from template-driven ones?",
@@ -424,6 +471,7 @@
  },
  {
   "id": "ng-form-control-state",
+  "number": 48,
   "topic": "angular",
   "subtopic": "forms",
   "question": "What states does a form control have?",
@@ -433,6 +481,7 @@
  },
  {
   "id": "ng-custom-validator",
+  "number": 49,
   "topic": "angular",
   "subtopic": "forms",
   "question": "How do you write your own validator?",
@@ -442,6 +491,7 @@
  },
  {
   "id": "ng-control-value-accessor",
+  "number": 50,
   "topic": "angular",
   "subtopic": "forms",
   "question": "What is `ControlValueAccessor` for?",
@@ -451,6 +501,7 @@
  },
  {
   "id": "ng-disabled-reactive",
+  "number": 51,
   "topic": "angular",
   "subtopic": "forms",
   "question": "Why can you not use `[disabled]` together with a reactive form?",
@@ -460,6 +511,7 @@
  },
  {
   "id": "ng-form-array",
+  "number": 52,
   "topic": "angular",
   "subtopic": "forms",
   "question": "How do you handle a dynamic list of fields in a reactive form?",
@@ -469,6 +521,7 @@
  },
  {
   "id": "ng-typed-forms",
+  "number": 53,
   "topic": "angular",
   "subtopic": "forms",
   "question": "What do typed forms give you, and what is `nonNullable` for?",
@@ -478,6 +531,7 @@
  },
  {
   "id": "ng-form-update-on",
+  "number": 54,
   "topic": "angular",
   "subtopic": "forms",
   "question": "What does the `updateOn` option do, and how does `valueChanges` differ from `statusChanges`?",
@@ -487,6 +541,7 @@
  },
  {
   "id": "ng-flattening-operators",
+  "number": 55,
   "topic": "angular",
   "subtopic": "RxJS",
   "question": "How do `switchMap`, `mergeMap`, `concatMap` and `exhaustMap` differ?",
@@ -496,6 +551,7 @@
  },
  {
   "id": "ng-cold-vs-hot",
+  "number": 56,
   "topic": "angular",
   "subtopic": "RxJS",
   "question": "How does a cold Observable differ from a hot one?",
@@ -505,6 +561,7 @@
  },
  {
   "id": "ng-subject-types",
+  "number": 57,
   "topic": "angular",
   "subtopic": "RxJS",
   "question": "How do `Subject`, `BehaviorSubject`, `ReplaySubject` and `AsyncSubject` differ?",
@@ -514,6 +571,7 @@
  },
  {
   "id": "ng-unsubscribe",
+  "number": 58,
   "topic": "angular",
   "subtopic": "RxJS",
   "question": "How do you avoid leaking subscriptions?",
@@ -523,6 +581,7 @@
  },
  {
   "id": "ng-async-pipe",
+  "number": 59,
   "topic": "angular",
   "subtopic": "RxJS",
   "question": "What does the `async` pipe do?",
@@ -532,6 +591,7 @@
  },
  {
   "id": "ng-signal-rxjs-interop",
+  "number": 60,
   "topic": "angular",
   "subtopic": "RxJS",
   "question": "When are signals not enough and RxJS is needed?",
@@ -541,6 +601,7 @@
  },
  {
   "id": "ng-http-interceptor",
+  "number": 61,
   "topic": "angular",
   "subtopic": "HTTP",
   "question": "What is an interceptor, and how is it registered?",
@@ -550,6 +611,7 @@
  },
  {
   "id": "ng-http-client-observable",
+  "number": 62,
   "topic": "angular",
   "subtopic": "HTTP",
   "question": "Why does an `HttpClient` request not run without a subscription?",
@@ -559,6 +621,7 @@
  },
  {
   "id": "ng-http-params",
+  "number": 63,
   "topic": "angular",
   "subtopic": "HTTP",
   "question": "What is the right way to pass query parameters to `HttpClient`?",
@@ -568,6 +631,7 @@
  },
  {
   "id": "ng-http-caching",
+  "number": 64,
   "topic": "angular",
   "subtopic": "HTTP",
   "question": "How do you cache an HTTP request so it is not sent again?",
@@ -577,6 +641,7 @@
  },
  {
   "id": "ng-ssr-hydration",
+  "number": 65,
   "topic": "angular",
   "subtopic": "SSR",
   "question": "What is hydration, and what does it give you?",
@@ -586,6 +651,7 @@
  },
  {
   "id": "ng-ssr-transfer-state",
+  "number": 66,
   "topic": "angular",
   "subtopic": "SSR",
   "question": "How do you avoid running the same request twice under server-side rendering?",
@@ -595,6 +661,7 @@
  },
  {
   "id": "ng-pure-pipe",
+  "number": 67,
   "topic": "angular",
   "subtopic": "pipes",
   "question": "How does a pure pipe differ from an impure one?",
@@ -604,6 +671,7 @@
  },
  {
   "id": "ng-directive-types",
+  "number": 68,
   "topic": "angular",
   "subtopic": "directives",
   "question": "What kinds of directives are there?",
@@ -613,6 +681,7 @@
  },
  {
   "id": "ng-host-binding",
+  "number": 69,
   "topic": "angular",
   "subtopic": "directives",
   "question": "How does a directive affect its host element?",
@@ -622,6 +691,7 @@
  },
  {
   "id": "ng-host-directives",
+  "number": 70,
   "topic": "angular",
   "subtopic": "directives",
   "question": "What are `hostDirectives`, and what problem do they solve?",
@@ -631,6 +701,7 @@
  },
  {
   "id": "ng-view-encapsulation",
+  "number": 71,
   "topic": "angular",
   "subtopic": "styles",
   "question": "What style encapsulation modes are there?",
@@ -640,6 +711,7 @@
  },
  {
   "id": "ng-host-context-styles",
+  "number": 72,
   "topic": "angular",
   "subtopic": "styles",
   "question": "How do you style a component differently depending on the theme?",
@@ -649,6 +721,7 @@
  },
  {
   "id": "ng-standalone-testing",
+  "number": 73,
   "topic": "angular",
   "subtopic": "testing",
   "question": "How do you test a standalone component?",
@@ -658,6 +731,7 @@
  },
  {
   "id": "ng-testing-harness",
+  "number": 74,
   "topic": "angular",
   "subtopic": "testing",
   "question": "What is a component harness, and why is it better than querying the DOM?",
@@ -667,6 +741,7 @@
  },
  {
   "id": "ng-testing-async",
+  "number": 75,
   "topic": "angular",
   "subtopic": "testing",
   "question": "How does `fakeAsync` differ from `waitForAsync`, and what does `tick` do?",
@@ -676,6 +751,7 @@
  },
  {
   "id": "ng-testing-signals",
+  "number": 76,
   "topic": "angular",
   "subtopic": "testing",
   "question": "How do you test signals, `computed` and `effect`?",
@@ -685,6 +761,7 @@
  },
  {
   "id": "ng-error-handler",
+  "number": 77,
   "topic": "angular",
   "subtopic": "error handling",
   "question": "How do you intercept unhandled errors across the whole application?",
@@ -694,6 +771,7 @@
  },
  {
   "id": "ng-optimized-image",
+  "number": 78,
   "topic": "angular",
   "subtopic": "performance",
   "question": "What does the `NgOptimizedImage` directive do?",

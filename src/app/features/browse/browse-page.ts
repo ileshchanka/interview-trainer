@@ -68,7 +68,7 @@ export class BrowsePage {
 
   readonly topic = input.required<Topic>();
   /**
-   * Номер вопроса из адреса, считая с единицы, — тот же, что в счётчике.
+   * Постоянный номер вопроса из адреса — тот же, что в списке перехода.
    * Пусто — зашли по короткой ссылке на колоду или номер не разобрался.
    */
   readonly position = input<number | undefined, unknown>(undefined, {
@@ -115,16 +115,22 @@ export class BrowsePage {
    * источника истины пришлось бы синхронизировать в обе стороны, и кнопка
    * «назад» в браузере расходилась бы с содержимым экрана.
    *
-   * Адрес без номера откатывается к сохранённой позиции, номер за границами
-   * колоды — к ближайшему краю; сам адрес поправит эффект ниже.
+   * Номер в адресе постоянный, а не порядковый, поэтому позиция ищется
+   * перебором. Неизвестный номер — удалённая карточка, чужая тема или вопрос
+   * вне выбранных категорий — откатывается к сохранённой позиции; сам адрес
+   * поправит эффект ниже.
    */
   protected readonly index = computed(() => {
-    const total = this.cards().length;
-    if (total === 0) {
+    const cards = this.cards();
+    if (cards.length === 0) {
       return 0;
     }
     const fromUrl = this.position();
-    return fromUrl === undefined ? this.savedIndex() : Math.min(fromUrl - 1, total - 1);
+    if (fromUrl === undefined) {
+      return this.savedIndex();
+    }
+    const found = cards.findIndex((card) => card.number === fromUrl);
+    return found >= 0 ? found : this.savedIndex();
   });
 
   protected readonly current = computed<Card | undefined>(() => this.cards()[this.index()]);
@@ -137,11 +143,11 @@ export class BrowsePage {
   protected readonly hasPrevious = computed(() => this.index() > 0);
   protected readonly hasNext = computed(() => this.index() + 1 < this.total());
 
-  /** Пункты списка перехода: номер плюс сам вопрос, обрезанный до строки. */
+  /** Пункты списка перехода: постоянный номер плюс сам вопрос, обрезанный до строки. */
   protected readonly jumpItems = computed(() =>
     this.cards().map((card, i) => ({
       index: i,
-      label: `${i + 1}. ${plainText(card.question)}`,
+      label: `${card.number}. ${plainText(card.question)}`,
     })),
   );
 
@@ -149,8 +155,8 @@ export class BrowsePage {
    * Позиция запоминается по колоде: чтение сотни карточек за один присест
    * никто не заканчивает, и возвращаться каждый раз к первой — издевательство.
    *
-   * Хранится `id`, а не номер из адреса: номер съезжает при перестановке
-   * корпуса, и человек возвращался бы не туда, где остановился.
+   * Хранится `id`, а не номер: номер живёт внутри темы, а `id` — единственный
+   * ключ, общий и для языков, и для прогресса.
    */
   private readonly savedIndex = computed(() => {
     const cards = this.cards();
@@ -161,10 +167,11 @@ export class BrowsePage {
 
   constructor() {
     // Адрес всегда называет показанный вопрос: и когда номера не было вовсе,
-    // и когда он оказался за границами колоды.
+    // и когда номер оказался незнакомым.
     effect(() => {
       const index = this.index();
-      if (this.cards().length === 0 || this.position() === index + 1) {
+      const cards = this.cards();
+      if (cards.length === 0 || this.position() === cards[index]?.number) {
         return;
       }
       untracked(() => this.show(index));
@@ -213,7 +220,7 @@ export class BrowsePage {
    * сотни вопросов пришлось бы жать сотню раз, чтобы выйти к колодам.
    */
   private show(index: number): void {
-    void this.router.navigate(['/browse', this.topic(), index + 1], {
+    void this.router.navigate(['/browse', this.topic(), this.cards()[index]?.number ?? 1], {
       replaceUrl: true,
       // Выбранные категории остаются в адресе: листание не должно втихую
       // расширять подборку до всей колоды.
@@ -226,8 +233,7 @@ export class BrowsePage {
    *
    * Позиция пересчитывается по `id` текущей карточки: если она осталась
    * в подборке — человек остаётся на ней же, иначе открывается первый вопрос
-   * нового набора. Номер в адресе после фильтра означает уже другое место,
-   * поэтому его нужно назвать явно, а не оставить прежним.
+   * нового набора, и его номер нужно назвать явно.
    */
   protected chooseCategories(numbers: readonly number[]): void {
     const selection = normalizeSelection(new Set(numbers), this.categories());
@@ -238,7 +244,7 @@ export class BrowsePage {
       0,
     );
 
-    void this.router.navigate(['/browse', this.topic(), index + 1], {
+    void this.router.navigate(['/browse', this.topic(), filtered[index]?.number ?? 1], {
       replaceUrl: true,
       queryParams: { cats: formatCategories(selection) },
     });

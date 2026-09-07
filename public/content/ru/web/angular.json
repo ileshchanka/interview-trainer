@@ -1,6 +1,7 @@
 [
  {
   "id": "ng-standalone",
+  "number": 1,
   "topic": "angular",
   "subtopic": "компоненты",
   "question": "Что такое standalone-компонент и что он изменил?",
@@ -10,6 +11,7 @@
  },
  {
   "id": "ng-component-lifecycle",
+  "number": 2,
   "topic": "angular",
   "subtopic": "компоненты",
   "question": "Перечислите основные хуки жизненного цикла в порядке вызова.",
@@ -19,6 +21,7 @@
  },
  {
   "id": "ng-constructor-vs-ngoninit",
+  "number": 3,
   "topic": "angular",
   "subtopic": "компоненты",
   "question": "Чем конструктор отличается от `ngOnInit`?",
@@ -28,6 +31,7 @@
  },
  {
   "id": "ng-input-signal",
+  "number": 4,
   "topic": "angular",
   "subtopic": "компоненты",
   "question": "Чем `input()` отличается от `@Input()`?",
@@ -37,6 +41,7 @@
  },
  {
   "id": "ng-output-function",
+  "number": 5,
   "topic": "angular",
   "subtopic": "компоненты",
   "question": "Как компонент отдаёт событие наружу?",
@@ -46,6 +51,7 @@
  },
  {
   "id": "ng-content-projection",
+  "number": 6,
   "topic": "angular",
   "subtopic": "компоненты",
   "question": "Что такое контент-проекция и как проецировать несколько слотов?",
@@ -55,6 +61,7 @@
  },
  {
   "id": "ng-viewchild-contentchild",
+  "number": 7,
   "topic": "angular",
   "subtopic": "компоненты",
   "question": "Чем `viewChild` отличается от `contentChild`?",
@@ -64,6 +71,7 @@
  },
  {
   "id": "ng-model-signal",
+  "number": 8,
   "topic": "angular",
   "subtopic": "компоненты",
   "question": "Что делает `model()` и чем отличается от пары `input()` + `output()`?",
@@ -73,6 +81,7 @@
  },
  {
   "id": "ng-destroy-ref",
+  "number": 9,
   "topic": "angular",
   "subtopic": "компоненты",
   "question": "Что такое `DestroyRef` и когда он удобнее `ngOnDestroy`?",
@@ -82,6 +91,7 @@
  },
  {
   "id": "ng-ngprojectas",
+  "number": 10,
   "topic": "angular",
   "subtopic": "компоненты",
   "question": "Зачем нужен `ngProjectAs`?",
@@ -91,6 +101,7 @@
  },
  {
   "id": "ng-dynamic-components",
+  "number": 11,
   "topic": "angular",
   "subtopic": "компоненты",
   "question": "Как создать компонент программно?",
@@ -100,6 +111,7 @@
  },
  {
   "id": "ng-ng-template-container",
+  "number": 12,
   "topic": "angular",
   "subtopic": "шаблоны",
   "question": "Чем `ng-template` отличается от `ng-container`?",
@@ -109,6 +121,7 @@
  },
  {
   "id": "ng-defer",
+  "number": 13,
   "topic": "angular",
   "subtopic": "шаблоны",
   "question": "Что делает блок `@defer`?",
@@ -118,6 +131,7 @@
  },
  {
   "id": "ng-control-flow",
+  "number": 14,
   "topic": "angular",
   "subtopic": "шаблоны",
   "question": "Чем встроенный `@if`/`@for` лучше `*ngIf`/`*ngFor`?",
@@ -127,6 +141,7 @@
  },
  {
   "id": "ng-trackby",
+  "number": 15,
   "topic": "angular",
   "subtopic": "шаблоны",
   "question": "Зачем нужен `track` в `@for`?",
@@ -136,6 +151,7 @@
  },
  {
   "id": "ng-template-context-typing",
+  "number": 16,
   "topic": "angular",
   "subtopic": "шаблоны",
   "question": "Как типизировать контекст `ng-template`?",
@@ -145,6 +161,7 @@
  },
  {
   "id": "ng-ngtemplateoutlet",
+  "number": 17,
   "topic": "angular",
   "subtopic": "шаблоны",
   "question": "Как передать компоненту кусок разметки с параметрами?",
@@ -154,6 +171,7 @@
  },
  {
   "id": "ng-change-detection",
+  "number": 18,
   "topic": "angular",
   "subtopic": "change detection",
   "question": "Как работает проверка изменений в Angular?",
@@ -163,6 +181,7 @@
  },
  {
   "id": "ng-onpush",
+  "number": 19,
   "topic": "angular",
   "subtopic": "change detection",
   "question": "Что меняет `ChangeDetectionStrategy.OnPush`?",
@@ -172,6 +191,7 @@
  },
  {
   "id": "ng-expression-changed",
+  "number": 20,
   "topic": "angular",
   "subtopic": "change detection",
   "question": "Откуда берётся `ExpressionChangedAfterItHasBeenCheckedError`?",
@@ -181,6 +201,7 @@
  },
  {
   "id": "ng-zone-js",
+  "number": 21,
   "topic": "angular",
   "subtopic": "change detection",
   "question": "Что делает zone.js и почему от него уходят?",
@@ -190,6 +211,7 @@
  },
  {
   "id": "ng-markforcheck-vs-detectchanges",
+  "number": 22,
   "topic": "angular",
   "subtopic": "change detection",
   "question": "Чем `markForCheck` отличается от `detectChanges`?",
@@ -199,6 +221,7 @@
  },
  {
   "id": "ng-after-render",
+  "number": 23,
   "topic": "angular",
   "subtopic": "change detection",
   "question": "Зачем нужны `afterRenderEffect` и `afterNextRender`?",
@@ -208,6 +231,7 @@
  },
  {
   "id": "ng-signals-basics",
+  "number": 24,
   "topic": "angular",
   "subtopic": "signals",
   "question": "Что такое сигнал и чем он отличается от Observable?",
@@ -217,6 +241,7 @@
  },
  {
   "id": "ng-computed",
+  "number": 25,
   "topic": "angular",
   "subtopic": "signals",
   "question": "Как работает `computed`?",
@@ -226,6 +251,7 @@
  },
  {
   "id": "ng-effect",
+  "number": 26,
   "topic": "angular",
   "subtopic": "signals",
   "question": "Для чего нужен `effect` и чего в нём делать не стоит?",
@@ -235,6 +261,7 @@
  },
  {
   "id": "ng-untracked",
+  "number": 27,
   "topic": "angular",
   "subtopic": "signals",
   "question": "Зачем нужен `untracked`?",
@@ -244,6 +271,7 @@
  },
  {
   "id": "ng-signal-update-set",
+  "number": 28,
   "topic": "angular",
   "subtopic": "signals",
   "question": "Чем `set` отличается от `update`?",
@@ -253,6 +281,7 @@
  },
  {
   "id": "ng-tosignal",
+  "number": 29,
   "topic": "angular",
   "subtopic": "signals",
   "question": "Что делает `toSignal` и о чём важно помнить?",
@@ -262,6 +291,7 @@
  },
  {
   "id": "ng-linked-signal",
+  "number": 30,
   "topic": "angular",
   "subtopic": "signals",
   "question": "Что делает `linkedSignal` и чем он отличается от `computed`?",
@@ -271,6 +301,7 @@
  },
  {
   "id": "ng-resource",
+  "number": 31,
   "topic": "angular",
   "subtopic": "signals",
   "question": "Что даёт `resource()` и `httpResource()`?",
@@ -280,6 +311,7 @@
  },
  {
   "id": "ng-di-basics",
+  "number": 32,
   "topic": "angular",
   "subtopic": "DI",
   "question": "Как Angular понимает, что внедрять в конструктор?",
@@ -289,6 +321,7 @@
  },
  {
   "id": "ng-injector-hierarchy",
+  "number": 33,
   "topic": "angular",
   "subtopic": "DI",
   "question": "Как устроена иерархия инжекторов?",
@@ -298,6 +331,7 @@
  },
  {
   "id": "ng-provided-in-root",
+  "number": 34,
   "topic": "angular",
   "subtopic": "DI",
   "question": "Что даёт `providedIn: 'root'`?",
@@ -307,6 +341,7 @@
  },
  {
   "id": "ng-provider-types",
+  "number": 35,
   "topic": "angular",
   "subtopic": "DI",
   "question": "Какие бывают виды провайдеров?",
@@ -316,6 +351,7 @@
  },
  {
   "id": "ng-injection-token",
+  "number": 36,
   "topic": "angular",
   "subtopic": "DI",
   "question": "Зачем нужен `InjectionToken`?",
@@ -325,6 +361,7 @@
  },
  {
   "id": "ng-inject-flags",
+  "number": 37,
   "topic": "angular",
   "subtopic": "DI",
   "question": "Что делают модификаторы `optional`, `self`, `skipSelf`, `host`?",
@@ -334,6 +371,7 @@
  },
  {
   "id": "ng-app-initializer",
+  "number": 38,
   "topic": "angular",
   "subtopic": "DI",
   "question": "Как выполнить асинхронную работу до старта приложения?",
@@ -343,6 +381,7 @@
  },
  {
   "id": "ng-environment-injector",
+  "number": 39,
   "topic": "angular",
   "subtopic": "DI",
   "question": "Зачем нужен `runInInjectionContext` и `EnvironmentInjector`?",
@@ -352,6 +391,7 @@
  },
  {
   "id": "ng-forward-ref",
+  "number": 40,
   "topic": "angular",
   "subtopic": "DI",
   "question": "Когда нужен `forwardRef`?",
@@ -361,6 +401,7 @@
  },
  {
   "id": "ng-lazy-loading",
+  "number": 41,
   "topic": "angular",
   "subtopic": "роутинг",
   "question": "Как сделать ленивую загрузку маршрута?",
@@ -370,6 +411,7 @@
  },
  {
   "id": "ng-route-guards",
+  "number": 42,
   "topic": "angular",
   "subtopic": "роутинг",
   "question": "Какие бывают guard-функции и когда каждая срабатывает?",
@@ -379,6 +421,7 @@
  },
  {
   "id": "ng-route-params",
+  "number": 43,
   "topic": "angular",
   "subtopic": "роутинг",
   "question": "Как получить параметр маршрута и почему `snapshot` бывает недостаточно?",
@@ -388,6 +431,7 @@
  },
  {
   "id": "ng-router-outlet-nested",
+  "number": 44,
   "topic": "angular",
   "subtopic": "роутинг",
   "question": "Как работают вложенные маршруты?",
@@ -397,6 +441,7 @@
  },
  {
   "id": "ng-query-params",
+  "number": 45,
   "topic": "angular",
   "subtopic": "роутинг",
   "question": "Как работать с query-параметрами и сохранять их при переходах?",
@@ -406,6 +451,7 @@
  },
  {
   "id": "ng-router-events",
+  "number": 46,
   "topic": "angular",
   "subtopic": "роутинг",
   "question": "Как отследить навигацию и показать индикатор загрузки?",
@@ -415,6 +461,7 @@
  },
  {
   "id": "ng-forms-comparison",
+  "number": 47,
   "topic": "angular",
   "subtopic": "формы",
   "question": "Чем реактивные формы отличаются от шаблонных?",
@@ -424,6 +471,7 @@
  },
  {
   "id": "ng-form-control-state",
+  "number": 48,
   "topic": "angular",
   "subtopic": "формы",
   "question": "Какие состояния есть у контрола формы?",
@@ -433,6 +481,7 @@
  },
  {
   "id": "ng-custom-validator",
+  "number": 49,
   "topic": "angular",
   "subtopic": "формы",
   "question": "Как написать свой валидатор?",
@@ -442,6 +491,7 @@
  },
  {
   "id": "ng-control-value-accessor",
+  "number": 50,
   "topic": "angular",
   "subtopic": "формы",
   "question": "Зачем нужен `ControlValueAccessor`?",
@@ -451,6 +501,7 @@
  },
  {
   "id": "ng-disabled-reactive",
+  "number": 51,
   "topic": "angular",
   "subtopic": "формы",
   "question": "Почему нельзя одновременно использовать `[disabled]` и реактивную форму?",
@@ -460,6 +511,7 @@
  },
  {
   "id": "ng-form-array",
+  "number": 52,
   "topic": "angular",
   "subtopic": "формы",
   "question": "Как работать с динамическим списком полей в реактивной форме?",
@@ -469,6 +521,7 @@
  },
  {
   "id": "ng-typed-forms",
+  "number": 53,
   "topic": "angular",
   "subtopic": "формы",
   "question": "Что дают типизированные формы и зачем `nonNullable`?",
@@ -478,6 +531,7 @@
  },
  {
   "id": "ng-form-update-on",
+  "number": 54,
   "topic": "angular",
   "subtopic": "формы",
   "question": "Что делает опция `updateOn` и чем `valueChanges` отличается от `statusChanges`?",
@@ -487,6 +541,7 @@
  },
  {
   "id": "ng-flattening-operators",
+  "number": 55,
   "topic": "angular",
   "subtopic": "RxJS",
   "question": "Чем различаются `switchMap`, `mergeMap`, `concatMap` и `exhaustMap`?",
@@ -496,6 +551,7 @@
  },
  {
   "id": "ng-cold-vs-hot",
+  "number": 56,
   "topic": "angular",
   "subtopic": "RxJS",
   "question": "Чем холодный Observable отличается от горячего?",
@@ -505,6 +561,7 @@
  },
  {
   "id": "ng-subject-types",
+  "number": 57,
   "topic": "angular",
   "subtopic": "RxJS",
   "question": "Чем различаются `Subject`, `BehaviorSubject`, `ReplaySubject` и `AsyncSubject`?",
@@ -514,6 +571,7 @@
  },
  {
   "id": "ng-unsubscribe",
+  "number": 58,
   "topic": "angular",
   "subtopic": "RxJS",
   "question": "Как избежать утечек подписок?",
@@ -523,6 +581,7 @@
  },
  {
   "id": "ng-async-pipe",
+  "number": 59,
   "topic": "angular",
   "subtopic": "RxJS",
   "question": "Что делает `async`-пайп?",
@@ -532,6 +591,7 @@
  },
  {
   "id": "ng-signal-rxjs-interop",
+  "number": 60,
   "topic": "angular",
   "subtopic": "RxJS",
   "question": "Когда сигналов недостаточно и нужен RxJS?",
@@ -541,6 +601,7 @@
  },
  {
   "id": "ng-http-interceptor",
+  "number": 61,
   "topic": "angular",
   "subtopic": "HTTP",
   "question": "Что такое интерсептор и как он регистрируется?",
@@ -550,6 +611,7 @@
  },
  {
   "id": "ng-http-client-observable",
+  "number": 62,
   "topic": "angular",
   "subtopic": "HTTP",
   "question": "Почему запрос `HttpClient` не выполняется без подписки?",
@@ -559,6 +621,7 @@
  },
  {
   "id": "ng-http-params",
+  "number": 63,
   "topic": "angular",
   "subtopic": "HTTP",
   "question": "Как правильно передавать параметры запроса в `HttpClient`?",
@@ -568,6 +631,7 @@
  },
  {
   "id": "ng-http-caching",
+  "number": 64,
   "topic": "angular",
   "subtopic": "HTTP",
   "question": "Как закэшировать HTTP-запрос, чтобы он не уходил повторно?",
@@ -577,6 +641,7 @@
  },
  {
   "id": "ng-ssr-hydration",
+  "number": 65,
   "topic": "angular",
   "subtopic": "SSR",
   "question": "Что такое гидратация и что она даёт?",
@@ -586,6 +651,7 @@
  },
  {
   "id": "ng-ssr-transfer-state",
+  "number": 66,
   "topic": "angular",
   "subtopic": "SSR",
   "question": "Как не выполнять один и тот же запрос дважды при серверном рендеринге?",
@@ -595,6 +661,7 @@
  },
  {
   "id": "ng-pure-pipe",
+  "number": 67,
   "topic": "angular",
   "subtopic": "пайпы",
   "question": "Чем чистый пайп отличается от нечистого?",
@@ -604,6 +671,7 @@
  },
  {
   "id": "ng-directive-types",
+  "number": 68,
   "topic": "angular",
   "subtopic": "директивы",
   "question": "Какие бывают директивы?",
@@ -613,6 +681,7 @@
  },
  {
   "id": "ng-host-binding",
+  "number": 69,
   "topic": "angular",
   "subtopic": "директивы",
   "question": "Как директива влияет на свой хост-элемент?",
@@ -622,6 +691,7 @@
  },
  {
   "id": "ng-host-directives",
+  "number": 70,
   "topic": "angular",
   "subtopic": "директивы",
   "question": "Что такое `hostDirectives` и какую задачу они решают?",
@@ -631,6 +701,7 @@
  },
  {
   "id": "ng-view-encapsulation",
+  "number": 71,
   "topic": "angular",
   "subtopic": "стили",
   "question": "Какие есть режимы инкапсуляции стилей?",
@@ -640,6 +711,7 @@
  },
  {
   "id": "ng-host-context-styles",
+  "number": 72,
   "topic": "angular",
   "subtopic": "стили",
   "question": "Как оформить компонент по-разному в зависимости от темы?",
@@ -649,6 +721,7 @@
  },
  {
   "id": "ng-standalone-testing",
+  "number": 73,
   "topic": "angular",
   "subtopic": "тестирование",
   "question": "Как тестировать standalone-компонент?",
@@ -658,6 +731,7 @@
  },
  {
   "id": "ng-testing-harness",
+  "number": 74,
   "topic": "angular",
   "subtopic": "тестирование",
   "question": "Что такое component harness и чем он лучше поиска по DOM?",
@@ -667,6 +741,7 @@
  },
  {
   "id": "ng-testing-async",
+  "number": 75,
   "topic": "angular",
   "subtopic": "тестирование",
   "question": "Чем `fakeAsync` отличается от `waitForAsync` и что делает `tick`?",
@@ -676,6 +751,7 @@
  },
  {
   "id": "ng-testing-signals",
+  "number": 76,
   "topic": "angular",
   "subtopic": "тестирование",
   "question": "Как тестировать сигналы, `computed` и `effect`?",
@@ -685,6 +761,7 @@
  },
  {
   "id": "ng-error-handler",
+  "number": 77,
   "topic": "angular",
   "subtopic": "обработка ошибок",
   "question": "Как перехватить необработанные ошибки во всём приложении?",
@@ -694,6 +771,7 @@
  },
  {
   "id": "ng-optimized-image",
+  "number": 78,
   "topic": "angular",
   "subtopic": "производительность",
   "question": "Что делает директива `NgOptimizedImage`?",

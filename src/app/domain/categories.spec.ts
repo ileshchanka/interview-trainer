@@ -10,7 +10,7 @@ import {
 import { Card, Topic } from './models';
 
 function card(id: string, subtopic: string, topic: Topic = 'js'): Card {
-  return { id, topic, subtopic, question: `вопрос ${id}`, answer: `ответ ${id}` };
+  return { id, number: 1, topic, subtopic, question: `вопрос ${id}`, answer: `ответ ${id}` };
 }
 
 const deck: readonly Card[] = [

@@ -1,6 +1,7 @@
 [
  {
   "id": "ts-structural-typing",
+  "number": 1,
   "topic": "ts",
   "subtopic": "the type system",
   "question": "Is typing in TypeScript structural or nominal?",
@@ -10,6 +11,7 @@
  },
  {
   "id": "ts-any-unknown-never",
+  "number": 2,
   "topic": "ts",
   "subtopic": "the type system",
   "question": "How do `any`, `unknown` and `never` differ?",
@@ -19,6 +21,7 @@
  },
  {
   "id": "ts-exhaustiveness",
+  "number": 3,
   "topic": "ts",
   "subtopic": "the type system",
   "question": "How do you make the compiler check that a union is handled exhaustively?",
@@ -28,6 +31,7 @@
  },
  {
   "id": "ts-union-intersection",
+  "number": 4,
   "topic": "ts",
   "subtopic": "the type system",
   "question": "How does `A | B` differ from `A & B`?",
@@ -37,6 +41,7 @@
  },
  {
   "id": "ts-discriminated-union",
+  "number": 5,
   "topic": "ts",
   "subtopic": "the type system",
   "question": "What is a discriminated union?",
@@ -46,6 +51,7 @@
  },
  {
   "id": "ts-literal-types",
+  "number": 6,
   "topic": "ts",
   "subtopic": "the type system",
   "question": "What is a literal type, and when is it inferred?",
@@ -55,6 +61,7 @@
  },
  {
   "id": "ts-as-const",
+  "number": 7,
   "topic": "ts",
   "subtopic": "the type system",
   "question": "What does `as const` do?",
@@ -64,6 +71,7 @@
  },
  {
   "id": "ts-template-literal-types",
+  "number": 8,
   "topic": "ts",
   "subtopic": "the type system",
   "question": "What are template literal types?",
@@ -73,6 +81,7 @@
  },
  {
   "id": "ts-variance",
+  "number": 9,
   "topic": "ts",
   "subtopic": "the type system",
   "question": "What are covariance and contravariance, using functions as the example?",
@@ -82,6 +91,7 @@
  },
  {
   "id": "ts-type-inference-widening",
+  "number": 10,
   "topic": "ts",
   "subtopic": "the type system",
   "question": "Why does `let x = 'a'` have the type `string` while `const x = 'a'` has the type `'a'`?",
@@ -91,6 +101,7 @@
  },
  {
   "id": "ts-keyof-typeof",
+  "number": 11,
   "topic": "ts",
   "subtopic": "the type system",
   "question": "What does the `keyof typeof` combination do?",
@@ -100,6 +111,7 @@
  },
  {
   "id": "ts-indexed-access",
+  "number": 12,
   "topic": "ts",
   "subtopic": "the type system",
   "question": "What does the notation `T[K]` mean in type position?",
@@ -109,6 +121,7 @@
  },
  {
   "id": "ts-excess-property-check",
+  "number": 13,
   "topic": "ts",
   "subtopic": "the type system",
   "question": "Why does a literal with an extra property fail while the same value in a variable passes?",
@@ -118,6 +131,7 @@
  },
  {
   "id": "ts-object-empty-types",
+  "number": 14,
   "topic": "ts",
   "subtopic": "the type system",
   "question": "How do `object`, `{}`, `Object` and `unknown` differ?",
@@ -127,6 +141,7 @@
  },
  {
   "id": "ts-branded-types",
+  "number": 15,
   "topic": "ts",
   "subtopic": "the type system",
   "question": "How do you get nominal typing in TypeScript?",
@@ -136,6 +151,7 @@
  },
  {
   "id": "ts-runtime-validation",
+  "number": 16,
   "topic": "ts",
   "subtopic": "the type system",
   "question": "Why do types not protect you from bad data coming from a server?",
@@ -145,6 +161,7 @@
  },
  {
   "id": "ts-tuples",
+  "number": 17,
   "topic": "ts",
   "subtopic": "the type system",
   "question": "How does a tuple differ from an array, and what is a variadic tuple?",
@@ -154,6 +171,7 @@
  },
  {
   "id": "ts-never-usage",
+  "number": 18,
   "topic": "ts",
   "subtopic": "the type system",
   "question": "Where does the `never` type show up in practice?",
@@ -163,6 +181,7 @@
  },
  {
   "id": "ts-typed-object-keys",
+  "number": 19,
   "topic": "ts",
   "subtopic": "the type system",
   "question": "Why does `Object.keys(user)` return `string[]` rather than a union of keys?",
@@ -172,6 +191,7 @@
  },
  {
   "id": "ts-narrowing",
+  "number": 20,
   "topic": "ts",
   "subtopic": "narrowing",
   "question": "Which constructs narrow a type?",
@@ -181,6 +201,7 @@
  },
  {
   "id": "ts-type-guard",
+  "number": 21,
   "topic": "ts",
   "subtopic": "narrowing",
   "question": "How do you write a user-defined type guard?",
@@ -190,6 +211,7 @@
  },
  {
   "id": "ts-assertion-function",
+  "number": 22,
   "topic": "ts",
   "subtopic": "narrowing",
   "question": "What is an assertion function, and how does it differ from a type guard?",
@@ -199,6 +221,7 @@
  },
  {
   "id": "ts-inferred-predicates",
+  "number": 23,
   "topic": "ts",
   "subtopic": "narrowing",
   "question": "Do you always have to write `arg is Type` for a function to narrow a type?",
@@ -208,6 +231,7 @@
  },
  {
   "id": "ts-narrowing-limits",
+  "number": 24,
   "topic": "ts",
   "subtopic": "narrowing",
   "question": "Why is narrowing sometimes “lost”?",
@@ -217,6 +241,7 @@
  },
  {
   "id": "ts-generics-why",
+  "number": 25,
   "topic": "ts",
   "subtopic": "generics",
   "question": "Why do we need generics when there is `any`?",
@@ -226,6 +251,7 @@
  },
  {
   "id": "ts-generic-constraints",
+  "number": 26,
   "topic": "ts",
   "subtopic": "generics",
   "question": "What does `T extends { id: string }` mean?",
@@ -235,6 +261,7 @@
  },
  {
   "id": "ts-generic-default",
+  "number": 27,
   "topic": "ts",
   "subtopic": "generics",
   "question": "Can a generic have a default value?",
@@ -244,6 +271,7 @@
  },
  {
   "id": "ts-generic-inference",
+  "number": 28,
   "topic": "ts",
   "subtopic": "generics",
   "question": "How does the compiler infer a type parameter, and when do you have to state it explicitly?",
@@ -253,6 +281,7 @@
  },
  {
   "id": "ts-const-type-parameter",
+  "number": 29,
   "topic": "ts",
   "subtopic": "generics",
   "question": "What does the `const` modifier on a type parameter do?",
@@ -262,6 +291,7 @@
  },
  {
   "id": "ts-generic-class",
+  "number": 30,
   "topic": "ts",
   "subtopic": "generics",
   "question": "How do generic classes work, and how do they differ from generic functions?",
@@ -271,6 +301,7 @@
  },
  {
   "id": "ts-conditional-types",
+  "number": 31,
   "topic": "ts",
   "subtopic": "conditional types",
   "question": "How is `T extends U ? X : Y` read?",
@@ -280,6 +311,7 @@
  },
  {
   "id": "ts-infer",
+  "number": 32,
   "topic": "ts",
   "subtopic": "conditional types",
   "question": "What does `infer` do?",
@@ -289,6 +321,7 @@
  },
  {
   "id": "ts-recursive-types",
+  "number": 33,
   "topic": "ts",
   "subtopic": "conditional types",
   "question": "How do you write a recursive type, and where is the limit of the recursion?",
@@ -298,6 +331,7 @@
  },
  {
   "id": "ts-distributive-conditional",
+  "number": 34,
   "topic": "ts",
   "subtopic": "conditional types",
   "question": "What does “a conditional type distributes over a union” mean, and how do you switch it off?",
@@ -307,6 +341,7 @@
  },
  {
   "id": "ts-mapped-types",
+  "number": 35,
   "topic": "ts",
   "subtopic": "mapped types",
   "question": "How is a mapped type built?",
@@ -316,6 +351,7 @@
  },
  {
   "id": "ts-key-remapping",
+  "number": 36,
   "topic": "ts",
   "subtopic": "mapped types",
   "question": "What does `as` inside a mapped type give you?",
@@ -325,6 +361,7 @@
  },
  {
   "id": "ts-utility-types",
+  "number": 37,
   "topic": "ts",
   "subtopic": "utility types",
   "question": "What do `Partial`, `Required`, `Readonly`, `Pick`, `Omit` and `Record` do?",
@@ -334,6 +371,7 @@
  },
  {
   "id": "ts-returntype-parameters",
+  "number": 38,
   "topic": "ts",
   "subtopic": "utility types",
   "question": "What do `ReturnType`, `Parameters` and `Awaited` do?",
@@ -343,6 +381,7 @@
  },
  {
   "id": "ts-omit-vs-exclude",
+  "number": 39,
   "topic": "ts",
   "subtopic": "utility types",
   "question": "How does `Omit` differ from `Exclude`?",
@@ -352,6 +391,7 @@
  },
  {
   "id": "ts-partial-danger",
+  "number": 40,
   "topic": "ts",
   "subtopic": "utility types",
   "question": "Why is `Partial` dangerous in a function's arguments?",
@@ -361,6 +401,7 @@
  },
  {
   "id": "ts-interface-vs-type",
+  "number": 41,
   "topic": "ts",
   "subtopic": "interfaces",
   "question": "How does `interface` differ from `type`?",
@@ -370,6 +411,7 @@
  },
  {
   "id": "ts-optional-vs-undefined",
+  "number": 42,
   "topic": "ts",
   "subtopic": "interfaces",
   "question": "How does `a?: string` differ from `a: string | undefined`?",
@@ -379,6 +421,7 @@
  },
  {
   "id": "ts-index-signature",
+  "number": 43,
   "topic": "ts",
   "subtopic": "interfaces",
   "question": "What is an index signature, and what makes it risky?",
@@ -388,6 +431,7 @@
  },
  {
   "id": "ts-readonly",
+  "number": 44,
   "topic": "ts",
   "subtopic": "interfaces",
   "question": "What does `readonly` actually guarantee?",
@@ -397,6 +441,7 @@
  },
  {
   "id": "ts-function-overloads",
+  "number": 45,
   "topic": "ts",
   "subtopic": "functions",
   "question": "How do function overloads work in TypeScript?",
@@ -406,6 +451,7 @@
  },
  {
   "id": "ts-this-parameter",
+  "number": 46,
   "topic": "ts",
   "subtopic": "functions",
   "question": "How do you type `this` in a function?",
@@ -415,6 +461,7 @@
  },
  {
   "id": "ts-generic-vs-overload",
+  "number": 47,
   "topic": "ts",
   "subtopic": "functions",
   "question": "When is a generic better than an overload?",
@@ -424,6 +471,7 @@
  },
  {
   "id": "ts-async-types",
+  "number": 48,
   "topic": "ts",
   "subtopic": "functions",
   "question": "How are asynchronous functions typed, and what is a “floating” promise?",
@@ -433,6 +481,7 @@
  },
  {
   "id": "ts-void-vs-undefined",
+  "number": 49,
   "topic": "ts",
   "subtopic": "functions",
   "question": "How does `void` differ from `undefined` in return position?",
@@ -442,6 +491,7 @@
  },
  {
   "id": "ts-enum-problems",
+  "number": 50,
   "topic": "ts",
   "subtopic": "enums",
   "question": "Why is `enum` in TypeScript contentious, and what should be used instead?",
@@ -451,6 +501,7 @@
  },
  {
   "id": "ts-isolated-modules",
+  "number": 51,
   "topic": "ts",
   "subtopic": "compilation",
   "question": "What does the `isolatedModules` flag mean?",
@@ -460,6 +511,7 @@
  },
  {
   "id": "ts-import-type",
+  "number": 52,
   "topic": "ts",
   "subtopic": "compilation",
   "question": "What is `import type` for?",
@@ -469,6 +521,7 @@
  },
  {
   "id": "ts-declaration-files",
+  "number": 53,
   "topic": "ts",
   "subtopic": "compilation",
   "question": "What is a `.d.ts`, and where do types for third-party libraries come from?",
@@ -478,6 +531,7 @@
  },
  {
   "id": "ts-tsconfig-paths",
+  "number": 54,
   "topic": "ts",
   "subtopic": "compilation",
   "question": "What do `paths` and `baseUrl` do in tsconfig?",
@@ -487,6 +541,7 @@
  },
  {
   "id": "ts-module-resolution",
+  "number": 55,
   "topic": "ts",
   "subtopic": "compilation",
   "question": "What does `moduleResolution` do, and why do imports sometimes need a `.js` extension?",
@@ -496,6 +551,7 @@
  },
  {
   "id": "ts-target-lib",
+  "number": 56,
   "topic": "ts",
   "subtopic": "compilation",
   "question": "How does `target` differ from `lib`, and what is `skipLibCheck` for?",
@@ -505,6 +561,7 @@
  },
  {
   "id": "ts-strict-flags",
+  "number": 57,
   "topic": "ts",
   "subtopic": "strictness",
   "question": "What does the `strict` flag turn on?",
@@ -514,6 +571,7 @@
  },
  {
   "id": "ts-strict-null-checks",
+  "number": 58,
   "topic": "ts",
   "subtopic": "strictness",
   "question": "What does `strictNullChecks` change?",
@@ -523,6 +581,7 @@
  },
  {
   "id": "ts-non-null-assertion",
+  "number": 59,
   "topic": "ts",
   "subtopic": "strictness",
   "question": "What does the `!` operator after an expression do, and why is it dangerous?",
@@ -532,6 +591,7 @@
  },
  {
   "id": "ts-as-vs-satisfies",
+  "number": 60,
   "topic": "ts",
   "subtopic": "strictness",
   "question": "How does `satisfies` differ from `as`?",
@@ -541,6 +601,7 @@
  },
  {
   "id": "ts-unknown-in-catch",
+  "number": 61,
   "topic": "ts",
   "subtopic": "strictness",
   "question": "What type does the variable in a `catch` have?",
@@ -550,6 +611,7 @@
  },
  {
   "id": "ts-class-modifiers",
+  "number": 62,
   "topic": "ts",
   "subtopic": "classes",
   "question": "How does TypeScript's `private` differ from `#field`?",
@@ -559,6 +621,7 @@
  },
  {
   "id": "ts-abstract-class",
+  "number": 63,
   "topic": "ts",
   "subtopic": "classes",
   "question": "When do you need an `abstract` class, and when is an interface enough?",
@@ -568,6 +631,7 @@
  },
  {
   "id": "ts-decorators",
+  "number": 64,
   "topic": "ts",
   "subtopic": "classes",
   "question": "How do standard decorators differ from the experimental ones?",
@@ -577,6 +641,7 @@
  },
  {
   "id": "ts-module-augmentation",
+  "number": 65,
   "topic": "ts",
   "subtopic": "modules",
   "question": "How do you add a property to a type from a third-party library?",

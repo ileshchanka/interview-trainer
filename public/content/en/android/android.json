@@ -1,6 +1,7 @@
 [
  {
   "id": "and-activity-lifecycle",
+  "number": 1,
   "topic": "android",
   "subtopic": "the lifecycle",
   "question": "List the Activity lifecycle callbacks in order.",
@@ -10,6 +11,7 @@
  },
  {
   "id": "and-rotation",
+  "number": 2,
   "topic": "android",
   "subtopic": "the lifecycle",
   "question": "What happens to an Activity on rotation, and how do you survive it?",
@@ -19,6 +21,7 @@
  },
  {
   "id": "and-saved-instance-state",
+  "number": 3,
   "topic": "android",
   "subtopic": "the lifecycle",
   "question": "When is `onSaveInstanceState` called, and what is the Bundle limit?",
@@ -28,6 +31,7 @@
  },
  {
   "id": "and-fragment-lifecycle",
+  "number": 4,
   "topic": "android",
   "subtopic": "the lifecycle",
   "question": "How does a Fragment's lifecycle differ from an Activity's?",
@@ -37,6 +41,7 @@
  },
  {
   "id": "and-configuration-changes",
+  "number": 5,
   "topic": "android",
   "subtopic": "the lifecycle",
   "question": "What does `android:configChanges` do, and why is it not a solution?",
@@ -46,6 +51,7 @@
  },
  {
   "id": "and-process-death",
+  "number": 6,
   "topic": "android",
   "subtopic": "the lifecycle",
   "question": "What is process death, and how do you reproduce it?",
@@ -55,6 +61,7 @@
  },
  {
   "id": "and-four-components",
+  "number": 7,
   "topic": "android",
   "subtopic": "components",
   "question": "What are the main application components?",
@@ -64,6 +71,7 @@
  },
  {
   "id": "and-intent",
+  "number": 8,
   "topic": "android",
   "subtopic": "components",
   "question": "How does an explicit Intent differ from an implicit one?",
@@ -73,6 +81,7 @@
  },
  {
   "id": "and-pending-intent",
+  "number": 9,
   "topic": "android",
   "subtopic": "components",
   "question": "What is a PendingIntent, and why does it require a mutability flag?",
@@ -82,6 +91,7 @@
  },
  {
   "id": "and-launch-modes",
+  "number": 10,
   "topic": "android",
   "subtopic": "components",
   "question": "What launch modes does an Activity have?",
@@ -91,6 +101,7 @@
  },
  {
   "id": "and-service-types",
+  "number": 11,
   "topic": "android",
   "subtopic": "components",
   "question": "How does a Foreground Service differ from an ordinary one, and when is it needed?",
@@ -100,6 +111,7 @@
  },
  {
   "id": "and-workmanager",
+  "number": 12,
   "topic": "android",
   "subtopic": "components",
   "question": "When do you use WorkManager?",
@@ -109,6 +121,7 @@
  },
  {
   "id": "and-broadcast-receiver",
+  "number": 13,
   "topic": "android",
   "subtopic": "components",
   "question": "What restrictions does a BroadcastReceiver have?",
@@ -118,6 +131,7 @@
  },
  {
   "id": "and-content-provider",
+  "number": 14,
   "topic": "android",
   "subtopic": "components",
   "question": "What is a ContentProvider for when Room exists?",
@@ -127,6 +141,7 @@
  },
  {
   "id": "and-context-types",
+  "number": 15,
   "topic": "android",
   "subtopic": "context",
   "question": "How does the Application Context differ from an Activity Context?",
@@ -136,6 +151,7 @@
  },
  {
   "id": "and-memory-leaks",
+  "number": 16,
   "topic": "android",
   "subtopic": "context",
   "question": "What are the typical sources of memory leaks on Android?",
@@ -145,6 +161,7 @@
  },
  {
   "id": "and-anr",
+  "number": 17,
   "topic": "android",
   "subtopic": "performance",
   "question": "What is an ANR, and under what conditions does it happen?",
@@ -154,6 +171,7 @@
  },
  {
   "id": "and-main-thread",
+  "number": 18,
   "topic": "android",
   "subtopic": "performance",
   "question": "Why may the UI be touched only from the main thread?",
@@ -163,6 +181,7 @@
  },
  {
   "id": "and-looper-handler",
+  "number": 19,
   "topic": "android",
   "subtopic": "concurrency",
   "question": "How do Looper, Handler and MessageQueue work?",
@@ -172,6 +191,7 @@
  },
  {
   "id": "and-recyclerview",
+  "number": 20,
   "topic": "android",
   "subtopic": "UI",
   "question": "How does RecyclerView reuse items, and what is DiffUtil for?",
@@ -181,6 +201,7 @@
  },
  {
   "id": "and-viewbinding",
+  "number": 21,
   "topic": "android",
   "subtopic": "UI",
   "question": "How does ViewBinding differ from findViewById and from DataBinding?",
@@ -190,6 +211,7 @@
  },
  {
   "id": "and-constraint-layout",
+  "number": 22,
   "topic": "android",
   "subtopic": "UI",
   "question": "What is ConstraintLayout for?",
@@ -199,6 +221,7 @@
  },
  {
   "id": "and-measure-layout-draw",
+  "number": 23,
   "topic": "android",
   "subtopic": "UI",
   "question": "What phases does drawing a View consist of?",
@@ -208,6 +231,7 @@
  },
  {
   "id": "and-density-dp",
+  "number": 24,
   "topic": "android",
   "subtopic": "UI",
   "question": "How does dp differ from px, and sp from dp?",
@@ -217,6 +241,7 @@
  },
  {
   "id": "and-resource-qualifiers",
+  "number": 25,
   "topic": "android",
   "subtopic": "UI",
   "question": "How do resource qualifiers work?",
@@ -226,6 +251,7 @@
  },
  {
   "id": "and-room",
+  "number": 26,
   "topic": "android",
   "subtopic": "data",
   "question": "What does Room give you on top of SQLite?",
@@ -235,6 +261,7 @@
  },
  {
   "id": "and-datastore",
+  "number": 27,
   "topic": "android",
   "subtopic": "data",
   "question": "Why is DataStore better than SharedPreferences?",
@@ -244,6 +271,7 @@
  },
  {
   "id": "and-scoped-storage",
+  "number": 28,
   "topic": "android",
   "subtopic": "data",
   "question": "What did Scoped Storage change?",
@@ -253,6 +281,7 @@
  },
  {
   "id": "and-keystore",
+  "number": 29,
   "topic": "android",
   "subtopic": "security",
   "question": "Where should tokens and keys be kept?",
@@ -262,6 +291,7 @@
  },
  {
   "id": "and-viewmodel",
+  "number": 30,
   "topic": "android",
   "subtopic": "architecture",
   "question": "What is a ViewModel, and why does it survive a rotation?",
@@ -271,6 +301,7 @@
  },
  {
   "id": "and-unidirectional-flow",
+  "number": 31,
   "topic": "android",
   "subtopic": "architecture",
   "question": "What is unidirectional data flow (UDF)?",
@@ -280,6 +311,7 @@
  },
  {
   "id": "and-repository",
+  "number": 32,
   "topic": "android",
   "subtopic": "architecture",
   "question": "What is the Repository layer for?",
@@ -289,6 +321,7 @@
  },
  {
   "id": "and-hilt",
+  "number": 33,
   "topic": "android",
   "subtopic": "DI",
   "question": "What does Hilt give you on top of Dagger?",
@@ -298,6 +331,7 @@
  },
  {
   "id": "and-modularization",
+  "number": 34,
   "topic": "android",
   "subtopic": "the build",
   "question": "Why split an application into modules?",
@@ -307,6 +341,7 @@
  },
  {
   "id": "and-r8",
+  "number": 35,
   "topic": "android",
   "subtopic": "the build",
   "question": "What does R8 do, and how do you avoid breaking the app?",
@@ -316,6 +351,7 @@
  },
  {
   "id": "and-gradle-variants",
+  "number": 36,
   "topic": "android",
   "subtopic": "the build",
   "question": "How does a buildType differ from a productFlavor?",
@@ -325,6 +361,7 @@
  },
  {
   "id": "and-permissions",
+  "number": 37,
   "topic": "android",
   "subtopic": "security",
   "question": "How do runtime permissions work?",
@@ -334,6 +371,7 @@
  },
  {
   "id": "and-activity-result",
+  "number": 38,
   "topic": "android",
   "subtopic": "components",
   "question": "What replaced `startActivityForResult`?",
@@ -343,6 +381,7 @@
  },
  {
   "id": "and-app-startup-time",
+  "number": 39,
   "topic": "android",
   "subtopic": "performance",
   "question": "What makes up cold start time?",
@@ -352,6 +391,7 @@
  },
  {
   "id": "and-baseline-profiles",
+  "number": 40,
   "topic": "android",
   "subtopic": "performance",
   "question": "What are Baseline Profiles?",
@@ -361,6 +401,7 @@
  },
  {
   "id": "and-strict-mode",
+  "number": 41,
   "topic": "android",
   "subtopic": "performance",
   "question": "What is StrictMode for?",
@@ -370,6 +411,7 @@
  },
  {
   "id": "and-testing-layers",
+  "number": 42,
   "topic": "android",
   "subtopic": "testing",
   "question": "How do unit tests differ from instrumented ones?",
@@ -379,6 +421,7 @@
  },
  {
   "id": "and-idling-espresso",
+  "number": 43,
   "topic": "android",
   "subtopic": "testing",
   "question": "How does Espresso synchronise with the application?",
@@ -388,6 +431,7 @@
  },
  {
   "id": "and-application-class",
+  "number": 44,
   "topic": "android",
   "subtopic": "components",
   "question": "What is the `Application` class, and what must not be done in it?",
@@ -397,6 +441,7 @@
  },
  {
   "id": "and-manifest-exported",
+  "number": 45,
   "topic": "android",
   "subtopic": "security",
   "question": "What does `android:exported` mean, and why is it mandatory since Android 12?",
@@ -406,6 +451,7 @@
  },
  {
   "id": "and-apk-vs-bundle",
+  "number": 46,
   "topic": "android",
   "subtopic": "the build",
   "question": "How does an App Bundle differ from an APK?",
@@ -415,6 +461,7 @@
  },
  {
   "id": "and-sdk-versions",
+  "number": 47,
   "topic": "android",
   "subtopic": "the build",
   "question": "How do `minSdk`, `targetSdk` and `compileSdk` differ?",
@@ -424,6 +471,7 @@
  },
  {
   "id": "and-art-dalvik",
+  "number": 48,
   "topic": "android",
   "subtopic": "the platform",
   "question": "How does ART differ from Dalvik?",
@@ -433,6 +481,7 @@
  },
  {
   "id": "and-dex-multidex",
+  "number": 49,
   "topic": "android",
   "subtopic": "the build",
   "question": "What is dex, and when is multidex needed?",
@@ -442,6 +491,7 @@
  },
  {
   "id": "and-binder",
+  "number": 50,
   "topic": "android",
   "subtopic": "the platform",
   "question": "What is Binder, and why does it have a transaction limit?",
@@ -451,6 +501,7 @@
  },
  {
   "id": "and-parcelable-serializable",
+  "number": 51,
   "topic": "android",
   "subtopic": "data",
   "question": "Why is `Parcelable` better than `Serializable`?",
@@ -460,6 +511,7 @@
  },
  {
   "id": "and-processes",
+  "number": 52,
   "topic": "android",
   "subtopic": "the platform",
   "question": "Can an application run in several processes?",
@@ -469,6 +521,7 @@
  },
  {
   "id": "and-fragment-transactions",
+  "number": 53,
   "topic": "android",
   "subtopic": "fragments",
   "question": "How does `commit` differ from `commitNow` and `commitAllowingStateLoss`?",
@@ -478,6 +531,7 @@
  },
  {
   "id": "and-child-fragment-manager",
+  "number": 54,
   "topic": "android",
   "subtopic": "fragments",
   "question": "How does `childFragmentManager` differ from `parentFragmentManager`?",
@@ -487,6 +541,7 @@
  },
  {
   "id": "and-fragment-result",
+  "number": 55,
   "topic": "android",
   "subtopic": "fragments",
   "question": "How do you pass a result between fragments?",
@@ -496,6 +551,7 @@
  },
  {
   "id": "and-navigation-component",
+  "number": 56,
   "topic": "android",
   "subtopic": "navigation",
   "question": "What does the Navigation Component give you?",
@@ -505,6 +561,7 @@
  },
  {
   "id": "and-deep-links",
+  "number": 57,
   "topic": "android",
   "subtopic": "navigation",
   "question": "How do App Links differ from ordinary deep links?",
@@ -514,6 +571,7 @@
  },
  {
   "id": "and-single-activity",
+  "number": 58,
   "topic": "android",
   "subtopic": "architecture",
   "question": "What is good about the Single Activity approach?",
@@ -523,6 +581,7 @@
  },
  {
   "id": "and-overdraw",
+  "number": 59,
   "topic": "android",
   "subtopic": "performance",
   "question": "What is overdraw, and how do you reduce it?",
@@ -532,6 +591,7 @@
  },
  {
   "id": "and-jank-frames",
+  "number": 60,
   "topic": "android",
   "subtopic": "performance",
   "question": "What is jank, and how much time is there per frame?",
@@ -541,6 +601,7 @@
  },
  {
   "id": "and-bitmap-memory",
+  "number": 61,
   "topic": "android",
   "subtopic": "performance",
   "question": "How much memory does a Bitmap take, and how do you save it?",
@@ -550,6 +611,7 @@
  },
  {
   "id": "and-oom",
+  "number": 62,
   "topic": "android",
   "subtopic": "performance",
   "question": "Why does OutOfMemory happen when the device has plenty of memory?",
@@ -559,6 +621,7 @@
  },
  {
   "id": "and-gc-android",
+  "number": 63,
   "topic": "android",
   "subtopic": "performance",
   "question": "How does garbage collection affect smoothness?",
@@ -568,6 +631,7 @@
  },
  {
   "id": "and-view-vs-compose-perf",
+  "number": 64,
   "topic": "android",
   "subtopic": "UI",
   "question": "What is expensive in a View hierarchy, and why is Compose free of it?",
@@ -577,6 +641,7 @@
  },
  {
   "id": "and-surfaceview",
+  "number": 65,
   "topic": "android",
   "subtopic": "UI",
   "question": "How does a `SurfaceView` differ from an ordinary View?",
@@ -586,6 +651,7 @@
  },
  {
   "id": "and-animations",
+  "number": 66,
   "topic": "android",
   "subtopic": "UI",
   "question": "What animation mechanisms does the View system have?",
@@ -595,6 +661,7 @@
  },
  {
   "id": "and-window-insets",
+  "number": 67,
   "topic": "android",
   "subtopic": "UI",
   "question": "What are WindowInsets, and what is edge-to-edge for?",
@@ -604,6 +671,7 @@
  },
  {
   "id": "and-dark-theme",
+  "number": 68,
   "topic": "android",
   "subtopic": "UI",
   "question": "What is the right way to support a dark theme?",
@@ -613,6 +681,7 @@
  },
  {
   "id": "and-rtl",
+  "number": 69,
   "topic": "android",
   "subtopic": "UI",
   "question": "What does supporting RTL languages take?",
@@ -622,6 +691,7 @@
  },
  {
   "id": "and-accessibility",
+  "number": 70,
   "topic": "android",
   "subtopic": "accessibility",
   "question": "What makes an application accessible?",
@@ -631,6 +701,7 @@
  },
  {
   "id": "and-retrofit-okhttp",
+  "number": 71,
   "topic": "android",
   "subtopic": "networking",
   "question": "How are the roles divided between Retrofit and OkHttp?",
@@ -640,6 +711,7 @@
  },
  {
   "id": "and-http-cache",
+  "number": 72,
   "topic": "android",
   "subtopic": "networking",
   "question": "How do you cache network responses?",
@@ -649,6 +721,7 @@
  },
  {
   "id": "and-serialization",
+  "number": 73,
   "topic": "android",
   "subtopic": "data",
   "question": "How does `kotlinx.serialization` differ from Gson and Moshi?",
@@ -658,6 +731,7 @@
  },
  {
   "id": "and-ssl-pinning",
+  "number": 74,
   "topic": "android",
   "subtopic": "security",
   "question": "What is certificate pinning, and what is the risk?",
@@ -667,6 +741,7 @@
  },
  {
   "id": "and-network-security-config",
+  "number": 75,
   "topic": "android",
   "subtopic": "security",
   "question": "Why does plain HTTP stop working from Android 9 onwards?",
@@ -676,6 +751,7 @@
  },
  {
   "id": "and-room-migrations",
+  "number": 76,
   "topic": "android",
   "subtopic": "data",
   "question": "What happens if you change a Room schema without a migration?",
@@ -685,6 +761,7 @@
  },
  {
   "id": "and-room-threading",
+  "number": 77,
   "topic": "android",
   "subtopic": "data",
   "question": "Why can Room queries not run on the main thread?",
@@ -694,6 +771,7 @@
  },
  {
   "id": "and-paging",
+  "number": 78,
   "topic": "android",
   "subtopic": "data",
   "question": "What is the Paging library for?",
@@ -703,6 +781,7 @@
  },
  {
   "id": "and-backup",
+  "number": 79,
   "topic": "android",
   "subtopic": "data",
   "question": "What is Auto Backup, and what is dangerous about it?",
@@ -712,6 +791,7 @@
  },
  {
   "id": "and-doze",
+  "number": 80,
   "topic": "android",
   "subtopic": "background work",
   "question": "What do Doze and App Standby do?",
@@ -721,6 +801,7 @@
  },
  {
   "id": "and-background-limits",
+  "number": 81,
   "topic": "android",
   "subtopic": "background work",
   "question": "What restrictions on background work appeared from Android 8 onwards?",
@@ -730,6 +811,7 @@
  },
  {
   "id": "and-notifications",
+  "number": 82,
   "topic": "android",
   "subtopic": "notifications",
   "question": "How do notification channels and the permission for them work?",
@@ -739,6 +821,7 @@
  },
  {
   "id": "and-fcm",
+  "number": 83,
   "topic": "android",
   "subtopic": "notifications",
   "question": "How does an FCM data message differ from a notification message?",
@@ -748,6 +831,7 @@
  },
  {
   "id": "and-alarm-manager",
+  "number": 84,
   "topic": "android",
   "subtopic": "background work",
   "question": "When do you need AlarmManager rather than WorkManager?",
@@ -757,6 +841,7 @@
  },
  {
   "id": "and-robolectric",
+  "number": 85,
   "topic": "android",
   "subtopic": "testing",
   "question": "What is Robolectric, and when is it appropriate?",
@@ -766,6 +851,7 @@
  },
  {
   "id": "and-test-doubles",
+  "number": 86,
   "topic": "android",
   "subtopic": "testing",
   "question": "How does a fake differ from a mock, and why does it matter?",
@@ -775,6 +861,7 @@
  },
  {
   "id": "and-turbine-flow-test",
+  "number": 87,
   "topic": "android",
   "subtopic": "testing",
   "question": "How do you test a `Flow`?",
@@ -784,6 +871,7 @@
  },
  {
   "id": "and-macrobenchmark",
+  "number": 88,
   "topic": "android",
   "subtopic": "testing",
   "question": "How does Macrobenchmark differ from Microbenchmark?",
@@ -793,6 +881,7 @@
  },
  {
   "id": "and-crash-reporting",
+  "number": 89,
   "topic": "android",
   "subtopic": "quality",
   "question": "What does it take to read stack traces from a release build?",
@@ -802,6 +891,7 @@
  },
  {
   "id": "and-lint",
+  "number": 90,
   "topic": "android",
   "subtopic": "quality",
   "question": "What does Android Lint check?",

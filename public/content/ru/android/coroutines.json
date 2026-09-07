@@ -1,6 +1,7 @@
 [
  {
   "id": "co-suspend",
+  "number": 1,
   "topic": "coroutines",
   "subtopic": "основы",
   "question": "Что делает модификатор `suspend`?",
@@ -10,6 +11,7 @@
  },
  {
   "id": "co-coroutine-vs-thread",
+  "number": 2,
   "topic": "coroutines",
   "subtopic": "основы",
   "question": "Чем корутина отличается от потока?",
@@ -19,6 +21,7 @@
  },
  {
   "id": "co-structured-concurrency",
+  "number": 3,
   "topic": "coroutines",
   "subtopic": "основы",
   "question": "Что такое структурированный параллелизм?",
@@ -28,6 +31,7 @@
  },
  {
   "id": "co-scope",
+  "number": 4,
   "topic": "coroutines",
   "subtopic": "скоупы",
   "question": "Какие скоупы есть в Android и когда какой?",
@@ -37,6 +41,7 @@
  },
  {
   "id": "co-launch-async",
+  "number": 5,
   "topic": "coroutines",
   "subtopic": "основы",
   "question": "Чем `launch` отличается от `async`?",
@@ -46,6 +51,7 @@
  },
  {
   "id": "co-runblocking",
+  "number": 6,
   "topic": "coroutines",
   "subtopic": "основы",
   "question": "Где допустим `runBlocking`?",
@@ -55,6 +61,7 @@
  },
  {
   "id": "co-dispatchers",
+  "number": 7,
   "topic": "coroutines",
   "subtopic": "диспетчеры",
   "question": "Какие бывают диспетчеры и для чего каждый?",
@@ -64,6 +71,7 @@
  },
  {
   "id": "co-withcontext",
+  "number": 8,
   "topic": "coroutines",
   "subtopic": "диспетчеры",
   "question": "Как правильно выбирать поток в suspend-функции?",
@@ -73,6 +81,7 @@
  },
  {
   "id": "co-job",
+  "number": 9,
   "topic": "coroutines",
   "subtopic": "отмена",
   "question": "Что такое `Job` и какие у него состояния?",
@@ -82,6 +91,7 @@
  },
  {
   "id": "co-cancellation-cooperative",
+  "number": 10,
   "topic": "coroutines",
   "subtopic": "отмена",
   "question": "Почему отмена корутины кооперативная?",
@@ -91,6 +101,7 @@
  },
  {
   "id": "co-cancellation-exception",
+  "number": 11,
   "topic": "coroutines",
   "subtopic": "отмена",
   "question": "Как обрабатывать `CancellationException`?",
@@ -100,6 +111,7 @@
  },
  {
   "id": "co-noncancellable",
+  "number": 12,
   "topic": "coroutines",
   "subtopic": "отмена",
   "question": "Как выполнить suspend-код при отмене?",
@@ -109,6 +121,7 @@
  },
  {
   "id": "co-exception-propagation",
+  "number": 13,
   "topic": "coroutines",
   "subtopic": "ошибки",
   "question": "Как распространяются исключения в корутинах?",
@@ -118,6 +131,7 @@
  },
  {
   "id": "co-supervisor",
+  "number": 14,
   "topic": "coroutines",
   "subtopic": "ошибки",
   "question": "Чем `supervisorScope` отличается от `coroutineScope`?",
@@ -127,6 +141,7 @@
  },
  {
   "id": "co-exception-handler",
+  "number": 15,
   "topic": "coroutines",
   "subtopic": "ошибки",
   "question": "Где работает `CoroutineExceptionHandler`?",
@@ -136,6 +151,7 @@
  },
  {
   "id": "co-flow-basics",
+  "number": 16,
   "topic": "coroutines",
   "subtopic": "Flow",
   "question": "Что такое `Flow` и чем он отличается от последовательности?",
@@ -145,6 +161,7 @@
  },
  {
   "id": "co-statyflow-sharedflow",
+  "number": 17,
   "topic": "coroutines",
   "subtopic": "Flow",
   "question": "Чем `StateFlow` отличается от `SharedFlow`?",
@@ -154,6 +171,7 @@
  },
  {
   "id": "co-hot-cold",
+  "number": 18,
   "topic": "coroutines",
   "subtopic": "Flow",
   "question": "Чем холодный поток отличается от горячего?",
@@ -163,6 +181,7 @@
  },
  {
   "id": "co-sharing-started",
+  "number": 19,
   "topic": "coroutines",
   "subtopic": "Flow",
   "question": "Что делает `SharingStarted.WhileSubscribed(5000)`?",
@@ -172,6 +191,7 @@
  },
  {
   "id": "co-flowon",
+  "number": 20,
   "topic": "coroutines",
   "subtopic": "Flow",
   "question": "Что делает оператор `flowOn`?",
@@ -181,6 +201,7 @@
  },
  {
   "id": "co-buffer-conflate",
+  "number": 21,
   "topic": "coroutines",
   "subtopic": "Flow",
   "question": "Чем `buffer` отличается от `conflate` и `collectLatest`?",
@@ -190,6 +211,7 @@
  },
  {
   "id": "co-combine-zip",
+  "number": 22,
   "topic": "coroutines",
   "subtopic": "Flow",
   "question": "Чем `combine` отличается от `zip`?",
@@ -199,6 +221,7 @@
  },
  {
   "id": "co-flatmap-operators",
+  "number": 23,
   "topic": "coroutines",
   "subtopic": "Flow",
   "question": "Какие есть аналоги `switchMap` во Flow?",
@@ -208,6 +231,7 @@
  },
  {
   "id": "co-callbackflow",
+  "number": 24,
   "topic": "coroutines",
   "subtopic": "Flow",
   "question": "Как обернуть колбэк-API во Flow?",
@@ -217,6 +241,7 @@
  },
  {
   "id": "co-suspendcancellable",
+  "number": 25,
   "topic": "coroutines",
   "subtopic": "интеграция",
   "question": "Как превратить колбэк с одним результатом в suspend-функцию?",
@@ -226,6 +251,7 @@
  },
  {
   "id": "co-repeat-on-lifecycle",
+  "number": 26,
   "topic": "coroutines",
   "subtopic": "Android",
   "question": "Зачем нужен `repeatOnLifecycle`?",
@@ -235,6 +261,7 @@
  },
  {
   "id": "co-viewmodelscope",
+  "number": 27,
   "topic": "coroutines",
   "subtopic": "Android",
   "question": "Что происходит с `viewModelScope` при закрытии экрана?",
@@ -244,6 +271,7 @@
  },
  {
   "id": "co-mutex",
+  "number": 28,
   "topic": "coroutines",
   "subtopic": "многопоточность",
   "question": "Как защитить общее состояние в корутинах?",
@@ -253,6 +281,7 @@
  },
  {
   "id": "co-channel",
+  "number": 29,
   "topic": "coroutines",
   "subtopic": "каналы",
   "question": "Когда нужен `Channel`, а не `Flow`?",
@@ -262,6 +291,7 @@
  },
  {
   "id": "co-testing-coroutines",
+  "number": 30,
   "topic": "coroutines",
   "subtopic": "тестирование",
   "question": "Как тестировать корутины?",
@@ -271,6 +301,7 @@
  },
  {
   "id": "co-debounce-throttle",
+  "number": 31,
   "topic": "coroutines",
   "subtopic": "Flow",
   "question": "Как сделать debounce и throttle во Flow?",
@@ -280,6 +311,7 @@
  },
  {
   "id": "co-distinct",
+  "number": 32,
   "topic": "coroutines",
   "subtopic": "Flow",
   "question": "Что делает `distinctUntilChanged`?",
@@ -289,6 +321,7 @@
  },
  {
   "id": "co-continuation",
+  "number": 33,
   "topic": "coroutines",
   "subtopic": "внутренности",
   "question": "Как компилятор реализует suspend-функции?",
@@ -298,6 +331,7 @@
  },
  {
   "id": "co-delay-vs-sleep",
+  "number": 34,
   "topic": "coroutines",
   "subtopic": "основы",
   "question": "Чем `delay` отличается от `Thread.sleep`?",
@@ -307,6 +341,7 @@
  },
  {
   "id": "co-coroutine-context",
+  "number": 35,
   "topic": "coroutines",
   "subtopic": "основы",
   "question": "Из чего состоит `CoroutineContext`?",
@@ -316,6 +351,7 @@
  },
  {
   "id": "co-coroutine-scope-builder",
+  "number": 36,
   "topic": "coroutines",
   "subtopic": "основы",
   "question": "Чем `coroutineScope { }` отличается от `CoroutineScope(...)`?",
@@ -325,6 +361,7 @@
  },
  {
   "id": "co-await-all",
+  "number": 37,
   "topic": "coroutines",
   "subtopic": "основы",
   "question": "Как дождаться нескольких `async` сразу?",
@@ -334,6 +371,7 @@
  },
  {
   "id": "co-coroutine-start",
+  "number": 38,
   "topic": "coroutines",
   "subtopic": "основы",
   "question": "Какие режимы запуска есть у корутины?",
@@ -343,6 +381,7 @@
  },
  {
   "id": "co-job-vs-deferred",
+  "number": 39,
   "topic": "coroutines",
   "subtopic": "основы",
   "question": "Чем `Job` отличается от `Deferred`?",
@@ -352,6 +391,7 @@
  },
  {
   "id": "co-invoke-on-completion",
+  "number": 40,
   "topic": "coroutines",
   "subtopic": "основы",
   "question": "Что делает `invokeOnCompletion`?",
@@ -361,6 +401,7 @@
  },
  {
   "id": "co-yield",
+  "number": 41,
   "topic": "coroutines",
   "subtopic": "отмена",
   "question": "Что делает `yield()`?",
@@ -370,6 +411,7 @@
  },
  {
   "id": "co-with-timeout",
+  "number": 42,
   "topic": "coroutines",
   "subtopic": "отмена",
   "question": "Чем `withTimeout` отличается от `withTimeoutOrNull`?",
@@ -379,6 +421,7 @@
  },
  {
   "id": "co-limited-parallelism",
+  "number": 43,
   "topic": "coroutines",
   "subtopic": "диспетчеры",
   "question": "Зачем нужен `limitedParallelism`?",
@@ -388,6 +431,7 @@
  },
  {
   "id": "co-main-immediate",
+  "number": 44,
   "topic": "coroutines",
   "subtopic": "диспетчеры",
   "question": "Чем `Dispatchers.Main.immediate` отличается от `Dispatchers.Main`?",
@@ -397,6 +441,7 @@
  },
  {
   "id": "co-single-thread-context",
+  "number": 45,
   "topic": "coroutines",
   "subtopic": "диспетчеры",
   "question": "Когда нужен собственный однопоточный диспетчер?",
@@ -406,6 +451,7 @@
  },
  {
   "id": "co-thread-local",
+  "number": 46,
   "topic": "coroutines",
   "subtopic": "диспетчеры",
   "question": "Что происходит с `ThreadLocal` в корутинах?",
@@ -415,6 +461,7 @@
  },
  {
   "id": "co-flow-builders",
+  "number": 47,
   "topic": "coroutines",
   "subtopic": "Flow",
   "question": "Какие есть способы создать `Flow`?",
@@ -424,6 +471,7 @@
  },
  {
   "id": "co-channel-flow",
+  "number": 48,
   "topic": "coroutines",
   "subtopic": "Flow",
   "question": "Чем `channelFlow` отличается от `flow` и `callbackFlow`?",
@@ -433,6 +481,7 @@
  },
  {
   "id": "co-flow-catch",
+  "number": 49,
   "topic": "coroutines",
   "subtopic": "Flow",
   "question": "Что делает оператор `catch` и почему он не ловит ошибки коллектора?",
@@ -442,6 +491,7 @@
  },
  {
   "id": "co-flow-retry",
+  "number": 50,
   "topic": "coroutines",
   "subtopic": "Flow",
   "question": "Как повторить неудачный запрос во Flow?",
@@ -451,6 +501,7 @@
  },
  {
   "id": "co-flow-lifecycle-ops",
+  "number": 51,
   "topic": "coroutines",
   "subtopic": "Flow",
   "question": "Что делают `onStart`, `onEach` и `onCompletion`?",
@@ -460,6 +511,7 @@
  },
  {
   "id": "co-flow-take",
+  "number": 52,
   "topic": "coroutines",
   "subtopic": "Flow",
   "question": "Что произойдёт с бесконечным потоком после `take(1)`?",
@@ -469,6 +521,7 @@
  },
  {
   "id": "co-shared-flow-config",
+  "number": 53,
   "topic": "coroutines",
   "subtopic": "Flow",
   "question": "Что задают `replay`, `extraBufferCapacity` и `onBufferOverflow` у `MutableSharedFlow`?",
@@ -478,6 +531,7 @@
  },
  {
   "id": "co-state-in",
+  "number": 54,
   "topic": "coroutines",
   "subtopic": "Flow",
   "question": "Чем `stateIn` отличается от `shareIn`?",
@@ -487,6 +541,7 @@
  },
  {
   "id": "co-flow-backpressure",
+  "number": 55,
   "topic": "coroutines",
   "subtopic": "Flow",
   "question": "Как во Flow решается проблема медленного потребителя?",
@@ -496,6 +551,7 @@
  },
  {
   "id": "co-select",
+  "number": 56,
   "topic": "coroutines",
   "subtopic": "продвинутое",
   "question": "Что делает выражение `select`?",
@@ -505,6 +561,7 @@
  },
  {
   "id": "co-actor-produce",
+  "number": 57,
   "topic": "coroutines",
   "subtopic": "каналы",
   "question": "Что такое `produce` и модель актора?",
@@ -514,6 +571,7 @@
  },
  {
   "id": "co-live-data-flow",
+  "number": 58,
   "topic": "coroutines",
   "subtopic": "Android",
   "question": "Чем `StateFlow` лучше `LiveData` и чего у него нет?",
@@ -523,6 +581,7 @@
  },
  {
   "id": "co-launch-when-started",
+  "number": 59,
   "topic": "coroutines",
   "subtopic": "Android",
   "question": "Почему `lifecycleScope.launchWhenStarted` считается устаревшим?",
@@ -532,6 +591,7 @@
  },
  {
   "id": "co-test-dispatchers",
+  "number": 60,
   "topic": "coroutines",
   "subtopic": "тестирование",
   "question": "Чем `StandardTestDispatcher` отличается от `UnconfinedTestDispatcher`?",
@@ -541,6 +601,7 @@
  },
  {
   "id": "co-injecting-dispatchers",
+  "number": 61,
   "topic": "coroutines",
   "subtopic": "тестирование",
   "question": "Почему диспетчер нужно внедрять, а не вызывать напрямую?",
@@ -550,6 +611,7 @@
  },
  {
   "id": "co-cancellation-leak",
+  "number": 62,
   "topic": "coroutines",
   "subtopic": "отмена",
   "question": "Почему `try/catch(Exception)` вокруг suspend-вызова опасен?",
@@ -559,6 +621,7 @@
  },
  {
   "id": "co-global-scope-danger",
+  "number": 63,
   "topic": "coroutines",
   "subtopic": "скоупы",
   "question": "Чем именно плох `GlobalScope`?",

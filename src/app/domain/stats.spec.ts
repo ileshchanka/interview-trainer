@@ -6,7 +6,7 @@ import { streakDays, topicProgress, weakSpots } from './stats';
 const NOW = Date.parse('2026-09-01T12:00:00Z');
 
 function card(id: string, topic: Card['topic'], subtopic: string): Card {
-  return { id, topic, subtopic, question: id, answer: id };
+  return { id, number: 1, topic, subtopic, question: id, answer: id };
 }
 
 function state(cardId: string, patch: Partial<ReviewState>): ReviewState {

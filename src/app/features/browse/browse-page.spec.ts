@@ -7,9 +7,15 @@ import { ContentService } from '../../core/content/content.service';
 import { Card } from '../../domain/models';
 import { BrowsePage } from './browse-page';
 
-function card(id: string, topic: Card['topic'] = 'kotlin', subtopic = 'основы'): Card {
+function card(
+  id: string,
+  number: number,
+  topic: Card['topic'] = 'kotlin',
+  subtopic = 'основы',
+): Card {
   return {
     id,
+    number,
     topic,
     subtopic,
     question: `вопрос ${id}`,
@@ -22,11 +28,13 @@ describe('BrowsePage', () => {
   let harness: RouterTestingHarness;
   let page: HTMLElement;
 
+  // Номера намеренно не совпадают с позицией: адрес обязан называть карточку,
+  // а не место в колоде.
   const cards = signal<readonly Card[]>([
-    card('a'),
-    card('b', 'kotlin', 'корутины'),
-    card('c'),
-    card('ng1', 'angular'),
+    card('a', 11),
+    card('b', 12, 'kotlin', 'корутины'),
+    card('c', 13),
+    card('ng1', 1, 'angular'),
   ]);
 
   /** Переход по адресу: harness создаётся один раз за тест, дальше только навигация. */
@@ -56,7 +64,7 @@ describe('BrowsePage', () => {
         { provide: ContentService, useValue: { cards, isFallback: () => false } },
       ],
     });
-    harness = await RouterTestingHarness.create('/browse/kotlin/1');
+    harness = await RouterTestingHarness.create('/browse/kotlin/11');
     page = harness.routeNativeElement as HTMLElement;
   });
 
@@ -84,7 +92,7 @@ describe('BrowsePage', () => {
   });
 
   it('открывает вопрос под номером из адреса', async () => {
-    await open('/browse/kotlin/3');
+    await open('/browse/kotlin/13');
 
     expect(question()).toBe('вопрос c');
     expect(counter()).toBe('3 / 3');
@@ -95,28 +103,38 @@ describe('BrowsePage', () => {
 
     expect(counter()).toBe('2 / 3');
     expect(question()).toBe('вопрос b');
-    expect(url()).toBe('/browse/kotlin/2');
+    expect(url()).toBe('/browse/kotlin/12');
   });
 
   it('адрес без вопроса дополняется номером', async () => {
     await open('/browse/kotlin');
 
     expect(question()).toBe('вопрос a');
-    expect(url()).toBe('/browse/kotlin/1');
+    expect(url()).toBe('/browse/kotlin/11');
   });
 
-  it('номер за границами колоды приводится к ближайшему краю', async () => {
+  // Номер постоянный, поэтому незнакомый — это удалённая карточка или чужая
+  // колода, а не «конец списка»: открываем сохранённую позицию.
+  it('незнакомый номер открывает сохранённую позицию и поправляет адрес', async () => {
     await open('/browse/kotlin/99');
 
-    expect(question()).toBe('вопрос c');
-    expect(url()).toBe('/browse/kotlin/3');
+    expect(question()).toBe('вопрос a');
+    expect(url()).toBe('/browse/kotlin/11');
   });
 
   it('нечисловой номер открывает сохранённую позицию, а не пустой экран', async () => {
     await open('/browse/kotlin/js-event-loop-order');
 
     expect(question()).toBe('вопрос a');
-    expect(url()).toBe('/browse/kotlin/1');
+    expect(url()).toBe('/browse/kotlin/11');
+  });
+
+  it('номера в списке перехода — те же, что в адресе', async () => {
+    const labels = harness
+      .routeDebugElement!.componentInstance['jumpItems']()
+      .map((item: { label: string }) => item.label);
+
+    expect(labels).toEqual(['11. вопрос a', '12. вопрос b', '13. вопрос c']);
   });
 
   it('на первой карточке «Назад» недоступна, на последней «Далее» исчезает', async () => {
@@ -154,47 +172,46 @@ describe('BrowsePage', () => {
   it('категории из адреса сужают колоду и счётчик', async () => {
     // Вторая карточка колоды — единственная из «корутин», значит её категория
     // вторая по счёту.
-    await open('/browse/kotlin/1?cats=2');
+    await open('/browse/kotlin/12?cats=2');
 
     expect(counter()).toBe('1 / 1');
     expect(question()).toBe('вопрос b');
   });
 
   it('мусор в параметре категорий означает всю колоду', async () => {
-    await open('/browse/kotlin/1?cats=abc');
+    await open('/browse/kotlin/11?cats=abc');
 
     expect(counter()).toBe('1 / 3');
   });
 
   it('листание не теряет выбранные категории', async () => {
-    await open('/browse/kotlin/1?cats=1');
+    await open('/browse/kotlin/11?cats=1');
 
     harness.routeDebugElement!.componentInstance['next']();
     await harness.fixture.whenStable();
 
-    expect(url()).toBe('/browse/kotlin/2?cats=1');
+    expect(url()).toBe('/browse/kotlin/13?cats=1');
     expect(question()).toBe('вопрос c');
   });
 
   it('выбор категорий попадает в адрес и оставляет человека на его карточке', async () => {
-    await open('/browse/kotlin/2');
+    await open('/browse/kotlin/12');
     expect(question()).toBe('вопрос b');
 
     harness.routeDebugElement!.componentInstance['chooseCategories']([2]);
     await harness.fixture.whenStable();
 
-    // Карточка «b» — единственная в выбранной категории, значит она же первая.
-    expect(url()).toBe('/browse/kotlin/1?cats=2');
+    expect(url()).toBe('/browse/kotlin/12?cats=2');
     expect(question()).toBe('вопрос b');
   });
 
   it('отмеченные все категории убирают параметр из адреса', async () => {
-    await open('/browse/kotlin/1?cats=1');
+    await open('/browse/kotlin/11?cats=1');
 
     harness.routeDebugElement!.componentInstance['chooseCategories']([1, 2]);
     await harness.fixture.whenStable();
 
-    expect(url()).toBe('/browse/kotlin/1');
+    expect(url()).toBe('/browse/kotlin/11');
     expect(counter()).toBe('1 / 3');
   });
 
@@ -214,7 +231,7 @@ describe('BrowsePage', () => {
     await open('/browse/kotlin');
 
     expect(counter()).toBe('2 / 3');
-    expect(url()).toBe('/browse/kotlin/2');
+    expect(url()).toBe('/browse/kotlin/12');
   });
 
   it('стрелки листают колоду', async () => {

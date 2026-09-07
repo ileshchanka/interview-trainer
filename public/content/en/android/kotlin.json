@@ -1,6 +1,7 @@
 [
  {
   "id": "kt-val-var",
+  "number": 1,
   "topic": "kotlin",
   "subtopic": "the basics",
   "question": "How does `val` differ from `var`, and what does `val` not guarantee?",
@@ -10,6 +11,7 @@
  },
  {
   "id": "kt-const-val",
+  "number": 2,
   "topic": "kotlin",
   "subtopic": "the basics",
   "question": "How does `const val` differ from an ordinary `val`?",
@@ -19,6 +21,7 @@
  },
  {
   "id": "kt-type-inference",
+  "number": 3,
   "topic": "kotlin",
   "subtopic": "the basics",
   "question": "When must a type be written out explicitly?",
@@ -28,6 +31,7 @@
  },
  {
   "id": "kt-expression-body",
+  "number": 4,
   "topic": "kotlin",
   "subtopic": "the basics",
   "question": "What is an expression body of a function?",
@@ -37,6 +41,7 @@
  },
  {
   "id": "kt-if-when-expression",
+  "number": 5,
   "topic": "kotlin",
   "subtopic": "the basics",
   "question": "Why are `if` and `when` expressions in Kotlin?",
@@ -46,6 +51,7 @@
  },
  {
   "id": "kt-string-templates",
+  "number": 6,
   "topic": "kotlin",
   "subtopic": "the basics",
   "question": "How do string templates and raw strings work?",
@@ -55,6 +61,7 @@
  },
  {
   "id": "kt-equality",
+  "number": 7,
   "topic": "kotlin",
   "subtopic": "the basics",
   "question": "How does `==` differ from `===`?",
@@ -64,6 +71,7 @@
  },
  {
   "id": "kt-ranges",
+  "number": 8,
   "topic": "kotlin",
   "subtopic": "the basics",
   "question": "How do you write a range, and how does `until` differ from `..`?",
@@ -73,6 +81,7 @@
  },
  {
   "id": "kt-null-safety",
+  "number": 9,
   "topic": "kotlin",
   "subtopic": "null safety",
   "question": "How does Kotlin's type system protect you from NPEs?",
@@ -82,6 +91,7 @@
  },
  {
   "id": "kt-safe-call-elvis",
+  "number": 10,
   "topic": "kotlin",
   "subtopic": "null safety",
   "question": "What do `?.`, `?:` and `!!` do?",
@@ -91,6 +101,7 @@
  },
  {
   "id": "kt-platform-types",
+  "number": 11,
   "topic": "kotlin",
   "subtopic": "null safety",
   "question": "What are platform types?",
@@ -100,6 +111,7 @@
  },
  {
   "id": "kt-lateinit",
+  "number": 12,
   "topic": "kotlin",
   "subtopic": "null safety",
   "question": "When do you use `lateinit`, and when `by lazy`?",
@@ -109,6 +121,7 @@
  },
  {
   "id": "kt-smart-cast",
+  "number": 13,
   "topic": "kotlin",
   "subtopic": "null safety",
   "question": "What is a smart cast, and when does it not work?",
@@ -118,6 +131,7 @@
  },
  {
   "id": "kt-data-class",
+  "number": 14,
   "topic": "kotlin",
   "subtopic": "classes",
   "question": "What does a `data class` generate, and what are its restrictions?",
@@ -127,6 +141,7 @@
  },
  {
   "id": "kt-sealed",
+  "number": 15,
   "topic": "kotlin",
   "subtopic": "classes",
   "question": "What are `sealed class` and `sealed interface` for?",
@@ -136,6 +151,7 @@
  },
  {
   "id": "kt-object-companion",
+  "number": 16,
   "topic": "kotlin",
   "subtopic": "classes",
   "question": "How does an `object` differ from a `companion object`?",
@@ -145,6 +161,7 @@
  },
  {
   "id": "kt-visibility",
+  "number": 17,
   "topic": "kotlin",
   "subtopic": "classes",
   "question": "What visibility modifiers are there, and what is `internal` good for?",
@@ -154,6 +171,7 @@
  },
  {
   "id": "kt-open-final",
+  "number": 18,
   "topic": "kotlin",
   "subtopic": "classes",
   "question": "Why are classes in Kotlin final by default?",
@@ -163,6 +181,7 @@
  },
  {
   "id": "kt-nested-inner",
+  "number": 19,
   "topic": "kotlin",
   "subtopic": "classes",
   "question": "How does a nested class differ from an `inner` one?",
@@ -172,6 +191,7 @@
  },
  {
   "id": "kt-interface-default",
+  "number": 20,
   "topic": "kotlin",
   "subtopic": "classes",
   "question": "What can an interface in Kotlin do that an abstract class cannot?",
@@ -181,6 +201,7 @@
  },
  {
   "id": "kt-delegation-by",
+  "number": 21,
   "topic": "kotlin",
   "subtopic": "classes",
   "question": "What does `class A(b: B) : B by b` do?",
@@ -190,6 +211,7 @@
  },
  {
   "id": "kt-delegated-properties",
+  "number": 22,
   "topic": "kotlin",
   "subtopic": "classes",
   "question": "What property delegates are there?",
@@ -199,6 +221,7 @@
  },
  {
   "id": "kt-enum-vs-sealed",
+  "number": 23,
   "topic": "kotlin",
   "subtopic": "classes",
   "question": "When do you take an `enum`, and when a `sealed` type?",
@@ -208,6 +231,7 @@
  },
  {
   "id": "kt-value-class",
+  "number": 24,
   "topic": "kotlin",
   "subtopic": "classes",
   "question": "What does a `value class` (an inline class) give you?",
@@ -217,6 +241,7 @@
  },
  {
   "id": "kt-default-named-args",
+  "number": 25,
   "topic": "kotlin",
   "subtopic": "functions",
   "question": "What do default values and named arguments give you?",
@@ -226,6 +251,7 @@
  },
  {
   "id": "kt-extension-functions",
+  "number": 26,
   "topic": "kotlin",
   "subtopic": "functions",
   "question": "How do extension functions work?",
@@ -235,6 +261,7 @@
  },
  {
   "id": "kt-infix",
+  "number": 27,
   "topic": "kotlin",
   "subtopic": "functions",
   "question": "What is an infix function?",
@@ -244,6 +271,7 @@
  },
  {
   "id": "kt-inline-functions",
+  "number": 28,
   "topic": "kotlin",
   "subtopic": "functions",
   "question": "What is `inline` for, and when is it harmful?",
@@ -253,6 +281,7 @@
  },
  {
   "id": "kt-reified",
+  "number": 29,
   "topic": "kotlin",
   "subtopic": "functions",
   "question": "What does `reified` do, and why is it impossible without `inline`?",
@@ -262,6 +291,7 @@
  },
  {
   "id": "kt-crossinline-noinline",
+  "number": 30,
   "topic": "kotlin",
   "subtopic": "functions",
   "question": "What are `crossinline` and `noinline` for?",
@@ -271,6 +301,7 @@
  },
  {
   "id": "kt-higher-order",
+  "number": 31,
   "topic": "kotlin",
   "subtopic": "functions",
   "question": "What is a function type, and how do you pass a reference to a function?",
@@ -280,6 +311,7 @@
  },
  {
   "id": "kt-vararg-spread",
+  "number": 32,
   "topic": "kotlin",
   "subtopic": "functions",
   "question": "How do you declare a variable number of arguments and pass an array?",
@@ -289,6 +321,7 @@
  },
  {
   "id": "kt-tailrec",
+  "number": 33,
   "topic": "kotlin",
   "subtopic": "functions",
   "question": "What does `tailrec` do?",
@@ -298,6 +331,7 @@
  },
  {
   "id": "kt-collections-readonly",
+  "number": 34,
   "topic": "kotlin",
   "subtopic": "collections",
   "question": "How does `List` differ from `MutableList`?",
@@ -307,6 +341,7 @@
  },
  {
   "id": "kt-sequence",
+  "number": 35,
   "topic": "kotlin",
   "subtopic": "collections",
   "question": "When is a `Sequence` better than a `List`?",
@@ -316,6 +351,7 @@
  },
  {
   "id": "kt-map-vs-flatmap",
+  "number": 36,
   "topic": "kotlin",
   "subtopic": "collections",
   "question": "How does `map` differ from `flatMap`, and `filter` from `partition`?",
@@ -325,6 +361,7 @@
  },
  {
   "id": "kt-mutable-hidden",
+  "number": 37,
   "topic": "kotlin",
   "subtopic": "collections",
   "question": "Why are `listOf()` and `mapOf()` preferable to `ArrayList()`?",
@@ -334,6 +371,7 @@
  },
  {
   "id": "kt-destructuring",
+  "number": 38,
   "topic": "kotlin",
   "subtopic": "collections",
   "question": "How does destructuring work?",
@@ -343,6 +381,7 @@
  },
  {
   "id": "kt-variance",
+  "number": 39,
   "topic": "kotlin",
   "subtopic": "generics",
   "question": "What do `out` and `in` mean in a generic declaration?",
@@ -352,6 +391,7 @@
  },
  {
   "id": "kt-star-projection",
+  "number": 40,
   "topic": "kotlin",
   "subtopic": "generics",
   "question": "What does `List<*>` mean?",
@@ -361,6 +401,7 @@
  },
  {
   "id": "kt-type-erasure",
+  "number": 41,
   "topic": "kotlin",
   "subtopic": "generics",
   "question": "Are generic types erased in Kotlin?",
@@ -370,6 +411,7 @@
  },
  {
   "id": "kt-generic-constraints",
+  "number": 42,
   "topic": "kotlin",
   "subtopic": "generics",
   "question": "How do you constrain a type parameter?",
@@ -379,6 +421,7 @@
  },
  {
   "id": "kt-no-checked-exceptions",
+  "number": 43,
   "topic": "kotlin",
   "subtopic": "exceptions",
   "question": "Why does Kotlin have no checked exceptions?",
@@ -388,6 +431,7 @@
  },
  {
   "id": "kt-runcatching",
+  "number": 44,
   "topic": "kotlin",
   "subtopic": "exceptions",
   "question": "What does `runCatching` do, and what is dangerous about it?",
@@ -397,6 +441,7 @@
  },
  {
   "id": "kt-java-interop",
+  "number": 45,
   "topic": "kotlin",
   "subtopic": "interop",
   "question": "What do you need to know about calling Kotlin from Java?",
@@ -406,6 +451,7 @@
  },
  {
   "id": "kt-scope-functions-choice",
+  "number": 46,
   "topic": "kotlin",
   "subtopic": "scope functions",
   "question": "How do you choose between `let`, `run`, `with`, `apply` and `also`?",
@@ -415,6 +461,7 @@
  },
  {
   "id": "kt-takeif",
+  "number": 47,
   "topic": "kotlin",
   "subtopic": "scope functions",
   "question": "What do `takeIf` and `takeUnless` do?",
@@ -424,6 +471,7 @@
  },
  {
   "id": "kt-operator-overloading",
+  "number": 48,
   "topic": "kotlin",
   "subtopic": "operators",
   "question": "How do you overload an operator?",
@@ -433,6 +481,7 @@
  },
  {
   "id": "kt-any-unit-nothing",
+  "number": 49,
   "topic": "kotlin",
   "subtopic": "the type system",
   "question": "How do `Any`, `Unit` and `Nothing` differ?",
@@ -442,6 +491,7 @@
  },
  {
   "id": "kt-as-safe-cast",
+  "number": 50,
   "topic": "kotlin",
   "subtopic": "the type system",
   "question": "How does `as` differ from `as?`?",
@@ -451,6 +501,7 @@
  },
  {
   "id": "kt-nothing-type-use",
+  "number": 51,
   "topic": "kotlin",
   "subtopic": "the type system",
   "question": "Where does the `Nothing` type show up in practice?",
@@ -460,6 +511,7 @@
  },
  {
   "id": "kt-numeric-conversion",
+  "number": 52,
   "topic": "kotlin",
   "subtopic": "the type system",
   "question": "Why does `val x: Long = 1` work while `val y: Long = intValue` does not?",
@@ -469,6 +521,7 @@
  },
  {
   "id": "kt-float-equality",
+  "number": 53,
   "topic": "kotlin",
   "subtopic": "the type system",
   "question": "How does comparing `Double` in Kotlin differ from Java?",
@@ -478,6 +531,7 @@
  },
  {
   "id": "kt-integer-overflow",
+  "number": 54,
   "topic": "kotlin",
   "subtopic": "the type system",
   "question": "What happens when an `Int` overflows?",
@@ -487,6 +541,7 @@
  },
  {
   "id": "kt-string-vs-stringbuilder",
+  "number": 55,
   "topic": "kotlin",
   "subtopic": "the type system",
   "question": "Why is concatenating strings in a loop a bad idea?",
@@ -496,6 +551,7 @@
  },
  {
   "id": "kt-array-vs-list",
+  "number": 56,
   "topic": "kotlin",
   "subtopic": "collections",
   "question": "How does `Array` differ from `List`, and when do you need an `IntArray`?",
@@ -505,6 +561,7 @@
  },
  {
   "id": "kt-typealias",
+  "number": 57,
   "topic": "kotlin",
   "subtopic": "the type system",
   "question": "What does `typealias` do, and what does it not do?",
@@ -514,6 +571,7 @@
  },
  {
   "id": "kt-constructors",
+  "number": 58,
   "topic": "kotlin",
   "subtopic": "classes",
   "question": "How does the primary constructor differ from a secondary one?",
@@ -523,6 +581,7 @@
  },
  {
   "id": "kt-init-order",
+  "number": 59,
   "topic": "kotlin",
   "subtopic": "classes",
   "question": "In what order does initialisation happen with inheritance?",
@@ -532,6 +591,7 @@
  },
  {
   "id": "kt-backing-field",
+  "number": 60,
   "topic": "kotlin",
   "subtopic": "classes",
   "question": "What is a backing field, and when is one created?",
@@ -541,6 +601,7 @@
  },
  {
   "id": "kt-custom-accessors",
+  "number": 61,
   "topic": "kotlin",
   "subtopic": "classes",
   "question": "How do you write your own setter with validation?",
@@ -550,6 +611,7 @@
  },
  {
   "id": "kt-anonymous-object",
+  "number": 62,
   "topic": "kotlin",
   "subtopic": "classes",
   "question": "What does `object : Interface { }` do?",
@@ -559,6 +621,7 @@
  },
  {
   "id": "kt-fun-interface",
+  "number": 63,
   "topic": "kotlin",
   "subtopic": "classes",
   "question": "What is a `fun interface` and SAM conversion?",
@@ -568,6 +631,7 @@
  },
  {
   "id": "kt-data-object",
+  "number": 64,
   "topic": "kotlin",
   "subtopic": "classes",
   "question": "What is a `data object` for?",
@@ -577,6 +641,7 @@
  },
  {
   "id": "kt-equals-hashcode",
+  "number": 65,
   "topic": "kotlin",
   "subtopic": "classes",
   "question": "What contract binds `equals` and `hashCode`?",
@@ -586,6 +651,7 @@
  },
  {
   "id": "kt-extension-property",
+  "number": 66,
   "topic": "kotlin",
   "subtopic": "functions",
   "question": "Can an extension be a property?",
@@ -595,6 +661,7 @@
  },
  {
   "id": "kt-local-functions",
+  "number": 67,
   "topic": "kotlin",
   "subtopic": "functions",
   "question": "What are local functions for?",
@@ -604,6 +671,7 @@
  },
  {
   "id": "kt-labels-return",
+  "number": 68,
   "topic": "kotlin",
   "subtopic": "functions",
   "question": "How do you return from a lambda only, not from the enclosing function?",
@@ -613,6 +681,7 @@
  },
  {
   "id": "kt-require-check-error",
+  "number": 69,
   "topic": "kotlin",
   "subtopic": "exceptions",
   "question": "How do `require`, `check` and `error` differ?",
@@ -622,6 +691,7 @@
  },
  {
   "id": "kt-try-expression",
+  "number": 70,
   "topic": "kotlin",
   "subtopic": "exceptions",
   "question": "Is `try` an expression?",
@@ -631,6 +701,7 @@
  },
  {
   "id": "kt-result-type",
+  "number": 71,
   "topic": "kotlin",
   "subtopic": "exceptions",
   "question": "What is `Result`, and why is it rarely returned from an API?",
@@ -640,6 +711,7 @@
  },
  {
   "id": "kt-fold-reduce",
+  "number": 72,
   "topic": "kotlin",
   "subtopic": "collections",
   "question": "How does `fold` differ from `reduce`?",
@@ -649,6 +721,7 @@
  },
  {
   "id": "kt-group-associate",
+  "number": 73,
   "topic": "kotlin",
   "subtopic": "collections",
   "question": "How does `groupBy` differ from `associateBy`?",
@@ -658,6 +731,7 @@
  },
  {
   "id": "kt-zip-windowed",
+  "number": 74,
   "topic": "kotlin",
   "subtopic": "collections",
   "question": "What do `zip`, `chunked` and `windowed` do?",
@@ -667,6 +741,7 @@
  },
  {
   "id": "kt-sorted-comparator",
+  "number": 75,
   "topic": "kotlin",
   "subtopic": "collections",
   "question": "How do you sort by several fields?",
@@ -676,6 +751,7 @@
  },
  {
   "id": "kt-map-getordefault",
+  "number": 76,
   "topic": "kotlin",
   "subtopic": "collections",
   "question": "How do `getOrElse`, `getOrPut` and `getOrDefault` differ for a `Map`?",
@@ -685,6 +761,7 @@
  },
  {
   "id": "kt-iterable-vs-collection",
+  "number": 77,
   "topic": "kotlin",
   "subtopic": "collections",
   "question": "How do `Iterable`, `Collection` and `List` differ?",
@@ -694,6 +771,7 @@
  },
  {
   "id": "kt-mutable-shared-state",
+  "number": 78,
   "topic": "kotlin",
   "subtopic": "collections",
   "question": "Why is a mutable collection in a public API dangerous?",
@@ -703,6 +781,7 @@
  },
  {
   "id": "kt-lazy-modes",
+  "number": 79,
   "topic": "kotlin",
   "subtopic": "delegates",
   "question": "What modes does `lazy` have, and when do you need a non-default one?",
@@ -712,6 +791,7 @@
  },
  {
   "id": "kt-observable-vetoable",
+  "number": 80,
   "topic": "kotlin",
   "subtopic": "delegates",
   "question": "What do `Delegates.observable` and `Delegates.vetoable` do?",
@@ -721,6 +801,7 @@
  },
  {
   "id": "kt-reflection",
+  "number": 81,
   "topic": "kotlin",
   "subtopic": "reflection",
   "question": "How does `KClass` differ from `Class`, and what does reflection cost?",
@@ -730,6 +811,7 @@
  },
  {
   "id": "kt-annotations",
+  "number": 82,
   "topic": "kotlin",
   "subtopic": "reflection",
   "question": "How do you declare an annotation, and what do `@Target`/`@Retention` set?",
@@ -739,6 +821,7 @@
  },
  {
   "id": "kt-ksp-kapt",
+  "number": 83,
   "topic": "kotlin",
   "subtopic": "tooling",
   "question": "Why is KSP better than kapt?",
@@ -748,6 +831,7 @@
  },
  {
   "id": "kt-expect-actual",
+  "number": 84,
   "topic": "kotlin",
   "subtopic": "multiplatform",
   "question": "What do `expect` and `actual` mean?",
@@ -757,6 +841,7 @@
  },
  {
   "id": "kt-coroutines-vs-rx",
+  "number": 85,
   "topic": "kotlin",
   "subtopic": "comparison",
   "question": "Why are coroutines better than RxJava, and where is Rx still stronger?",
@@ -766,6 +851,7 @@
  },
  {
   "id": "kt-kotlin-vs-java",
+  "number": 86,
   "topic": "kotlin",
   "subtopic": "comparison",
   "question": "What would you name as Kotlin's main advantages over Java in an interview?",
@@ -775,6 +861,7 @@
  },
  {
   "id": "kt-string-comparison",
+  "number": 87,
   "topic": "kotlin",
   "subtopic": "the type system",
   "question": "What is the right way to compare strings case-insensitively?",
@@ -784,6 +871,7 @@
  },
  {
   "id": "kt-copy-on-write",
+  "number": 88,
   "topic": "kotlin",
   "subtopic": "collections",
   "question": "How do you safely hand out an immutable snapshot of mutable state?",

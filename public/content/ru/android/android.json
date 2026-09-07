@@ -1,6 +1,7 @@
 [
  {
   "id": "and-activity-lifecycle",
+  "number": 1,
   "topic": "android",
   "subtopic": "жизненный цикл",
   "question": "Перечислите колбэки жизненного цикла Activity по порядку.",
@@ -10,6 +11,7 @@
  },
  {
   "id": "and-rotation",
+  "number": 2,
   "topic": "android",
   "subtopic": "жизненный цикл",
   "question": "Что происходит с Activity при повороте экрана и как это пережить?",
@@ -19,6 +21,7 @@
  },
  {
   "id": "and-saved-instance-state",
+  "number": 3,
   "topic": "android",
   "subtopic": "жизненный цикл",
   "question": "Когда вызывается `onSaveInstanceState` и каков лимит Bundle?",
@@ -28,6 +31,7 @@
  },
  {
   "id": "and-fragment-lifecycle",
+  "number": 4,
   "topic": "android",
   "subtopic": "жизненный цикл",
   "question": "Чем жизненный цикл Fragment отличается от Activity?",
@@ -37,6 +41,7 @@
  },
  {
   "id": "and-configuration-changes",
+  "number": 5,
   "topic": "android",
   "subtopic": "жизненный цикл",
   "question": "Что делает `android:configChanges` и почему это не решение?",
@@ -46,6 +51,7 @@
  },
  {
   "id": "and-process-death",
+  "number": 6,
   "topic": "android",
   "subtopic": "жизненный цикл",
   "question": "Что такое process death и как его воспроизвести?",
@@ -55,6 +61,7 @@
  },
  {
   "id": "and-four-components",
+  "number": 7,
   "topic": "android",
   "subtopic": "компоненты",
   "question": "Какие есть основные компоненты приложения?",
@@ -64,6 +71,7 @@
  },
  {
   "id": "and-intent",
+  "number": 8,
   "topic": "android",
   "subtopic": "компоненты",
   "question": "Чем явный Intent отличается от неявного?",
@@ -73,6 +81,7 @@
  },
  {
   "id": "and-pending-intent",
+  "number": 9,
   "topic": "android",
   "subtopic": "компоненты",
   "question": "Что такое PendingIntent и почему он требует флаг изменяемости?",
@@ -82,6 +91,7 @@
  },
  {
   "id": "and-launch-modes",
+  "number": 10,
   "topic": "android",
   "subtopic": "компоненты",
   "question": "Какие есть режимы запуска Activity?",
@@ -91,6 +101,7 @@
  },
  {
   "id": "and-service-types",
+  "number": 11,
   "topic": "android",
   "subtopic": "компоненты",
   "question": "Чем Foreground Service отличается от обычного и когда он нужен?",
@@ -100,6 +111,7 @@
  },
  {
   "id": "and-workmanager",
+  "number": 12,
   "topic": "android",
   "subtopic": "компоненты",
   "question": "Когда использовать WorkManager?",
@@ -109,6 +121,7 @@
  },
  {
   "id": "and-broadcast-receiver",
+  "number": 13,
   "topic": "android",
   "subtopic": "компоненты",
   "question": "Какие ограничения у BroadcastReceiver?",
@@ -118,6 +131,7 @@
  },
  {
   "id": "and-content-provider",
+  "number": 14,
   "topic": "android",
   "subtopic": "компоненты",
   "question": "Зачем нужен ContentProvider, если есть Room?",
@@ -127,6 +141,7 @@
  },
  {
   "id": "and-context-types",
+  "number": 15,
   "topic": "android",
   "subtopic": "контекст",
   "question": "Чем Application Context отличается от Activity Context?",
@@ -136,6 +151,7 @@
  },
  {
   "id": "and-memory-leaks",
+  "number": 16,
   "topic": "android",
   "subtopic": "контекст",
   "question": "Какие типичные источники утечек памяти в Android?",
@@ -145,6 +161,7 @@
  },
  {
   "id": "and-anr",
+  "number": 17,
   "topic": "android",
   "subtopic": "производительность",
   "question": "Что такое ANR и при каких условиях он возникает?",
@@ -154,6 +171,7 @@
  },
  {
   "id": "and-main-thread",
+  "number": 18,
   "topic": "android",
   "subtopic": "производительность",
   "question": "Почему UI можно трогать только из главного потока?",
@@ -163,6 +181,7 @@
  },
  {
   "id": "and-looper-handler",
+  "number": 19,
   "topic": "android",
   "subtopic": "многопоточность",
   "question": "Как устроены Looper, Handler и MessageQueue?",
@@ -172,6 +191,7 @@
  },
  {
   "id": "and-recyclerview",
+  "number": 20,
   "topic": "android",
   "subtopic": "UI",
   "question": "Как RecyclerView переиспользует элементы и зачем нужен DiffUtil?",
@@ -181,6 +201,7 @@
  },
  {
   "id": "and-viewbinding",
+  "number": 21,
   "topic": "android",
   "subtopic": "UI",
   "question": "Чем ViewBinding отличается от findViewById и от DataBinding?",
@@ -190,6 +211,7 @@
  },
  {
   "id": "and-constraint-layout",
+  "number": 22,
   "topic": "android",
   "subtopic": "UI",
   "question": "Зачем нужен ConstraintLayout?",
@@ -199,6 +221,7 @@
  },
  {
   "id": "and-measure-layout-draw",
+  "number": 23,
   "topic": "android",
   "subtopic": "UI",
   "question": "Из каких фаз состоит отрисовка View?",
@@ -208,6 +231,7 @@
  },
  {
   "id": "and-density-dp",
+  "number": 24,
   "topic": "android",
   "subtopic": "UI",
   "question": "Чем dp отличается от px, а sp от dp?",
@@ -217,6 +241,7 @@
  },
  {
   "id": "and-resource-qualifiers",
+  "number": 25,
   "topic": "android",
   "subtopic": "UI",
   "question": "Как работают квалификаторы ресурсов?",
@@ -226,6 +251,7 @@
  },
  {
   "id": "and-room",
+  "number": 26,
   "topic": "android",
   "subtopic": "данные",
   "question": "Что даёт Room поверх SQLite?",
@@ -235,6 +261,7 @@
  },
  {
   "id": "and-datastore",
+  "number": 27,
   "topic": "android",
   "subtopic": "данные",
   "question": "Чем DataStore лучше SharedPreferences?",
@@ -244,6 +271,7 @@
  },
  {
   "id": "and-scoped-storage",
+  "number": 28,
   "topic": "android",
   "subtopic": "данные",
   "question": "Что изменило Scoped Storage?",
@@ -253,6 +281,7 @@
  },
  {
   "id": "and-keystore",
+  "number": 29,
   "topic": "android",
   "subtopic": "безопасность",
   "question": "Где хранить токены и ключи?",
@@ -262,6 +291,7 @@
  },
  {
   "id": "and-viewmodel",
+  "number": 30,
   "topic": "android",
   "subtopic": "архитектура",
   "question": "Что такое ViewModel и почему она переживает поворот?",
@@ -271,6 +301,7 @@
  },
  {
   "id": "and-unidirectional-flow",
+  "number": 31,
   "topic": "android",
   "subtopic": "архитектура",
   "question": "Что такое однонаправленный поток данных (UDF)?",
@@ -280,6 +311,7 @@
  },
  {
   "id": "and-repository",
+  "number": 32,
   "topic": "android",
   "subtopic": "архитектура",
   "question": "Зачем нужен слой Repository?",
@@ -289,6 +321,7 @@
  },
  {
   "id": "and-hilt",
+  "number": 33,
   "topic": "android",
   "subtopic": "DI",
   "question": "Что даёт Hilt поверх Dagger?",
@@ -298,6 +331,7 @@
  },
  {
   "id": "and-modularization",
+  "number": 34,
   "topic": "android",
   "subtopic": "сборка",
   "question": "Зачем разбивать приложение на модули?",
@@ -307,6 +341,7 @@
  },
  {
   "id": "and-r8",
+  "number": 35,
   "topic": "android",
   "subtopic": "сборка",
   "question": "Что делает R8 и как не сломать приложение?",
@@ -316,6 +351,7 @@
  },
  {
   "id": "and-gradle-variants",
+  "number": 36,
   "topic": "android",
   "subtopic": "сборка",
   "question": "Чем buildType отличается от productFlavor?",
@@ -325,6 +361,7 @@
  },
  {
   "id": "and-permissions",
+  "number": 37,
   "topic": "android",
   "subtopic": "безопасность",
   "question": "Как устроены разрешения в рантайме?",
@@ -334,6 +371,7 @@
  },
  {
   "id": "and-activity-result",
+  "number": 38,
   "topic": "android",
   "subtopic": "компоненты",
   "question": "Что пришло на смену `startActivityForResult`?",
@@ -343,6 +381,7 @@
  },
  {
   "id": "and-app-startup-time",
+  "number": 39,
   "topic": "android",
   "subtopic": "производительность",
   "question": "Из чего складывается время холодного старта?",
@@ -352,6 +391,7 @@
  },
  {
   "id": "and-baseline-profiles",
+  "number": 40,
   "topic": "android",
   "subtopic": "производительность",
   "question": "Что такое Baseline Profiles?",
@@ -361,6 +401,7 @@
  },
  {
   "id": "and-strict-mode",
+  "number": 41,
   "topic": "android",
   "subtopic": "производительность",
   "question": "Зачем нужен StrictMode?",
@@ -370,6 +411,7 @@
  },
  {
   "id": "and-testing-layers",
+  "number": 42,
   "topic": "android",
   "subtopic": "тестирование",
   "question": "Чем unit-тесты отличаются от инструментальных?",
@@ -379,6 +421,7 @@
  },
  {
   "id": "and-idling-espresso",
+  "number": 43,
   "topic": "android",
   "subtopic": "тестирование",
   "question": "Как Espresso синхронизируется с приложением?",
@@ -388,6 +431,7 @@
  },
  {
   "id": "and-application-class",
+  "number": 44,
   "topic": "android",
   "subtopic": "компоненты",
   "question": "Что такое класс `Application` и что в нём нельзя делать?",
@@ -397,6 +441,7 @@
  },
  {
   "id": "and-manifest-exported",
+  "number": 45,
   "topic": "android",
   "subtopic": "безопасность",
   "question": "Что означает `android:exported` и почему с Android 12 он обязателен?",
@@ -406,6 +451,7 @@
  },
  {
   "id": "and-apk-vs-bundle",
+  "number": 46,
   "topic": "android",
   "subtopic": "сборка",
   "question": "Чем App Bundle отличается от APK?",
@@ -415,6 +461,7 @@
  },
  {
   "id": "and-sdk-versions",
+  "number": 47,
   "topic": "android",
   "subtopic": "сборка",
   "question": "Чем различаются `minSdk`, `targetSdk` и `compileSdk`?",
@@ -424,6 +471,7 @@
  },
  {
   "id": "and-art-dalvik",
+  "number": 48,
   "topic": "android",
   "subtopic": "платформа",
   "question": "Чем ART отличается от Dalvik?",
@@ -433,6 +481,7 @@
  },
  {
   "id": "and-dex-multidex",
+  "number": 49,
   "topic": "android",
   "subtopic": "сборка",
   "question": "Что такое dex и когда нужен multidex?",
@@ -442,6 +491,7 @@
  },
  {
   "id": "and-binder",
+  "number": 50,
   "topic": "android",
   "subtopic": "платформа",
   "question": "Что такое Binder и почему у него лимит транзакции?",
@@ -451,6 +501,7 @@
  },
  {
   "id": "and-parcelable-serializable",
+  "number": 51,
   "topic": "android",
   "subtopic": "данные",
   "question": "Чем `Parcelable` лучше `Serializable`?",
@@ -460,6 +511,7 @@
  },
  {
   "id": "and-processes",
+  "number": 52,
   "topic": "android",
   "subtopic": "платформа",
   "question": "Может ли приложение работать в нескольких процессах?",
@@ -469,6 +521,7 @@
  },
  {
   "id": "and-fragment-transactions",
+  "number": 53,
   "topic": "android",
   "subtopic": "фрагменты",
   "question": "Чем `commit` отличается от `commitNow` и `commitAllowingStateLoss`?",
@@ -478,6 +531,7 @@
  },
  {
   "id": "and-child-fragment-manager",
+  "number": 54,
   "topic": "android",
   "subtopic": "фрагменты",
   "question": "Чем `childFragmentManager` отличается от `parentFragmentManager`?",
@@ -487,6 +541,7 @@
  },
  {
   "id": "and-fragment-result",
+  "number": 55,
   "topic": "android",
   "subtopic": "фрагменты",
   "question": "Как передать результат между фрагментами?",
@@ -496,6 +551,7 @@
  },
  {
   "id": "and-navigation-component",
+  "number": 56,
   "topic": "android",
   "subtopic": "навигация",
   "question": "Что даёт Navigation Component?",
@@ -505,6 +561,7 @@
  },
  {
   "id": "and-deep-links",
+  "number": 57,
   "topic": "android",
   "subtopic": "навигация",
   "question": "Чем App Links отличаются от обычных deep links?",
@@ -514,6 +571,7 @@
  },
  {
   "id": "and-single-activity",
+  "number": 58,
   "topic": "android",
   "subtopic": "архитектура",
   "question": "Чем хорош подход Single Activity?",
@@ -523,6 +581,7 @@
  },
  {
   "id": "and-overdraw",
+  "number": 59,
   "topic": "android",
   "subtopic": "производительность",
   "question": "Что такое overdraw и как его уменьшить?",
@@ -532,6 +591,7 @@
  },
  {
   "id": "and-jank-frames",
+  "number": 60,
   "topic": "android",
   "subtopic": "производительность",
   "question": "Что такое jank и сколько времени есть на кадр?",
@@ -541,6 +601,7 @@
  },
  {
   "id": "and-bitmap-memory",
+  "number": 61,
   "topic": "android",
   "subtopic": "производительность",
   "question": "Сколько памяти занимает Bitmap и как её экономить?",
@@ -550,6 +611,7 @@
  },
  {
   "id": "and-oom",
+  "number": 62,
   "topic": "android",
   "subtopic": "производительность",
   "question": "Почему возникает OutOfMemory, если у устройства много памяти?",
@@ -559,6 +621,7 @@
  },
  {
   "id": "and-gc-android",
+  "number": 63,
   "topic": "android",
   "subtopic": "производительность",
   "question": "Как сборка мусора влияет на плавность?",
@@ -568,6 +631,7 @@
  },
  {
   "id": "and-view-vs-compose-perf",
+  "number": 64,
   "topic": "android",
   "subtopic": "UI",
   "question": "Что дороже в иерархии View и почему Compose от этого свободен?",
@@ -577,6 +641,7 @@
  },
  {
   "id": "and-surfaceview",
+  "number": 65,
   "topic": "android",
   "subtopic": "UI",
   "question": "Чем `SurfaceView` отличается от обычной View?",
@@ -586,6 +651,7 @@
  },
  {
   "id": "and-animations",
+  "number": 66,
   "topic": "android",
   "subtopic": "UI",
   "question": "Какие механизмы анимации есть в View-системе?",
@@ -595,6 +661,7 @@
  },
  {
   "id": "and-window-insets",
+  "number": 67,
   "topic": "android",
   "subtopic": "UI",
   "question": "Что такое WindowInsets и зачем нужен edge-to-edge?",
@@ -604,6 +671,7 @@
  },
  {
   "id": "and-dark-theme",
+  "number": 68,
   "topic": "android",
   "subtopic": "UI",
   "question": "Как правильно поддержать тёмную тему?",
@@ -613,6 +681,7 @@
  },
  {
   "id": "and-rtl",
+  "number": 69,
   "topic": "android",
   "subtopic": "UI",
   "question": "Что нужно для поддержки RTL-языков?",
@@ -622,6 +691,7 @@
  },
  {
   "id": "and-accessibility",
+  "number": 70,
   "topic": "android",
   "subtopic": "доступность",
   "question": "Что делает приложение доступным?",
@@ -631,6 +701,7 @@
  },
  {
   "id": "and-retrofit-okhttp",
+  "number": 71,
   "topic": "android",
   "subtopic": "сеть",
   "question": "Как распределены роли между Retrofit и OkHttp?",
@@ -640,6 +711,7 @@
  },
  {
   "id": "and-http-cache",
+  "number": 72,
   "topic": "android",
   "subtopic": "сеть",
   "question": "Как кэшировать ответы сети?",
@@ -649,6 +721,7 @@
  },
  {
   "id": "and-serialization",
+  "number": 73,
   "topic": "android",
   "subtopic": "данные",
   "question": "Чем `kotlinx.serialization` отличается от Gson и Moshi?",
@@ -658,6 +731,7 @@
  },
  {
   "id": "and-ssl-pinning",
+  "number": 74,
   "topic": "android",
   "subtopic": "безопасность",
   "question": "Что такое certificate pinning и в чём его риск?",
@@ -667,6 +741,7 @@
  },
  {
   "id": "and-network-security-config",
+  "number": 75,
   "topic": "android",
   "subtopic": "безопасность",
   "question": "Почему с Android 9 не работает HTTP по обычному адресу?",
@@ -676,6 +751,7 @@
  },
  {
   "id": "and-room-migrations",
+  "number": 76,
   "topic": "android",
   "subtopic": "данные",
   "question": "Что произойдёт, если изменить схему Room без миграции?",
@@ -685,6 +761,7 @@
  },
  {
   "id": "and-room-threading",
+  "number": 77,
   "topic": "android",
   "subtopic": "данные",
   "question": "Почему запросы Room нельзя выполнять в главном потоке?",
@@ -694,6 +771,7 @@
  },
  {
   "id": "and-paging",
+  "number": 78,
   "topic": "android",
   "subtopic": "данные",
   "question": "Зачем нужна библиотека Paging?",
@@ -703,6 +781,7 @@
  },
  {
   "id": "and-backup",
+  "number": 79,
   "topic": "android",
   "subtopic": "данные",
   "question": "Что такое Auto Backup и чем он опасен?",
@@ -712,6 +791,7 @@
  },
  {
   "id": "and-doze",
+  "number": 80,
   "topic": "android",
   "subtopic": "фон",
   "question": "Что делают Doze и App Standby?",
@@ -721,6 +801,7 @@
  },
  {
   "id": "and-background-limits",
+  "number": 81,
   "topic": "android",
   "subtopic": "фон",
   "question": "Какие ограничения на фоновую работу появились начиная с Android 8?",
@@ -730,6 +811,7 @@
  },
  {
   "id": "and-notifications",
+  "number": 82,
   "topic": "android",
   "subtopic": "уведомления",
   "question": "Как устроены каналы уведомлений и разрешение на них?",
@@ -739,6 +821,7 @@
  },
  {
   "id": "and-fcm",
+  "number": 83,
   "topic": "android",
   "subtopic": "уведомления",
   "question": "Чем data-сообщение FCM отличается от notification-сообщения?",
@@ -748,6 +831,7 @@
  },
  {
   "id": "and-alarm-manager",
+  "number": 84,
   "topic": "android",
   "subtopic": "фон",
   "question": "Когда нужен AlarmManager, а не WorkManager?",
@@ -757,6 +841,7 @@
  },
  {
   "id": "and-robolectric",
+  "number": 85,
   "topic": "android",
   "subtopic": "тестирование",
   "question": "Что такое Robolectric и когда он уместен?",
@@ -766,6 +851,7 @@
  },
  {
   "id": "and-test-doubles",
+  "number": 86,
   "topic": "android",
   "subtopic": "тестирование",
   "question": "Чем fake отличается от mock и почему это важно?",
@@ -775,6 +861,7 @@
  },
  {
   "id": "and-turbine-flow-test",
+  "number": 87,
   "topic": "android",
   "subtopic": "тестирование",
   "question": "Как тестировать `Flow`?",
@@ -784,6 +871,7 @@
  },
  {
   "id": "and-macrobenchmark",
+  "number": 88,
   "topic": "android",
   "subtopic": "тестирование",
   "question": "Чем Macrobenchmark отличается от Microbenchmark?",
@@ -793,6 +881,7 @@
  },
  {
   "id": "and-crash-reporting",
+  "number": 89,
   "topic": "android",
   "subtopic": "качество",
   "question": "Что нужно, чтобы читать стектрейсы релизной сборки?",
@@ -802,6 +891,7 @@
  },
  {
   "id": "and-lint",
+  "number": 90,
   "topic": "android",
   "subtopic": "качество",
   "question": "Что проверяет Android Lint?",

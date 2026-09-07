@@ -1,6 +1,7 @@
 [
  {
   "id": "cmp-declarative",
+  "number": 1,
   "topic": "compose",
   "subtopic": "the basics",
   "question": "How does a declarative UI differ from an imperative one?",
@@ -10,6 +11,7 @@
  },
  {
   "id": "cmp-composable",
+  "number": 2,
   "topic": "compose",
   "subtopic": "the basics",
   "question": "What does the `@Composable` annotation do, and what restrictions does such a function have?",
@@ -19,6 +21,7 @@
  },
  {
   "id": "cmp-recomposition",
+  "number": 3,
   "topic": "compose",
   "subtopic": "recomposition",
   "question": "What is recomposition, and when does it run?",
@@ -28,6 +31,7 @@
  },
  {
   "id": "cmp-state",
+  "number": 4,
   "topic": "compose",
   "subtopic": "state",
   "question": "How do you declare state, and how does `remember` differ from `mutableStateOf`?",
@@ -37,6 +41,7 @@
  },
  {
   "id": "cmp-remember-saveable",
+  "number": 5,
   "topic": "compose",
   "subtopic": "state",
   "question": "How does `rememberSaveable` differ from `remember`?",
@@ -46,6 +51,7 @@
  },
  {
   "id": "cmp-state-hoisting",
+  "number": 6,
   "topic": "compose",
   "subtopic": "state",
   "question": "What is state hoisting?",
@@ -55,6 +61,7 @@
  },
  {
   "id": "cmp-remember-keys",
+  "number": 7,
   "topic": "compose",
   "subtopic": "state",
   "question": "What do the keys in `remember(key)` do?",
@@ -64,6 +71,7 @@
  },
  {
   "id": "cmp-derived-state",
+  "number": 8,
   "topic": "compose",
   "subtopic": "state",
   "question": "When do you need `derivedStateOf`?",
@@ -73,6 +81,7 @@
  },
  {
   "id": "cmp-side-effects",
+  "number": 9,
   "topic": "compose",
   "subtopic": "effects",
   "question": "What is `LaunchedEffect` for, and when does it restart?",
@@ -82,6 +91,7 @@
  },
  {
   "id": "cmp-disposable-effect",
+  "number": 10,
   "topic": "compose",
   "subtopic": "effects",
   "question": "What is `DisposableEffect` for?",
@@ -91,6 +101,7 @@
  },
  {
   "id": "cmp-effect-choice",
+  "number": 11,
   "topic": "compose",
   "subtopic": "effects",
   "question": "How does `SideEffect` differ from `rememberCoroutineScope`?",
@@ -100,6 +111,7 @@
  },
  {
   "id": "cmp-collect-as-state",
+  "number": 12,
   "topic": "compose",
   "subtopic": "state",
   "question": "How do you display a `Flow` in Compose?",
@@ -109,6 +121,7 @@
  },
  {
   "id": "cmp-stability",
+  "number": 13,
   "topic": "compose",
   "subtopic": "performance",
   "question": "What is type stability, and why does it affect performance?",
@@ -118,6 +131,7 @@
  },
  {
   "id": "cmp-lambda-allocation",
+  "number": 14,
   "topic": "compose",
   "subtopic": "performance",
   "question": "Why can passing a lambda into a composable break recomposition skipping?",
@@ -127,6 +141,7 @@
  },
  {
   "id": "cmp-phases",
+  "number": 15,
   "topic": "compose",
   "subtopic": "rendering",
   "question": "What phases does a frame in Compose consist of?",
@@ -136,6 +151,7 @@
  },
  {
   "id": "cmp-modifier-order",
+  "number": 16,
   "topic": "compose",
   "subtopic": "modifiers",
   "question": "Why does the order of modifiers matter?",
@@ -145,6 +161,7 @@
  },
  {
   "id": "cmp-modifier-parameter",
+  "number": 17,
   "topic": "compose",
   "subtopic": "modifiers",
   "question": "Why should a composable of your own take a `modifier` parameter?",
@@ -154,6 +171,7 @@
  },
  {
   "id": "cmp-lazy-column",
+  "number": 18,
   "topic": "compose",
   "subtopic": "lists",
   "question": "How does `LazyColumn` differ from a scrollable `Column`?",
@@ -163,6 +181,7 @@
  },
  {
   "id": "cmp-lazy-keys",
+  "number": 19,
   "topic": "compose",
   "subtopic": "lists",
   "question": "What is `key` in a LazyColumn's `items` for?",
@@ -172,6 +191,7 @@
  },
  {
   "id": "cmp-content-type",
+  "number": 20,
   "topic": "compose",
   "subtopic": "lists",
   "question": "What does `contentType` give you in a LazyColumn?",
@@ -181,6 +201,7 @@
  },
  {
   "id": "cmp-composition-local",
+  "number": 21,
   "topic": "compose",
   "subtopic": "DI",
   "question": "What is a `CompositionLocal`, and when is it appropriate?",
@@ -190,6 +211,7 @@
  },
  {
   "id": "cmp-theme",
+  "number": 22,
   "topic": "compose",
   "subtopic": "theming",
   "question": "How is theming arranged in Material 3?",
@@ -199,6 +221,7 @@
  },
  {
   "id": "cmp-preview",
+  "number": 23,
   "topic": "compose",
   "subtopic": "tooling",
   "question": "What does `@Preview` give you, and what are its limits?",
@@ -208,6 +231,7 @@
  },
  {
   "id": "cmp-navigation",
+  "number": 24,
   "topic": "compose",
   "subtopic": "navigation",
   "question": "How is navigation arranged in Compose?",
@@ -217,6 +241,7 @@
  },
  {
   "id": "cmp-viewmodel-scope-nav",
+  "number": 25,
   "topic": "compose",
   "subtopic": "navigation",
   "question": "How is a ViewModel tied to a navigation destination?",
@@ -226,6 +251,7 @@
  },
  {
   "id": "cmp-interop",
+  "number": 26,
   "topic": "compose",
   "subtopic": "interop",
   "question": "How do you combine Compose and Views?",
@@ -235,6 +261,7 @@
  },
  {
   "id": "cmp-testing",
+  "number": 27,
   "topic": "compose",
   "subtopic": "testing",
   "question": "How is Compose UI tested?",
@@ -244,6 +271,7 @@
  },
  {
   "id": "cmp-semantics",
+  "number": 28,
   "topic": "compose",
   "subtopic": "accessibility",
   "question": "What is the semantics tree?",
@@ -253,6 +281,7 @@
  },
  {
   "id": "cmp-immutable-annotations",
+  "number": 29,
   "topic": "compose",
   "subtopic": "performance",
   "question": "How does `@Stable` differ from `@Immutable`?",
@@ -262,6 +291,7 @@
  },
  {
   "id": "cmp-recomposition-scope",
+  "number": 30,
   "topic": "compose",
   "subtopic": "recomposition",
   "question": "What is a recomposition scope?",
@@ -271,6 +301,7 @@
  },
  {
   "id": "cmp-snapshot",
+  "number": 31,
   "topic": "compose",
   "subtopic": "state",
   "question": "What is Compose's snapshot system?",
@@ -280,6 +311,7 @@
  },
  {
   "id": "cmp-mutable-state-list",
+  "number": 32,
   "topic": "compose",
   "subtopic": "state",
   "question": "Why does `mutableStateOf(mutableListOf())` not work?",
@@ -289,6 +321,7 @@
  },
  {
   "id": "cmp-box-row-column",
+  "number": 33,
   "topic": "compose",
   "subtopic": "layout",
   "question": "How do `Box`, `Row` and `Column` differ from their View counterparts?",
@@ -298,6 +331,7 @@
  },
  {
   "id": "cmp-intrinsic-measurements",
+  "number": 34,
   "topic": "compose",
   "subtopic": "layout",
   "question": "Why is measurement in Compose single-pass?",
@@ -307,6 +341,7 @@
  },
  {
   "id": "cmp-compose-vs-view",
+  "number": 35,
   "topic": "compose",
   "subtopic": "the basics",
   "question": "What would you name as Compose's main advantage in an interview?",
@@ -316,6 +351,7 @@
  },
  {
   "id": "cmp-slot-api",
+  "number": 36,
   "topic": "compose",
   "subtopic": "patterns",
   "question": "What is the slot API in Compose?",
@@ -325,6 +361,7 @@
  },
  {
   "id": "cmp-scaffold",
+  "number": 37,
   "topic": "compose",
   "subtopic": "patterns",
   "question": "What does `Scaffold` give you?",
@@ -334,6 +371,7 @@
  },
  {
   "id": "cmp-state-in-viewmodel",
+  "number": 38,
   "topic": "compose",
   "subtopic": "state",
   "question": "Where should a screen's state live — in `remember` or in a ViewModel?",
@@ -343,6 +381,7 @@
  },
  {
   "id": "cmp-produce-state",
+  "number": 39,
   "topic": "compose",
   "subtopic": "state",
   "question": "What does `produceState` do?",
@@ -352,6 +391,7 @@
  },
  {
   "id": "cmp-snapshot-flow",
+  "number": 40,
   "topic": "compose",
   "subtopic": "state",
   "question": "What is `snapshotFlow` for?",
@@ -361,6 +401,7 @@
  },
  {
   "id": "cmp-remember-updated-state",
+  "number": 41,
   "topic": "compose",
   "subtopic": "effects",
   "question": "What is `rememberUpdatedState` for?",
@@ -370,6 +411,7 @@
  },
  {
   "id": "cmp-key-composable",
+  "number": 42,
   "topic": "compose",
   "subtopic": "recomposition",
   "question": "What does the `key()` function do in a composition?",
@@ -379,6 +421,7 @@
  },
  {
   "id": "cmp-movable-content",
+  "number": 43,
   "topic": "compose",
   "subtopic": "recomposition",
   "question": "What is `movableContentOf` for?",
@@ -388,6 +431,7 @@
  },
  {
   "id": "cmp-custom-layout",
+  "number": 44,
   "topic": "compose",
   "subtopic": "layout",
   "question": "How do you write a custom layout?",
@@ -397,6 +441,7 @@
  },
  {
   "id": "cmp-subcompose-layout",
+  "number": 45,
   "topic": "compose",
   "subtopic": "layout",
   "question": "When do you need `SubcomposeLayout`, and what is wrong with it?",
@@ -406,6 +451,7 @@
  },
  {
   "id": "cmp-box-with-constraints",
+  "number": 46,
   "topic": "compose",
   "subtopic": "layout",
   "question": "What does `BoxWithConstraints` give you?",
@@ -415,6 +461,7 @@
  },
  {
   "id": "cmp-window-size-classes",
+  "number": 47,
   "topic": "compose",
   "subtopic": "layout",
   "question": "What are window size classes?",
@@ -424,6 +471,7 @@
  },
  {
   "id": "cmp-modifier-node",
+  "number": 48,
   "topic": "compose",
   "subtopic": "modifiers",
   "question": "Why is `Modifier.Node` better than `Modifier.composed`?",
@@ -433,6 +481,7 @@
  },
  {
   "id": "cmp-draw-modifiers",
+  "number": 49,
   "topic": "compose",
   "subtopic": "rendering",
   "question": "How does `drawBehind` differ from `drawWithContent` and `graphicsLayer`?",
@@ -442,6 +491,7 @@
  },
  {
   "id": "cmp-animate-as-state",
+  "number": 50,
   "topic": "compose",
   "subtopic": "animation",
   "question": "What levels of animation API does Compose have?",
@@ -451,6 +501,7 @@
  },
  {
   "id": "cmp-gestures",
+  "number": 51,
   "topic": "compose",
   "subtopic": "gestures",
   "question": "How do you handle gestures in Compose?",
@@ -460,6 +511,7 @@
  },
  {
   "id": "cmp-nested-scroll",
+  "number": 52,
   "topic": "compose",
   "subtopic": "gestures",
   "question": "What problem does `nestedScroll` solve?",
@@ -469,6 +521,7 @@
  },
  {
   "id": "cmp-focus",
+  "number": 53,
   "topic": "compose",
   "subtopic": "input",
   "question": "How do you control focus and the keyboard?",
@@ -478,6 +531,7 @@
  },
  {
   "id": "cmp-text-field-state",
+  "number": 54,
   "topic": "compose",
   "subtopic": "input",
   "question": "What is the catch with a `TextField`'s state?",
@@ -487,6 +541,7 @@
  },
  {
   "id": "cmp-compose-lifecycle",
+  "number": 55,
   "topic": "compose",
   "subtopic": "the basics",
   "question": "What is the lifecycle of a composition?",
@@ -496,6 +551,7 @@
  },
  {
   "id": "cmp-readonly-composable",
+  "number": 56,
   "topic": "compose",
   "subtopic": "performance",
   "question": "What does `@ReadOnlyComposable` mean?",
@@ -505,6 +561,7 @@
  },
  {
   "id": "cmp-compose-metrics",
+  "number": 57,
   "topic": "compose",
   "subtopic": "performance",
   "question": "How do you find out why a composable is recomposing?",
@@ -514,6 +571,7 @@
  },
  {
   "id": "cmp-strong-skipping",
+  "number": 58,
   "topic": "compose",
   "subtopic": "performance",
   "question": "What did strong skipping mode change?",
@@ -523,6 +581,7 @@
  },
  {
   "id": "cmp-lazy-layouts",
+  "number": 59,
   "topic": "compose",
   "subtopic": "lists",
   "question": "What other lazy containers are there besides `LazyColumn`?",
@@ -532,6 +591,7 @@
  },
  {
   "id": "cmp-lazy-scope",
+  "number": 60,
   "topic": "compose",
   "subtopic": "lists",
   "question": "Why can you not wrap `items` in an ordinary `if` with a loop?",
@@ -541,6 +601,7 @@
  },
  {
   "id": "cmp-padding-values",
+  "number": 61,
   "topic": "compose",
   "subtopic": "layout",
   "question": "How does a list's `contentPadding` differ from `Modifier.padding`?",
@@ -550,6 +611,7 @@
  },
  {
   "id": "cmp-composition-local-provider",
+  "number": 62,
   "topic": "compose",
   "subtopic": "DI",
   "question": "How do you supply your own value through a `CompositionLocal`?",
@@ -559,6 +621,7 @@
  },
  {
   "id": "cmp-compose-events",
+  "number": 63,
   "topic": "compose",
   "subtopic": "patterns",
   "question": "How do you show a one-off event (a snackbar, a navigation) in Compose?",
@@ -568,6 +631,7 @@
  },
  {
   "id": "cmp-compose-multiplatform",
+  "number": 64,
   "topic": "compose",
   "subtopic": "the ecosystem",
   "question": "How does Compose Multiplatform differ from Jetpack Compose?",
@@ -577,6 +641,7 @@
  },
  {
   "id": "cmp-compose-bom",
+  "number": 65,
   "topic": "compose",
   "subtopic": "the ecosystem",
   "question": "What is the Compose BOM for?",
@@ -586,6 +651,7 @@
  },
  {
   "id": "cmp-compose-testing-sync",
+  "number": 66,
   "topic": "compose",
   "subtopic": "testing",
   "question": "Why does a Compose test hang on an animation?",
@@ -595,6 +661,7 @@
  },
  {
   "id": "cmp-recomposition-loop",
+  "number": 67,
   "topic": "compose",
   "subtopic": "recomposition",
   "question": "Where does an infinite recomposition come from?",

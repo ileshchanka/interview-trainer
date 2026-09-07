@@ -1,6 +1,7 @@
 [
  {
   "id": "js-event-loop-order",
+  "number": 1,
   "topic": "js",
   "subtopic": "event loop",
   "question": "В каком порядке выполняются синхронный код, микрозадачи и макрозадачи?",
@@ -10,6 +11,7 @@
  },
  {
   "id": "js-microtask-vs-macrotask",
+  "number": 2,
   "topic": "js",
   "subtopic": "event loop",
   "question": "Что выведет этот код?\n\n```js\nsetTimeout(() => console.log(1));\nPromise.resolve().then(() => console.log(2));\nconsole.log(3);\n```",
@@ -19,6 +21,7 @@
  },
  {
   "id": "js-settimeout-zero",
+  "number": 3,
   "topic": "js",
   "subtopic": "event loop",
   "question": "Гарантирует ли `setTimeout(fn, 0)` немедленное выполнение?",
@@ -28,6 +31,7 @@
  },
  {
   "id": "js-queue-microtask",
+  "number": 4,
   "topic": "js",
   "subtopic": "event loop",
   "question": "Чем `queueMicrotask` отличается от `setTimeout(fn, 0)` и от `Promise.resolve().then(fn)`?",
@@ -37,6 +41,7 @@
  },
  {
   "id": "js-raf-vs-timeout",
+  "number": 5,
   "topic": "js",
   "subtopic": "event loop",
   "question": "Когда выполняется колбэк `requestAnimationFrame`?",
@@ -46,6 +51,7 @@
  },
  {
   "id": "js-blocking-main-thread",
+  "number": 6,
   "topic": "js",
   "subtopic": "event loop",
   "question": "Почему тяжёлые вычисления в JS «вешают» интерфейс и как этого избежать?",
@@ -55,6 +61,7 @@
  },
  {
   "id": "js-closure-definition",
+  "number": 7,
   "topic": "js",
   "subtopic": "замыкания",
   "question": "Что такое замыкание?",
@@ -64,6 +71,7 @@
  },
  {
   "id": "js-closure-var-loop",
+  "number": 8,
   "topic": "js",
   "subtopic": "замыкания",
   "question": "Почему этот код печатает `3 3 3`?\n\n```js\nfor (var i = 0; i < 3; i++) {\n  setTimeout(() => console.log(i));\n}\n```",
@@ -73,6 +81,7 @@
  },
  {
   "id": "js-closure-private",
+  "number": 9,
   "topic": "js",
   "subtopic": "замыкания",
   "question": "Как сделать приватное состояние на замыкании?",
@@ -82,6 +91,7 @@
  },
  {
   "id": "js-closure-memory",
+  "number": 10,
   "topic": "js",
   "subtopic": "замыкания",
   "question": "Могут ли замыкания приводить к утечкам памяти?",
@@ -91,6 +101,7 @@
  },
  {
   "id": "js-this-rules",
+  "number": 11,
   "topic": "js",
   "subtopic": "this",
   "question": "От чего зависит значение `this` в обычной функции?",
@@ -100,6 +111,7 @@
  },
  {
   "id": "js-this-arrow",
+  "number": 12,
   "topic": "js",
   "subtopic": "this",
   "question": "Чем `this` в стрелочной функции отличается от обычной?",
@@ -109,6 +121,7 @@
  },
  {
   "id": "js-this-lost",
+  "number": 13,
   "topic": "js",
   "subtopic": "this",
   "question": "Почему при таком вызове теряется `this`?\n\n```js\nconst f = obj.method;\nf();\n```",
@@ -118,6 +131,7 @@
  },
  {
   "id": "js-this-bind",
+  "number": 14,
   "topic": "js",
   "subtopic": "this",
   "question": "Чем `call`, `apply` и `bind` отличаются друг от друга?",
@@ -127,6 +141,7 @@
  },
  {
   "id": "js-prototype-chain",
+  "number": 15,
   "topic": "js",
   "subtopic": "прототипы",
   "question": "Как работает поиск свойства по цепочке прототипов?",
@@ -136,6 +151,7 @@
  },
  {
   "id": "js-prototype-vs-proto",
+  "number": 16,
   "topic": "js",
   "subtopic": "прототипы",
   "question": "В чём разница между `F.prototype` и `obj.__proto__`?",
@@ -145,6 +161,7 @@
  },
  {
   "id": "js-class-sugar",
+  "number": 17,
   "topic": "js",
   "subtopic": "прототипы",
   "question": "Классы в JS — это новая сущность или синтаксический сахар?",
@@ -154,6 +171,7 @@
  },
  {
   "id": "js-instanceof",
+  "number": 18,
   "topic": "js",
   "subtopic": "прототипы",
   "question": "Что на самом деле проверяет `instanceof`?",
@@ -163,6 +181,7 @@
  },
  {
   "id": "js-typeof-null",
+  "number": 19,
   "topic": "js",
   "subtopic": "типы",
   "question": "Почему `typeof null === 'object'`?",
@@ -172,6 +191,7 @@
  },
  {
   "id": "js-equality",
+  "number": 20,
   "topic": "js",
   "subtopic": "типы",
   "question": "Чем `==` отличается от `===`?",
@@ -181,6 +201,7 @@
  },
  {
   "id": "js-nan",
+  "number": 21,
   "topic": "js",
   "subtopic": "типы",
   "question": "Как надёжно проверить, что значение — `NaN`?",
@@ -190,6 +211,7 @@
  },
  {
   "id": "js-falsy",
+  "number": 22,
   "topic": "js",
   "subtopic": "типы",
   "question": "Перечислите все ложные (falsy) значения.",
@@ -199,6 +221,7 @@
  },
  {
   "id": "js-nullish",
+  "number": 23,
   "topic": "js",
   "subtopic": "типы",
   "question": "Чем `??` отличается от `||`?",
@@ -208,6 +231,7 @@
  },
  {
   "id": "js-optional-chaining",
+  "number": 24,
   "topic": "js",
   "subtopic": "типы",
   "question": "Что делает `?.` и где он не помогает?",
@@ -217,6 +241,7 @@
  },
  {
   "id": "js-number-precision",
+  "number": 25,
   "topic": "js",
   "subtopic": "типы",
   "question": "Почему `0.1 + 0.2 !== 0.3`?",
@@ -226,6 +251,7 @@
  },
  {
   "id": "js-symbol",
+  "number": 26,
   "topic": "js",
   "subtopic": "типы",
   "question": "Зачем нужны символы?",
@@ -235,6 +261,7 @@
  },
  {
   "id": "js-var-let-const",
+  "number": 27,
   "topic": "js",
   "subtopic": "области видимости",
   "question": "Чем различаются `var`, `let` и `const`?",
@@ -244,6 +271,7 @@
  },
  {
   "id": "js-tdz",
+  "number": 28,
   "topic": "js",
   "subtopic": "области видимости",
   "question": "Что такое временная мёртвая зона (TDZ)?",
@@ -253,6 +281,7 @@
  },
  {
   "id": "js-hoisting",
+  "number": 29,
   "topic": "js",
   "subtopic": "области видимости",
   "question": "Что всплывает, а что нет?",
@@ -262,6 +291,7 @@
  },
  {
   "id": "js-iife",
+  "number": 30,
   "topic": "js",
   "subtopic": "области видимости",
   "question": "Зачем нужны IIFE и что их заменило?",
@@ -271,6 +301,7 @@
  },
  {
   "id": "js-promise-states",
+  "number": 31,
   "topic": "js",
   "subtopic": "промисы",
   "question": "Какие бывают состояния промиса и можно ли их менять?",
@@ -280,6 +311,7 @@
  },
  {
   "id": "js-promise-all-family",
+  "number": 32,
   "topic": "js",
   "subtopic": "промисы",
   "question": "Чем различаются `Promise.all`, `allSettled`, `race` и `any`?",
@@ -289,6 +321,7 @@
  },
  {
   "id": "js-promise-not-cancellable",
+  "number": 33,
   "topic": "js",
   "subtopic": "промисы",
   "question": "Можно ли отменить промис?",
@@ -298,6 +331,7 @@
  },
  {
   "id": "js-async-await-basics",
+  "number": 34,
   "topic": "js",
   "subtopic": "промисы",
   "question": "Что возвращает `async`-функция и что делает `await`?",
@@ -307,6 +341,7 @@
  },
  {
   "id": "js-await-in-loop",
+  "number": 35,
   "topic": "js",
   "subtopic": "промисы",
   "question": "Чем плох `await` внутри цикла и когда он всё же уместен?",
@@ -316,6 +351,7 @@
  },
  {
   "id": "js-unhandled-rejection",
+  "number": 36,
   "topic": "js",
   "subtopic": "промисы",
   "question": "Что произойдёт, если у отклонённого промиса нет обработчика?",
@@ -325,6 +361,7 @@
  },
  {
   "id": "js-then-vs-catch-order",
+  "number": 37,
   "topic": "js",
   "subtopic": "промисы",
   "question": "В чём разница между `p.then(f, g)` и `p.then(f).catch(g)`?",
@@ -334,6 +371,7 @@
  },
  {
   "id": "js-array-methods-mutating",
+  "number": 38,
   "topic": "js",
   "subtopic": "массивы",
   "question": "Какие методы массива изменяют исходный массив?",
@@ -343,6 +381,7 @@
  },
  {
   "id": "js-sort-default",
+  "number": 39,
   "topic": "js",
   "subtopic": "массивы",
   "question": "Почему `[10, 9, 1].sort()` даёт `[1, 10, 9]`?",
@@ -352,6 +391,7 @@
  },
  {
   "id": "js-reduce",
+  "number": 40,
   "topic": "js",
   "subtopic": "массивы",
   "question": "Что делает `reduce` и зачем ему начальное значение?",
@@ -361,6 +401,7 @@
  },
  {
   "id": "js-shallow-vs-deep-copy",
+  "number": 41,
   "topic": "js",
   "subtopic": "объекты",
   "question": "Чем поверхностное копирование отличается от глубокого и как сделать каждое?",
@@ -370,6 +411,7 @@
  },
  {
   "id": "js-map-vs-object",
+  "number": 42,
   "topic": "js",
   "subtopic": "объекты",
   "question": "Когда `Map` предпочтительнее обычного объекта?",
@@ -379,6 +421,7 @@
  },
  {
   "id": "js-weakmap",
+  "number": 43,
   "topic": "js",
   "subtopic": "объекты",
   "question": "Зачем нужны `WeakMap` и `WeakSet`?",
@@ -388,6 +431,7 @@
  },
  {
   "id": "js-object-key-order",
+  "number": 44,
   "topic": "js",
   "subtopic": "объекты",
   "question": "В каком порядке перебираются ключи объекта?",
@@ -397,6 +441,7 @@
  },
  {
   "id": "js-spread-vs-rest",
+  "number": 45,
   "topic": "js",
   "subtopic": "объекты",
   "question": "Чем `...` в объявлении параметров отличается от `...` в вызове?",
@@ -406,6 +451,7 @@
  },
  {
   "id": "js-destructuring-default",
+  "number": 46,
   "topic": "js",
   "subtopic": "объекты",
   "question": "Когда срабатывает значение по умолчанию при деструктуризации?",
@@ -415,6 +461,7 @@
  },
  {
   "id": "js-getter-setter",
+  "number": 47,
   "topic": "js",
   "subtopic": "объекты",
   "question": "Что такое геттеры и сеттеры и чем они опасны?",
@@ -424,6 +471,7 @@
  },
  {
   "id": "js-deep-equal",
+  "number": 48,
   "topic": "js",
   "subtopic": "объекты",
   "question": "Почему `{a: 1} === {a: 1}` даёт `false` и как сравнивать объекты по значению?",
@@ -433,6 +481,7 @@
  },
  {
   "id": "js-esm-vs-cjs",
+  "number": 49,
   "topic": "js",
   "subtopic": "модули",
   "question": "Чем ES-модули отличаются от CommonJS?",
@@ -442,6 +491,7 @@
  },
  {
   "id": "js-dynamic-import",
+  "number": 50,
   "topic": "js",
   "subtopic": "модули",
   "question": "Что возвращает `import()` и зачем он нужен?",
@@ -451,6 +501,7 @@
  },
  {
   "id": "js-debounce-throttle",
+  "number": 51,
   "topic": "js",
   "subtopic": "паттерны",
   "question": "Чем debounce отличается от throttle?",
@@ -460,6 +511,7 @@
  },
  {
   "id": "js-generators",
+  "number": 52,
   "topic": "js",
   "subtopic": "генераторы",
   "question": "Что делает `function*` и `yield`?",
@@ -469,6 +521,7 @@
  },
  {
   "id": "js-iterable-protocol",
+  "number": 53,
   "topic": "js",
   "subtopic": "итераторы",
   "question": "Что делает объект итерируемым?",
@@ -478,6 +531,7 @@
  },
  {
   "id": "js-async-iterators",
+  "number": 54,
   "topic": "js",
   "subtopic": "итераторы",
   "question": "Что делают `for await...of` и асинхронные генераторы?",
@@ -487,6 +541,7 @@
  },
  {
   "id": "js-error-handling-async",
+  "number": 55,
   "topic": "js",
   "subtopic": "ошибки",
   "question": "Почему `try/catch` не ловит ошибку из колбэка `setTimeout`?",
@@ -496,6 +551,7 @@
  },
  {
   "id": "js-custom-errors",
+  "number": 56,
   "topic": "js",
   "subtopic": "ошибки",
   "question": "Как правильно объявить свой класс ошибки?",
@@ -505,6 +561,7 @@
  },
  {
   "id": "js-try-finally",
+  "number": 57,
   "topic": "js",
   "subtopic": "ошибки",
   "question": "Что произойдёт, если и в `try`, и в `finally` есть `return`?",
@@ -514,6 +571,7 @@
  },
  {
   "id": "js-event-delegation",
+  "number": 58,
   "topic": "js",
   "subtopic": "DOM",
   "question": "Что такое делегирование событий и зачем оно нужно?",
@@ -523,6 +581,7 @@
  },
  {
   "id": "js-event-phases",
+  "number": 59,
   "topic": "js",
   "subtopic": "DOM",
   "question": "Какие фазы проходит событие в DOM?",
@@ -532,6 +591,7 @@
  },
  {
   "id": "js-strict-mode",
+  "number": 60,
   "topic": "js",
   "subtopic": "строгий режим",
   "question": "Что меняет строгий режим?",
@@ -541,6 +601,7 @@
  },
  {
   "id": "js-proxy",
+  "number": 61,
   "topic": "js",
   "subtopic": "метапрограммирование",
   "question": "Что такое `Proxy` и где он реально применяется?",
@@ -550,6 +611,7 @@
  },
  {
   "id": "js-class-private-fields",
+  "number": 62,
   "topic": "js",
   "subtopic": "классы",
   "question": "Чем приватное поле `#count` отличается от соглашения `_count`?",
@@ -559,6 +621,7 @@
  },
  {
   "id": "js-class-static",
+  "number": 63,
   "topic": "js",
   "subtopic": "классы",
   "question": "Что можно объявить статическим в классе?",
@@ -568,6 +631,7 @@
  },
  {
   "id": "js-super-extends",
+  "number": 64,
   "topic": "js",
   "subtopic": "классы",
   "question": "В каком порядке выполняются конструкторы при `extends` и зачем нужен `super()`?",
@@ -577,6 +641,7 @@
  },
  {
   "id": "js-currying",
+  "number": 65,
   "topic": "js",
   "subtopic": "функции",
   "question": "Что такое каррирование и частичное применение?",
@@ -586,6 +651,7 @@
  },
  {
   "id": "js-arguments-vs-rest",
+  "number": 66,
   "topic": "js",
   "subtopic": "функции",
   "question": "Чем `arguments` отличается от rest-параметра?",
@@ -595,6 +661,7 @@
  },
  {
   "id": "js-default-params",
+  "number": 67,
   "topic": "js",
   "subtopic": "функции",
   "question": "Когда вычисляется значение параметра по умолчанию?",
@@ -604,6 +671,7 @@
  },
  {
   "id": "js-recursion-stack",
+  "number": 68,
   "topic": "js",
   "subtopic": "функции",
   "question": "Почему глубокая рекурсия в JS падает и что с этим делать?",
@@ -613,6 +681,7 @@
  },
  {
   "id": "js-string-methods",
+  "number": 69,
   "topic": "js",
   "subtopic": "строки",
   "question": "Чем `slice`, `substring` и `at` отличаются друг от друга?",
@@ -622,6 +691,7 @@
  },
  {
   "id": "js-string-unicode",
+  "number": 70,
   "topic": "js",
   "subtopic": "строки",
   "question": "Почему `'🙂'.length === 2` и как считать символы правильно?",
@@ -631,6 +701,7 @@
  },
  {
   "id": "js-tagged-templates",
+  "number": 71,
   "topic": "js",
   "subtopic": "строки",
   "question": "Что такое теговый шаблон и где он применяется?",
@@ -640,6 +711,7 @@
  },
  {
   "id": "js-number-formatting",
+  "number": 72,
   "topic": "js",
   "subtopic": "числа",
   "question": "Чем `toFixed` плох для округления и что использовать вместо него?",
@@ -649,6 +721,7 @@
  },
  {
   "id": "js-bigint",
+  "number": 73,
   "topic": "js",
   "subtopic": "числа",
   "question": "Когда нужен `BigInt` и в чём его ограничения?",
@@ -658,6 +731,7 @@
  },
  {
   "id": "js-date-pitfalls",
+  "number": 74,
   "topic": "js",
   "subtopic": "дата и время",
   "question": "Какие ловушки есть у встроенного `Date`?",
@@ -667,6 +741,7 @@
  },
  {
   "id": "js-intl",
+  "number": 75,
   "topic": "js",
   "subtopic": "дата и время",
   "question": "Что умеет `Intl` и почему это лучше ручного форматирования?",
@@ -676,6 +751,7 @@
  },
  {
   "id": "js-json-stringify",
+  "number": 76,
   "topic": "js",
   "subtopic": "JSON",
   "question": "Что теряется при `JSON.stringify`?",
@@ -685,6 +761,7 @@
  },
  {
   "id": "js-regexp-flags",
+  "number": 77,
   "topic": "js",
   "subtopic": "регулярные выражения",
   "question": "Что делают флаги `g`, `i`, `m`, `s`, `u` и `y`?",
@@ -694,6 +771,7 @@
  },
  {
   "id": "js-regexp-lastindex",
+  "number": 78,
   "topic": "js",
   "subtopic": "регулярные выражения",
   "question": "Почему регулярка с флагом `g` даёт разный результат при повторных вызовах?",
@@ -703,6 +781,7 @@
  },
  {
   "id": "js-fetch-basics",
+  "number": 79,
   "topic": "js",
   "subtopic": "сеть",
   "question": "Почему `fetch` не бросает ошибку при ответе 404 или 500?",
@@ -712,6 +791,7 @@
  },
  {
   "id": "js-abort-controller",
+  "number": 80,
   "topic": "js",
   "subtopic": "сеть",
   "question": "Как отменить запрос или поставить ему таймаут?",
@@ -721,6 +801,7 @@
  },
  {
   "id": "js-cors",
+  "number": 81,
   "topic": "js",
   "subtopic": "сеть",
   "question": "Что такое CORS и почему предзапрос приходит методом OPTIONS?",
@@ -730,6 +811,7 @@
  },
  {
   "id": "js-storage",
+  "number": 82,
   "topic": "js",
   "subtopic": "браузер",
   "question": "Чем различаются `localStorage`, `sessionStorage`, куки и IndexedDB?",
@@ -739,6 +821,7 @@
  },
  {
   "id": "js-reflow-repaint",
+  "number": 83,
   "topic": "js",
   "subtopic": "браузер",
   "question": "Что такое layout thrashing и как его избежать?",
@@ -748,6 +831,7 @@
  },
  {
   "id": "js-observers",
+  "number": 84,
   "topic": "js",
   "subtopic": "браузер",
   "question": "Для чего нужны `IntersectionObserver`, `ResizeObserver` и `MutationObserver`?",
@@ -757,6 +841,7 @@
  },
  {
   "id": "js-memory-leaks",
+  "number": 85,
   "topic": "js",
   "subtopic": "память",
   "question": "Какие утечки памяти типичны для фронтенда?",
@@ -766,6 +851,7 @@
  },
  {
   "id": "js-web-workers",
+  "number": 86,
   "topic": "js",
   "subtopic": "производительность",
   "question": "Что умеет Web Worker и чего в нём нет?",
