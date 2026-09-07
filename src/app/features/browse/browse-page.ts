@@ -15,7 +15,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSelectModule } from '@angular/material/select';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { ContentService } from '../../core/content/content.service';
 import { Card, TOPIC_TITLES, Topic } from '../../domain/models';
 import { MarkdownPipe } from '../../shared/markdown.pipe';
@@ -53,10 +53,12 @@ const POSITION_KEY = 'interview-trainer.browse';
 })
 export class BrowsePage {
   private readonly content = inject(ContentService);
+  private readonly router = inject(Router);
 
   readonly topic = input.required<Topic>();
+  /** Вопрос из адреса. Пусто — зашли по короткой ссылке на колоду. */
+  readonly cardId = input<string | undefined>(undefined);
 
-  protected readonly index = signal(0);
   protected readonly revealed = signal(false);
 
   protected readonly title = computed(() => TOPIC_TITLES[this.topic()]);
@@ -67,6 +69,24 @@ export class BrowsePage {
   );
 
   protected readonly total = computed(() => this.cards().length);
+
+  /**
+   * Текущая позиция выводится из адреса, а не хранится рядом с ним: два
+   * источника истины пришлось бы синхронизировать в обе стороны, и кнопка
+   * «назад» в браузере расходилась бы с содержимым экрана.
+   *
+   * Адреса без вопроса и с неизвестным `id` не показывают пустой экран,
+   * а откатываются к сохранённой позиции — сам адрес поправит эффект ниже.
+   */
+  protected readonly index = computed(() => {
+    const cards = this.cards();
+    if (cards.length === 0) {
+      return 0;
+    }
+    const fromUrl = cards.findIndex((card) => card.id === this.cardId());
+    return fromUrl >= 0 ? fromUrl : this.savedIndex();
+  });
+
   protected readonly current = computed<Card | undefined>(() => this.cards()[this.index()]);
 
   protected readonly percent = computed(() => {
@@ -85,34 +105,52 @@ export class BrowsePage {
     })),
   );
 
+  /**
+   * Позиция запоминается по колоде: чтение сотни карточек за один присест
+   * никто не заканчивает, и возвращаться каждый раз к первой — издевательство.
+   */
+  private readonly savedIndex = computed(() => {
+    const cards = this.cards();
+    const saved = readPosition(this.topic());
+    const byId = cards.findIndex((card) => card.id === saved);
+    return byId >= 0 ? byId : 0;
+  });
+
   constructor() {
-    // Позиция запоминается по колоде: чтение сотни карточек за один присест
-    // никто не заканчивает, и возвращаться каждый раз к первой — издевательство.
+    // Адрес всегда называет показанный вопрос: и когда его не было вовсе,
+    // и когда пришёл `id` из старой ссылки, которого в колоде уже нет.
     effect(() => {
-      const topic = this.topic();
-      const total = this.cards().length;
-      if (total === 0) {
+      const card = this.current();
+      if (card === undefined || card.id === this.cardId()) {
         return;
       }
-      untracked(() => {
-        this.index.set(Math.min(readPosition(topic), total - 1));
-        this.revealed.set(false);
-      });
+      untracked(() => this.show(card.id));
     });
 
     effect(() => {
-      const topic = untracked(() => this.topic());
-      savePosition(topic, this.index());
+      const card = this.current();
+      if (card !== undefined) {
+        savePosition(
+          untracked(() => this.topic()),
+          card.id,
+        );
+      }
+    });
+
+    // Новый вопрос всегда открывается закрытым, иначе переход по «Далее»
+    // или по ссылке сразу показывал бы ответ.
+    effect(() => {
+      this.current()?.id;
+      untracked(() => this.revealed.set(false));
     });
   }
 
   protected go(index: number): void {
-    const total = this.total();
-    if (total === 0) {
+    const cards = this.cards();
+    if (cards.length === 0) {
       return;
     }
-    this.index.set(Math.min(Math.max(index, 0), total - 1));
-    this.revealed.set(false);
+    this.show(cards[Math.min(Math.max(index, 0), cards.length - 1)].id);
   }
 
   protected next(): void {
@@ -125,6 +163,14 @@ export class BrowsePage {
 
   protected reveal(): void {
     this.revealed.set(true);
+  }
+
+  /**
+   * Листание заменяет запись в истории, а не добавляет: иначе «назад» после
+   * сотни вопросов пришлось бы жать сотню раз, чтобы выйти к колодам.
+   */
+  private show(cardId: string): void {
+    void this.router.navigate(['/browse', this.topic(), cardId], { replaceUrl: true });
   }
 
   /**
@@ -171,19 +217,21 @@ function plainText(markdown: string): string {
     .trim();
 }
 
-function readPosition(topic: Topic): number {
+/**
+ * Хранится идентификатор, а не номер: номер съезжает при любой перестановке
+ * корпуса, и человек возвращался бы не туда, где остановился.
+ */
+function readPosition(topic: Topic): string | null {
   try {
-    const raw = localStorage.getItem(`${POSITION_KEY}.${topic}`);
-    const value = Number(raw);
-    return Number.isInteger(value) && value >= 0 ? value : 0;
+    return localStorage.getItem(`${POSITION_KEY}.${topic}`);
   } catch {
-    return 0;
+    return null;
   }
 }
 
-function savePosition(topic: Topic, index: number): void {
+function savePosition(topic: Topic, cardId: string): void {
   try {
-    localStorage.setItem(`${POSITION_KEY}.${topic}`, String(index));
+    localStorage.setItem(`${POSITION_KEY}.${topic}`, cardId);
   } catch {
     // Приватный режим: позиция просто не запомнится.
   }

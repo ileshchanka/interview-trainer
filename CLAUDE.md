@@ -45,6 +45,10 @@ TypeScript strict. Бэкенда нет: контент — статическ�
   (сигналы поверх `ProgressStorage`, внедряемого через токен `PROGRESS_STORAGE`;
   реализация — `IndexedDbStorage`, в тестах подменяется фейком).
 - **`features/`** — экраны: `decks`, `review`, `browse`, `code`, `stats`.
+  У `browse` текущий вопрос живёт в адресе (`/browse/:topic/:cardId`), а не в поле
+  компонента: позиция выводится из `cardId`, листание навигирует с `replaceUrl`.
+  Второго источника истины здесь заводить нельзя — с ним «назад» в браузере
+  расходится с тем, что на экране.
 - **`shared/`** — обёртка Monaco, markdown-pipe, `ThemeService`, `TrackService`, гварды треков.
 
 ### Треки

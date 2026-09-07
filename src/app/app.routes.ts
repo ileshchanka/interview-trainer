@@ -25,6 +25,18 @@ export const routes: Routes = [
   },
   {
     // Просмотр колоды подряд, без оценок и расписания.
+    //
+    // Вопрос адресуется своим `id`, а не номером: идентификаторы карточек
+    // стабильны, а номер меняется при любой правке корпуса — и присланная
+    // ссылка начинала бы открывать чужой вопрос.
+    path: 'browse/:topic/:cardId',
+    title: 'Все вопросы — Interview Trainer',
+    canActivate: [syncTrackGuard],
+    loadComponent: () => import('./features/browse/browse-page').then((m) => m.BrowsePage),
+  },
+  {
+    // Вход без вопроса: экран сам подставит в адрес сохранённую позицию.
+    // Маршрут остаётся ради ссылок с экрана колод и коротких ссылок на колоду.
     path: 'browse/:topic',
     title: 'Все вопросы — Interview Trainer',
     canActivate: [syncTrackGuard],
