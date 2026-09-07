@@ -56,8 +56,17 @@ export class BrowsePage {
   private readonly router = inject(Router);
 
   readonly topic = input.required<Topic>();
-  /** Вопрос из адреса. Пусто — зашли по короткой ссылке на колоду. */
-  readonly cardId = input<string | undefined>(undefined);
+  /**
+   * Номер вопроса из адреса, считая с единицы, — тот же, что в счётчике.
+   * Пусто — зашли по короткой ссылке на колоду или номер не разобрался.
+   */
+  readonly position = input<number | undefined, unknown>(undefined, {
+    alias: 'number',
+    transform: (raw) => {
+      const value = Number(raw);
+      return Number.isInteger(value) && value >= 1 ? value : undefined;
+    },
+  });
 
   protected readonly revealed = signal(false);
 
@@ -75,16 +84,16 @@ export class BrowsePage {
    * источника истины пришлось бы синхронизировать в обе стороны, и кнопка
    * «назад» в браузере расходилась бы с содержимым экрана.
    *
-   * Адреса без вопроса и с неизвестным `id` не показывают пустой экран,
-   * а откатываются к сохранённой позиции — сам адрес поправит эффект ниже.
+   * Адрес без номера откатывается к сохранённой позиции, номер за границами
+   * колоды — к ближайшему краю; сам адрес поправит эффект ниже.
    */
   protected readonly index = computed(() => {
-    const cards = this.cards();
-    if (cards.length === 0) {
+    const total = this.cards().length;
+    if (total === 0) {
       return 0;
     }
-    const fromUrl = cards.findIndex((card) => card.id === this.cardId());
-    return fromUrl >= 0 ? fromUrl : this.savedIndex();
+    const fromUrl = this.position();
+    return fromUrl === undefined ? this.savedIndex() : Math.min(fromUrl - 1, total - 1);
   });
 
   protected readonly current = computed<Card | undefined>(() => this.cards()[this.index()]);
@@ -108,6 +117,9 @@ export class BrowsePage {
   /**
    * Позиция запоминается по колоде: чтение сотни карточек за один присест
    * никто не заканчивает, и возвращаться каждый раз к первой — издевательство.
+   *
+   * Хранится `id`, а не номер из адреса: номер съезжает при перестановке
+   * корпуса, и человек возвращался бы не туда, где остановился.
    */
   private readonly savedIndex = computed(() => {
     const cards = this.cards();
@@ -117,14 +129,14 @@ export class BrowsePage {
   });
 
   constructor() {
-    // Адрес всегда называет показанный вопрос: и когда его не было вовсе,
-    // и когда пришёл `id` из старой ссылки, которого в колоде уже нет.
+    // Адрес всегда называет показанный вопрос: и когда номера не было вовсе,
+    // и когда он оказался за границами колоды.
     effect(() => {
-      const card = this.current();
-      if (card === undefined || card.id === this.cardId()) {
+      const index = this.index();
+      if (this.cards().length === 0 || this.position() === index + 1) {
         return;
       }
-      untracked(() => this.show(card.id));
+      untracked(() => this.show(index));
     });
 
     effect(() => {
@@ -146,11 +158,11 @@ export class BrowsePage {
   }
 
   protected go(index: number): void {
-    const cards = this.cards();
-    if (cards.length === 0) {
+    const total = this.total();
+    if (total === 0) {
       return;
     }
-    this.show(cards[Math.min(Math.max(index, 0), cards.length - 1)].id);
+    this.show(Math.min(Math.max(index, 0), total - 1));
   }
 
   protected next(): void {
@@ -169,8 +181,8 @@ export class BrowsePage {
    * Листание заменяет запись в истории, а не добавляет: иначе «назад» после
    * сотни вопросов пришлось бы жать сотню раз, чтобы выйти к колодам.
    */
-  private show(cardId: string): void {
-    void this.router.navigate(['/browse', this.topic(), cardId], { replaceUrl: true });
+  private show(index: number): void {
+    void this.router.navigate(['/browse', this.topic(), index + 1], { replaceUrl: true });
   }
 
   /**

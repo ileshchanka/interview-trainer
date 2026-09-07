@@ -39,7 +39,7 @@ describe('BrowsePage', () => {
         provideZonelessChangeDetection(),
         provideRouter(
           [
-            { path: 'browse/:topic/:cardId', component: BrowsePage },
+            { path: 'browse/:topic/:number', component: BrowsePage },
             { path: 'browse/:topic', component: BrowsePage },
           ],
           withComponentInputBinding(),
@@ -47,7 +47,7 @@ describe('BrowsePage', () => {
         { provide: ContentService, useValue: { cards } },
       ],
     });
-    harness = await RouterTestingHarness.create('/browse/kotlin/a');
+    harness = await RouterTestingHarness.create('/browse/kotlin/1');
     page = harness.routeNativeElement as HTMLElement;
   });
 
@@ -74,8 +74,8 @@ describe('BrowsePage', () => {
     expect(question()).toBe('вопрос a');
   });
 
-  it('открывает вопрос, названный в адресе', async () => {
-    await open('/browse/kotlin/c');
+  it('открывает вопрос под номером из адреса', async () => {
+    await open('/browse/kotlin/3');
 
     expect(question()).toBe('вопрос c');
     expect(counter()).toBe('3 / 3');
@@ -86,21 +86,28 @@ describe('BrowsePage', () => {
 
     expect(counter()).toBe('2 / 3');
     expect(question()).toBe('вопрос b');
-    expect(url()).toBe('/browse/kotlin/b');
+    expect(url()).toBe('/browse/kotlin/2');
   });
 
-  it('адрес без вопроса дополняется идентификатором', async () => {
+  it('адрес без вопроса дополняется номером', async () => {
     await open('/browse/kotlin');
 
     expect(question()).toBe('вопрос a');
-    expect(url()).toBe('/browse/kotlin/a');
+    expect(url()).toBe('/browse/kotlin/1');
   });
 
-  it('ссылка на удалённый вопрос открывает начало колоды, а не пустой экран', async () => {
-    await open('/browse/kotlin/kt-которого-нет');
+  it('номер за границами колоды приводится к ближайшему краю', async () => {
+    await open('/browse/kotlin/99');
+
+    expect(question()).toBe('вопрос c');
+    expect(url()).toBe('/browse/kotlin/3');
+  });
+
+  it('нечисловой номер открывает сохранённую позицию, а не пустой экран', async () => {
+    await open('/browse/kotlin/js-event-loop-order');
 
     expect(question()).toBe('вопрос a');
-    expect(url()).toBe('/browse/kotlin/a');
+    expect(url()).toBe('/browse/kotlin/1');
   });
 
   it('на первой карточке «Назад» недоступна, на последней «Далее» исчезает', async () => {
@@ -145,13 +152,13 @@ describe('BrowsePage', () => {
     expect(counter()).toBe('1 / 3');
   });
 
-  it('позиция запоминается по идентификатору и восстанавливается при входе без него', async () => {
+  it('позиция запоминается по идентификатору и восстанавливается при входе без номера', async () => {
     await click('Далее');
 
     await open('/browse/kotlin');
 
     expect(counter()).toBe('2 / 3');
-    expect(url()).toBe('/browse/kotlin/b');
+    expect(url()).toBe('/browse/kotlin/2');
   });
 
   it('стрелки листают колоду', async () => {
