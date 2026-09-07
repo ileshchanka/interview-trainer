@@ -117,7 +117,13 @@ export class ContentService {
  */
 async function fetchJson<T>(path: string): Promise<T> {
   const url = new URL(path, document.baseURI).toString();
-  const response = await fetch(url);
+  // `no-cache` — не «не кэшировать», а «спроси сервер перед тем, как отдать
+  // копию». Путь к контенту стабильный и хэша в имени не несёт, поэтому после
+  // деплоя браузер иначе молча отдал бы старый JSON, и приложение читало бы
+  // поля, которых в нём ещё нет (так в списке вопросов появлялся `undefined`).
+  // При неизменившемся файле приходит 304 без тела — цена одного условного
+  // запроса на тему, а не перекачка корпуса.
+  const response = await fetch(url, { cache: 'no-cache' });
   if (!response.ok) {
     throw new Error(`${path}: ${response.status}`);
   }
