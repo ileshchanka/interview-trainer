@@ -4,6 +4,7 @@
  */
 
 import { Card, Grade, ReviewState, Topic } from './models';
+import { filterByCategories } from './categories';
 import { isDue } from './srs';
 
 export interface SessionOptions {
@@ -13,6 +14,13 @@ export interface SessionOptions {
   readonly reviewLimit: number;
   /** Ограничить сессию одной темой; `undefined` — все темы. */
   readonly topic?: Topic;
+  /**
+   * Номера категорий внутри темы; пустой набор — вся тема.
+   *
+   * Имеет смысл только вместе с `topic`: номера категорий нумеруются внутри
+   * колоды, и без темы «категория 3» ничего не означает.
+   */
+  readonly categories?: ReadonlySet<number>;
 }
 
 export const DEFAULT_SESSION: SessionOptions = { newLimit: 10, reviewLimit: 40 };
@@ -36,7 +44,9 @@ export function buildSession(
   now: number,
   options: SessionOptions = DEFAULT_SESSION,
 ): SessionQueue {
-  const pool = options.topic ? cards.filter((c) => c.topic === options.topic) : cards;
+  const pool = options.topic
+    ? filterByCategories(cards, options.topic, options.categories ?? new Set())
+    : cards;
 
   const due = pool
     .filter((card) => {

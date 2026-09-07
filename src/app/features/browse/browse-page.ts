@@ -18,6 +18,13 @@ import { MatSelectModule } from '@angular/material/select';
 import { Router, RouterLink } from '@angular/router';
 import { ContentService } from '../../core/content/content.service';
 import { Card, Topic } from '../../domain/models';
+import {
+  categoriesOf,
+  filterByCategories,
+  formatCategories,
+  normalizeSelection,
+  parseCategories,
+} from '../../domain/categories';
 import { LanguageService } from '../../shared/language.service';
 import { MarkdownPipe } from '../../shared/markdown.pipe';
 
@@ -72,6 +79,16 @@ export class BrowsePage {
     },
   });
 
+  /**
+   * Выбранные категории — номерами, из адреса (`?cats=1,4`). Как и позиция,
+   * они живут только в адресе: второй источник истины разошёлся бы с кнопкой
+   * «назад», а ссылкой на подборку тогда нельзя было бы поделиться.
+   */
+  readonly selection = input<ReadonlySet<number>, unknown>(new Set<number>(), {
+    alias: 'cats',
+    transform: parseCategories,
+  });
+
   protected readonly revealed = signal(false);
 
   protected readonly title = computed(() => this.t().topics[this.topic()]);
@@ -79,10 +96,17 @@ export class BrowsePage {
   /** Колода показана в оригинале, потому что на выбранный язык её ещё не перевели. */
   protected readonly fallback = computed(() => this.content.isFallback(this.topic()));
 
+  /** Категории колоды — по всей теме, а не по отфильтрованному набору: иначе
+      выбор одной категории стирал бы из списка все остальные. */
+  protected readonly categories = computed(() => categoriesOf(this.content.cards(), this.topic()));
+
   /** Карточки идут в порядке файла: он сгруппирован по подтемам и читается подряд. */
   protected readonly cards = computed<readonly Card[]>(() =>
-    this.content.cards().filter((card) => card.topic === this.topic()),
+    filterByCategories(this.content.cards(), this.topic(), this.selection()),
   );
+
+  /** Значение для `mat-select multiple`: тому нужен массив, а не Set. */
+  protected readonly chosen = computed(() => [...this.selection()]);
 
   protected readonly total = computed(() => this.cards().length);
 
@@ -189,7 +213,35 @@ export class BrowsePage {
    * сотни вопросов пришлось бы жать сотню раз, чтобы выйти к колодам.
    */
   private show(index: number): void {
-    void this.router.navigate(['/browse', this.topic(), index + 1], { replaceUrl: true });
+    void this.router.navigate(['/browse', this.topic(), index + 1], {
+      replaceUrl: true,
+      // Выбранные категории остаются в адресе: листание не должно втихую
+      // расширять подборку до всей колоды.
+      queryParamsHandling: 'preserve',
+    });
+  }
+
+  /**
+   * Смена набора категорий.
+   *
+   * Позиция пересчитывается по `id` текущей карточки: если она осталась
+   * в подборке — человек остаётся на ней же, иначе открывается первый вопрос
+   * нового набора. Номер в адресе после фильтра означает уже другое место,
+   * поэтому его нужно назвать явно, а не оставить прежним.
+   */
+  protected chooseCategories(numbers: readonly number[]): void {
+    const selection = normalizeSelection(new Set(numbers), this.categories());
+    const currentId = this.current()?.id;
+    const filtered = filterByCategories(this.content.cards(), this.topic(), selection);
+    const index = Math.max(
+      filtered.findIndex((card) => card.id === currentId),
+      0,
+    );
+
+    void this.router.navigate(['/browse', this.topic(), index + 1], {
+      replaceUrl: true,
+      queryParams: { cats: formatCategories(selection) },
+    });
   }
 
   /**
@@ -228,9 +280,16 @@ function isTyping(target: EventTarget | null): boolean {
   return tag === 'INPUT' || tag === 'TEXTAREA' || element?.isContentEditable === true;
 }
 
-/** Markdown в списке перехода не нужен: там одна строка без разметки. */
+/**
+ * Markdown в списке перехода не нужен: там одна строка без разметки.
+ *
+ * Блок кода отбрасывается целиком вместе со всем, что за ним: у вопроса
+ * «что выведет этот код» полезная часть — первая фраза, а листинг в одну
+ * строку списка превращается в кашу вроде «js setTimeout(() = console.log».
+ */
 function plainText(markdown: string): string {
-  return markdown
+  const [beforeCode] = markdown.split('```');
+  return beforeCode
     .replace(/[`*_#>]/g, '')
     .replace(/\s+/g, ' ')
     .trim();

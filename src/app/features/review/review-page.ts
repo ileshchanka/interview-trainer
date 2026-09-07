@@ -17,6 +17,7 @@ import { ContentService } from '../../core/content/content.service';
 import { ProgressStore } from '../../core/storage/progress.store';
 import { Card, GRADES, Grade, Topic } from '../../domain/models';
 import { SessionQueue, advance, buildSession } from '../../domain/session';
+import { parseCategories } from '../../domain/categories';
 import { initialState, review } from '../../domain/srs';
 import { LanguageService } from '../../shared/language.service';
 import { MarkdownPipe } from '../../shared/markdown.pipe';
@@ -55,6 +56,16 @@ export class ReviewPage {
 
   /** Тема из маршрута; пусто — сессия по всем темам сразу. */
   readonly topic = input<Topic | undefined>(undefined);
+
+  /**
+   * Категории из адреса (`?cats=1,4`) — экран их не выбирает, только уважает:
+   * набор приходит с экрана колод по ссылке «Заниматься». Номера нумеруются
+   * внутри колоды, поэтому без темы они не значат ничего.
+   */
+  readonly selection = input<ReadonlySet<number>, unknown>(new Set<number>(), {
+    alias: 'cats',
+    transform: parseCategories,
+  });
 
   protected readonly queue = signal<SessionQueue>({ pending: [], done: [] });
   protected readonly revealed = signal(false);
@@ -102,6 +113,7 @@ export class ReviewPage {
     // иначе только что отвеченная карточка тут же вернулась бы в очередь.
     effect(() => {
       const topic = this.topic();
+      const categories = this.selection();
       const cards = this.content.cards();
       if (cards.length === 0) {
         return;
@@ -113,6 +125,7 @@ export class ReviewPage {
         newLimit: 10,
         reviewLimit: 40,
         topic,
+        categories,
       });
       this.queue.set(queue);
       this.planned.set(queue.pending.length);

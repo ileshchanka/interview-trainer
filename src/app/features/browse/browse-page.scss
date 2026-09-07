@@ -15,11 +15,26 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* Фильтр категорий и переход по номеру — одна строка на широком экране,
+   два поля друг под другом на телефоне. */
 .jump {
   margin-top: 16px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
 
   mat-form-field {
     width: 100%;
+  }
+
+  .categories {
+    flex: 1 1 220px;
+    width: auto;
+  }
+
+  .jump-field {
+    flex: 2 1 320px;
+    width: auto;
   }
 }
 

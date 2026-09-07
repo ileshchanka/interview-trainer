@@ -55,6 +55,23 @@ describe('session', () => {
     expect(queue.pending).toEqual(['ng1']);
   });
 
+  it('сессию можно сузить до выбранных категорий темы', () => {
+    const cards = [
+      { ...card('a'), subtopic: 'event loop' },
+      { ...card('b'), subtopic: 'замыкания' },
+      { ...card('c'), subtopic: 'промисы' },
+    ];
+
+    const queue = buildSession(cards, new Map(), NOW, {
+      newLimit: 10,
+      reviewLimit: 10,
+      topic: 'js',
+      categories: new Set([1, 3]),
+    });
+
+    expect(queue.pending).toEqual(['a', 'c']);
+  });
+
   it('«не помню» возвращает карточку в конец очереди этой же сессии', () => {
     const queue = { pending: ['a', 'b', 'c'], done: [] };
 

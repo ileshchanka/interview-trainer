@@ -35,6 +35,48 @@
           <p class="fallback">{{ t().content.fallback }}</p>
         }
 
+        <!-- Категории — подтемы колоды. Список раскрывается по требованию:
+             их до 28 на тему, и развёрнутыми они прячут сами колоды. -->
+        <button
+          mat-button
+          type="button"
+          class="categories-toggle"
+          (click)="toggleExpanded(deck.topic)"
+        >
+          <mat-icon>{{ expanded() === deck.topic ? 'expand_less' : 'expand_more' }}</mat-icon>
+          {{ t().decks.categories }}:
+          {{
+            deck.selection.size === 0
+              ? t().decks.categoriesAll(deck.categories.length)
+              : t().decks.categoriesSome(deck.selection.size, deck.categories.length)
+          }}
+        </button>
+
+        @if (expanded() === deck.topic) {
+          <div class="categories">
+            @for (category of deck.categories; track category.number) {
+              <mat-checkbox
+                [checked]="deck.selection.has(category.number)"
+                (change)="toggleCategory(deck, category.number, $event.checked)"
+              >
+                {{ category.subtopic }} <span class="muted">{{ category.cards }}</span>
+              </mat-checkbox>
+            }
+          </div>
+          <!-- Сброс — под списком, а не в нём: список прокручивается, и внутри
+               кнопку пришлось бы искать. -->
+          @if (deck.selection.size > 0) {
+            <button
+              mat-button
+              type="button"
+              class="categories-reset"
+              (click)="resetCategories(deck)"
+            >
+              {{ t().decks.categoriesReset }}
+            </button>
+          }
+        }
+
         <div class="counters">
           <span class="counter due" [class.zero]="deck.due === 0">
             <b>{{ deck.due }}</b> {{ t().decks.due }}
@@ -52,10 +94,13 @@
 
       <mat-card-actions align="end">
         <!-- Просмотр доступен всегда: он не зависит от расписания повторений. -->
-        <a mat-button [routerLink]="['/browse', deck.topic]">{{ t().decks.browse }}</a>
+        <a mat-button [routerLink]="['/browse', deck.topic]" [queryParams]="{ cats: deck.cats }">{{
+          t().decks.browse
+        }}</a>
         <a
           mat-button
           [routerLink]="['/review', deck.topic]"
+          [queryParams]="{ cats: deck.cats }"
           [disabled]="deck.due === 0 && deck.fresh === 0"
         >
           {{ t().decks.study }}

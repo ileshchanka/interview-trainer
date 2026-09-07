@@ -82,6 +82,11 @@ const ru = {
       `Выучено ${mastered} из ${total} — ${percent}%`,
     browse: 'Все вопросы',
     study: 'Заниматься',
+    categories: 'Категории',
+    categoriesAll: (n: number) =>
+      `все (${n} ${plural('ru', n, ['категория', 'категории', 'категорий'])})`,
+    categoriesSome: (chosen: number, total: number) => `выбрано ${chosen} из ${total}`,
+    categoriesReset: 'Сбросить',
     tasksHeading: 'Кодовые задачи',
     tasksLeft: (n: number) => `Нерешённых задач: ${n}`,
     toTasks: 'К задачам',
@@ -116,6 +121,11 @@ const ru = {
 
   browse: {
     jump: 'Перейти к вопросу',
+    categories: 'Категории',
+    allCategories: 'Все категории',
+    categoryOption: (subtopic: string, cards: number) => `${subtopic} — ${cards}`,
+    categoriesChosen: (n: number) =>
+      `Выбрано ${n} ${plural('ru', n, ['категория', 'категории', 'категорий'])}`,
     reveal: 'Показать ответ',
     space: 'пробел',
     previous: 'Назад',
@@ -250,6 +260,10 @@ const en: Messages = {
       `Mastered ${mastered} of ${total} — ${percent}%`,
     browse: 'All questions',
     study: 'Study',
+    categories: 'Categories',
+    categoriesAll: (n: number) => `all (${n} ${plural('en', n, ['category', 'categories'])})`,
+    categoriesSome: (chosen: number, total: number) => `${chosen} of ${total} selected`,
+    categoriesReset: 'Reset',
     tasksHeading: 'Code tasks',
     tasksLeft: (n: number) => `Unsolved tasks: ${n}`,
     toTasks: 'To the tasks',
@@ -283,6 +297,10 @@ const en: Messages = {
 
   browse: {
     jump: 'Jump to question',
+    categories: 'Categories',
+    allCategories: 'All categories',
+    categoryOption: (subtopic: string, cards: number) => `${subtopic} — ${cards}`,
+    categoriesChosen: (n: number) => `${n} ${plural('en', n, ['category', 'categories'])} selected`,
     reveal: 'Show answer',
     space: 'space',
     previous: 'Back',

@@ -7,11 +7,11 @@ import { ContentService } from '../../core/content/content.service';
 import { Card } from '../../domain/models';
 import { BrowsePage } from './browse-page';
 
-function card(id: string, topic: Card['topic'] = 'kotlin'): Card {
+function card(id: string, topic: Card['topic'] = 'kotlin', subtopic = 'основы'): Card {
   return {
     id,
     topic,
-    subtopic: 'основы',
+    subtopic,
     question: `вопрос ${id}`,
     answer: `ответ ${id}`,
     example: '```kotlin\nval x = 1\n```',
@@ -22,7 +22,12 @@ describe('BrowsePage', () => {
   let harness: RouterTestingHarness;
   let page: HTMLElement;
 
-  const cards = signal<readonly Card[]>([card('a'), card('b'), card('c'), card('ng1', 'angular')]);
+  const cards = signal<readonly Card[]>([
+    card('a'),
+    card('b', 'kotlin', 'корутины'),
+    card('c'),
+    card('ng1', 'angular'),
+  ]);
 
   /** Переход по адресу: harness создаётся один раз за тест, дальше только навигация. */
   async function open(url: string): Promise<void> {
@@ -144,6 +149,53 @@ describe('BrowsePage', () => {
     // Markdown обязан превратиться в <pre><code>, иначе отступы схлопнутся.
     const code = page.querySelector('.example pre code');
     expect(code?.textContent?.trim()).toBe('val x = 1');
+  });
+
+  it('категории из адреса сужают колоду и счётчик', async () => {
+    // Вторая карточка колоды — единственная из «корутин», значит её категория
+    // вторая по счёту.
+    await open('/browse/kotlin/1?cats=2');
+
+    expect(counter()).toBe('1 / 1');
+    expect(question()).toBe('вопрос b');
+  });
+
+  it('мусор в параметре категорий означает всю колоду', async () => {
+    await open('/browse/kotlin/1?cats=abc');
+
+    expect(counter()).toBe('1 / 3');
+  });
+
+  it('листание не теряет выбранные категории', async () => {
+    await open('/browse/kotlin/1?cats=1');
+
+    harness.routeDebugElement!.componentInstance['next']();
+    await harness.fixture.whenStable();
+
+    expect(url()).toBe('/browse/kotlin/2?cats=1');
+    expect(question()).toBe('вопрос c');
+  });
+
+  it('выбор категорий попадает в адрес и оставляет человека на его карточке', async () => {
+    await open('/browse/kotlin/2');
+    expect(question()).toBe('вопрос b');
+
+    harness.routeDebugElement!.componentInstance['chooseCategories']([2]);
+    await harness.fixture.whenStable();
+
+    // Карточка «b» — единственная в выбранной категории, значит она же первая.
+    expect(url()).toBe('/browse/kotlin/1?cats=2');
+    expect(question()).toBe('вопрос b');
+  });
+
+  it('отмеченные все категории убирают параметр из адреса', async () => {
+    await open('/browse/kotlin/1?cats=1');
+
+    harness.routeDebugElement!.componentInstance['chooseCategories']([1, 2]);
+    await harness.fixture.whenStable();
+
+    expect(url()).toBe('/browse/kotlin/1');
+    expect(counter()).toBe('1 / 3');
   });
 
   it('переход по номеру ограничен размером колоды', async () => {

@@ -15,7 +15,23 @@
 
 @if (current(); as card) {
   <div class="jump">
-    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+    <mat-form-field appearance="outline" subscriptSizing="dynamic" class="categories">
+      <mat-label>{{ t().browse.categories }}</mat-label>
+      <mat-select
+        multiple
+        [value]="chosen()"
+        (selectionChange)="chooseCategories($event.value)"
+        [placeholder]="t().browse.allCategories"
+      >
+        @for (category of categories(); track category.number) {
+          <mat-option [value]="category.number">
+            {{ t().browse.categoryOption(category.subtopic, category.cards) }}
+          </mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" subscriptSizing="dynamic" class="jump-field">
       <mat-label>{{ t().browse.jump }}</mat-label>
       <mat-select [value]="index()" (selectionChange)="go($event.value)">
         @for (item of jumpItems(); track item.index) {
