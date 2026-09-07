@@ -19,9 +19,10 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { Router, RouterLink } from '@angular/router';
 import { ContentService } from '../../core/content/content.service';
 import { ProgressStore } from '../../core/storage/progress.store';
-import { TOPIC_TITLES, isRunnable } from '../../domain/models';
+import { isRunnable } from '../../domain/models';
 import { Verdict, compareOutput } from '../../domain/verdict';
 import { CodeEditor } from '../../shared/monaco/code-editor';
+import { LanguageService } from '../../shared/language.service';
 import { MarkdownPipe } from '../../shared/markdown.pipe';
 import { CodeRunner } from './code-runner.service';
 
@@ -48,10 +49,11 @@ export class TaskPage {
   private readonly progress = inject(ProgressStore);
   private readonly runner = inject(CodeRunner);
   private readonly router = inject(Router);
+  private readonly languages = inject(LanguageService);
 
   readonly id = input.required<string>();
 
-  protected readonly titles = TOPIC_TITLES;
+  protected readonly t = this.languages.t;
   protected readonly prediction = signal('');
   protected readonly running = signal(false);
   protected readonly verdict = signal<Verdict | null>(null);

@@ -17,7 +17,8 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSelectModule } from '@angular/material/select';
 import { Router, RouterLink } from '@angular/router';
 import { ContentService } from '../../core/content/content.service';
-import { Card, TOPIC_TITLES, Topic } from '../../domain/models';
+import { Card, Topic } from '../../domain/models';
+import { LanguageService } from '../../shared/language.service';
 import { MarkdownPipe } from '../../shared/markdown.pipe';
 
 const POSITION_KEY = 'interview-trainer.browse';
@@ -54,6 +55,9 @@ const POSITION_KEY = 'interview-trainer.browse';
 export class BrowsePage {
   private readonly content = inject(ContentService);
   private readonly router = inject(Router);
+  private readonly languages = inject(LanguageService);
+
+  protected readonly t = this.languages.t;
 
   readonly topic = input.required<Topic>();
   /**
@@ -70,7 +74,10 @@ export class BrowsePage {
 
   protected readonly revealed = signal(false);
 
-  protected readonly title = computed(() => TOPIC_TITLES[this.topic()]);
+  protected readonly title = computed(() => this.t().topics[this.topic()]);
+
+  /** Колода показана в оригинале, потому что на выбранный язык её ещё не перевели. */
+  protected readonly fallback = computed(() => this.content.isFallback(this.topic()));
 
   /** Карточки идут в порядке файла: он сгруппирован по подтемам и читается подряд. */
   protected readonly cards = computed<readonly Card[]>(() =>

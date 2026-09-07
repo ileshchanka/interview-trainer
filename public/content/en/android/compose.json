@@ -1,0 +1,605 @@
+[
+ {
+  "id": "cmp-declarative",
+  "topic": "compose",
+  "subtopic": "the basics",
+  "question": "How does a declarative UI differ from an imperative one?",
+  "answer": "In an imperative one you change existing Views (`textView.text = …`). In a declarative one you describe what the screen looks like **for a given state**, and the framework brings the UI into line with that description.",
+  "example": "```kotlin\n// Imperative: changing an existing View\ntextView.text = user.name\navatarView.isVisible = user.hasAvatar\n\n// Declarative: describing what the screen looks like for this state\n@Composable\nfun Profile(user: User) {\n    Text(user.name)\n    if (user.hasAvatar) Avatar(user.avatarUrl)\n}\n```",
+  "explanation": "The consequence: state and screen cannot fall out of sync by construction — the most common class of bugs in the View system disappears."
+ },
+ {
+  "id": "cmp-composable",
+  "topic": "compose",
+  "subtopic": "the basics",
+  "question": "What does the `@Composable` annotation do, and what restrictions does such a function have?",
+  "answer": "It marks a function that describes part of the UI and can only be called from another composable function. It returns no View but makes changes to the current composition.",
+  "example": "```kotlin\n@Composable\nfun Greeting(name: String) {\n    Text(\"Hello, $name\")\n}\n\n// It can only be called from another composable function:\n// fun plain() { Greeting(\"Anna\") }   // a compile error\n```",
+  "explanation": "Composable functions must be idempotent and free of side effects: they run often, in any order, and may be skipped or executed in parallel."
+ },
+ {
+  "id": "cmp-recomposition",
+  "topic": "compose",
+  "subtopic": "recomposition",
+  "question": "What is recomposition, and when does it run?",
+  "answer": "A re-invocation of composable functions when the state they read changes. Compose re-executes only those functions whose inputs changed and skips the rest.",
+  "example": "```kotlin\n@Composable\nfun Counter() {\n    var count by remember { mutableStateOf(0) }\n\n    Column {\n        Text(\"Clicks: $count\")           // redrawn when count changes\n        Button(onClick = { count++ }) { Text(\"Click\") }\n        Text(\"Static text\")              // will be skipped\n    }\n}\n```",
+  "explanation": "A recomposition can be cancelled and started again, which is why side effects in the body of a composable are unacceptable: they would run an unpredictable number of times."
+ },
+ {
+  "id": "cmp-state",
+  "topic": "compose",
+  "subtopic": "state",
+  "question": "How do you declare state, and how does `remember` differ from `mutableStateOf`?",
+  "answer": "`mutableStateOf` creates an observable container, `remember` preserves the value across recompositions. Both are needed: without `remember` the state would be created afresh on every recomposition.",
+  "example": "```kotlin\nvar query by remember { mutableStateOf(\"\") }   // a delegate: we touch the value\n\n// Without remember the value would reset on every recomposition:\n// var query by mutableStateOf(\"\")\n\nTextField(value = query, onValueChange = { query = it })\n```",
+  "explanation": "The `var x by remember { mutableStateOf(0) }` syntax uses a property delegate — the accesses go to the value rather than to the `State` object."
+ },
+ {
+  "id": "cmp-remember-saveable",
+  "topic": "compose",
+  "subtopic": "state",
+  "question": "How does `rememberSaveable` differ from `remember`?",
+  "answer": "`remember` survives recomposition but not the recreation of an Activity. `rememberSaveable` additionally stores the value in a Bundle and survives a rotation and process death.",
+  "example": "```kotlin\nvar tab by rememberSaveable { mutableStateOf(0) }   // survives rotation and process death\nvar hovered by remember { mutableStateOf(false) }   // recomposition only\n\n// A type of your own needs a Saver\nval state = rememberSaveable(saver = Filter.Saver) { Filter() }\n```",
+  "explanation": "The type has to be saveable: primitives, a `Parcelable`, or a `Saver` of your own. The Bundle limit is the usual one — around 1 MB per transaction."
+ },
+ {
+  "id": "cmp-state-hoisting",
+  "topic": "compose",
+  "subtopic": "state",
+  "question": "What is state hoisting?",
+  "answer": "Moving state up the tree: a composable takes a value and a change callback (`value` + `onValueChange`) instead of holding the state inside itself.",
+  "example": "```kotlin\n@Composable\nfun SearchField(value: String, onValueChange: (String) -> Unit) {   // stateless\n    TextField(value = value, onValueChange = onValueChange)\n}\n\n@Composable\nfun Screen() {\n    var query by rememberSaveable { mutableStateOf(\"\") }\n    SearchField(query) { query = it }        // the state was hoisted up to here\n}\n```",
+  "explanation": "It makes a component stateless — easy to reuse, preview and test. It is the same principle as “lift state to the common ancestor” in React."
+ },
+ {
+  "id": "cmp-remember-keys",
+  "topic": "compose",
+  "subtopic": "state",
+  "question": "What do the keys in `remember(key)` do?",
+  "answer": "When a key changes, the value is computed anew. Without a key `remember` holds the first computed value for the whole lifetime of the composable at that place in the tree.",
+  "example": "```kotlin\n@Composable\nfun Details(userId: Long) {\n    // Without a key the result for the first userId would stick around\n    val formatter = remember(userId) { Formatter(userId) }\n    Text(formatter.title)\n}\n```",
+  "explanation": "The classic bug: a `remember` without a key keeps the data of the previous list item after the argument changes."
+ },
+ {
+  "id": "cmp-derived-state",
+  "topic": "compose",
+  "subtopic": "state",
+  "question": "When do you need `derivedStateOf`?",
+  "answer": "When frequently changing state yields rarely changing state: `scrollState.firstVisibleItemIndex > 0`, for example. It damps down the extra recompositions.",
+  "example": "```kotlin\nval listState = rememberLazyListState()\n\n// Recomputed on every pixel of scrolling:\n// val showButton = listState.firstVisibleItemIndex > 0\n\nval showButton by remember {\n    derivedStateOf { listState.firstVisibleItemIndex > 0 }   // changes rarely\n}\n```",
+  "explanation": "For a simple transformation of one state into another it is unnecessary — a plain expression is cheaper. An unwarranted `derivedStateOf` is a common over-complication."
+ },
+ {
+  "id": "cmp-side-effects",
+  "topic": "compose",
+  "subtopic": "effects",
+  "question": "What is `LaunchedEffect` for, and when does it restart?",
+  "answer": "It launches a coroutine tied to the life of the composable: it starts when the composable enters the composition and is cancelled when it leaves. It restarts when the keys change.",
+  "example": "```kotlin\n@Composable\nfun Details(id: Long, viewModel: DetailsViewModel) {\n    LaunchedEffect(id) {                 // restarts when id changes\n        viewModel.load(id)\n    }\n\n    LaunchedEffect(Unit) { }             // once per lifetime\n}\n```",
+  "explanation": "`LaunchedEffect(Unit)` runs once per lifetime. A coroutine must not be launched in the body of a composable — recomposition would spawn dozens of them."
+ },
+ {
+  "id": "cmp-disposable-effect",
+  "topic": "compose",
+  "subtopic": "effects",
+  "question": "What is `DisposableEffect` for?",
+  "answer": "For an effect that needs releasing: registering a listener, subscribing to a system event. The mandatory `onDispose` block runs when the composable leaves or a key changes.",
+  "example": "```kotlin\nDisposableEffect(lifecycleOwner) {\n    val observer = LifecycleEventObserver { _, event -> handle(event) }\n    lifecycleOwner.lifecycle.addObserver(observer)\n\n    onDispose {                          // the block is mandatory\n        lifecycleOwner.lifecycle.removeObserver(observer)\n    }\n}\n```",
+  "explanation": "The typical example is subscribing a `LifecycleObserver` and unsubscribing in `onDispose`."
+ },
+ {
+  "id": "cmp-effect-choice",
+  "topic": "compose",
+  "subtopic": "effects",
+  "question": "How does `SideEffect` differ from `rememberCoroutineScope`?",
+  "answer": "`SideEffect` runs after every successful composition — it is used to sync Compose state with non-Compose objects. `rememberCoroutineScope` gives a scope for launching coroutines **from callbacks** (a button press).",
+  "example": "```kotlin\nval scope = rememberCoroutineScope()\n\nButton(onClick = {\n    scope.launch { snackbarHostState.showSnackbar(\"Done\") }   // a reaction to an event\n}) { Text(\"Save\") }\n\nLaunchedEffect(state.error) {            // a reaction to state\n    state.error?.let { snackbarHostState.showSnackbar(it) }\n}\n```",
+  "explanation": "The rule: reacting to state means `LaunchedEffect`; reacting to a user event means `rememberCoroutineScope`."
+ },
+ {
+  "id": "cmp-collect-as-state",
+  "topic": "compose",
+  "subtopic": "state",
+  "question": "How do you display a `Flow` in Compose?",
+  "answer": "With `collectAsStateWithLifecycle()` — it stops collecting when the screen goes to the background. A plain `collectAsState()` keeps collecting and burning resources.",
+  "example": "```kotlin\nval state by viewModel.state.collectAsStateWithLifecycle()   // stops in the background\n\n// collectAsState() keeps collecting and burning resources while the screen is invisible\nScreen(state)\n```",
+  "explanation": "For a `StateFlow` the initial value is known; for a cold `Flow` it has to be supplied explicitly."
+ },
+ {
+  "id": "cmp-stability",
+  "topic": "compose",
+  "subtopic": "performance",
+  "question": "What is type stability, and why does it affect performance?",
+  "answer": "Compose skips recomposing a function when its parameters are stable and unchanged. An unstable type (a `List`, say — an interface with a potentially mutable implementation) forces the function to be re-executed every time.",
+  "example": "```kotlin\n@Composable\nfun UserList(users: List<User>) { }   // List is unstable: the function is never skipped\n\n// The options:\n@Composable\nfun UserList(users: ImmutableList<User>) { }   // kotlinx.collections.immutable\n\n@Immutable\ndata class UsersUi(val items: List<User>)\n```",
+  "explanation": "Stable are: primitives, strings, lambdas, and a `data class` made only of stable `val`s. For lists there is `ImmutableList` from `kotlinx.collections.immutable` or the `@Immutable` annotation."
+ },
+ {
+  "id": "cmp-lambda-allocation",
+  "topic": "compose",
+  "subtopic": "performance",
+  "question": "Why can passing a lambda into a composable break recomposition skipping?",
+  "answer": "A lambda capturing a changing value is recreated and counts as a new parameter. Compose remembers lambdas by itself, but only when the captured values are stable.",
+  "example": "```kotlin\n// A new lambda on every recomposition — the parameter “changes”\nUserRow(user = user, onClick = { onOpen(user.id) })\n\n// A stable reference:\nUserRow(user = user, onClick = onOpen)   // onClick: (Long) -> Unit\n```",
+  "explanation": "Better to pass a stable reference rather than `{ onClick(item.id) }`, or hoist the lambda higher with `remember`."
+ },
+ {
+  "id": "cmp-phases",
+  "topic": "compose",
+  "subtopic": "rendering",
+  "question": "What phases does a frame in Compose consist of?",
+  "answer": "Composition (what to draw), Layout (measuring and placing), Drawing (painting). State read in a later phase restarts only that phase and the ones after it.",
+  "example": "```kotlin\n// Reading state during composition — all three phases restart\nBox(Modifier.offset(x = offset.dp))\n\n// Reading it during layout — no recomposition happens at all\nBox(Modifier.offset { IntOffset(offset.roundToPx(), 0) })\n```",
+  "explanation": "Hence the optimisation: `Modifier.offset { }` with a lambda reads the state during the layout phase and causes no recomposition at all — the single most important trick for animations."
+ },
+ {
+  "id": "cmp-modifier-order",
+  "topic": "compose",
+  "subtopic": "modifiers",
+  "question": "Why does the order of modifiers matter?",
+  "answer": "Modifiers are applied left to right, wrapping one another: `padding().background()` paints the background inside the padding, while `background().padding()` paints it outside.",
+  "example": "```kotlin\nBox(Modifier.padding(16.dp).background(Color.Red))   // the background is inside the padding\nBox(Modifier.background(Color.Red).padding(16.dp))   // the background is outside, padding inside\n\nBox(Modifier.padding(16.dp).clickable { })           // a smaller touch target\nBox(Modifier.clickable { }.padding(16.dp))           // a larger touch target\n```",
+  "explanation": "The same goes for `clickable`: before `padding` the touch target is smaller, after it larger. This is the most common trick question about Compose."
+ },
+ {
+  "id": "cmp-modifier-parameter",
+  "topic": "compose",
+  "subtopic": "modifiers",
+  "question": "Why should a composable of your own take a `modifier` parameter?",
+  "answer": "So that the caller can set sizes, padding and behaviour from the outside. By convention it is the first optional parameter and is applied to the root element.",
+  "example": "```kotlin\n@Composable\nfun UserRow(\n    user: User,\n    modifier: Modifier = Modifier,   // the first optional parameter\n) {\n    Row(modifier.fillMaxWidth()) { Text(user.name) }\n}\n\nUserRow(user, Modifier.padding(8.dp))\n```",
+  "explanation": "Without it the component cannot be fitted into somebody else's layout without being rewritten."
+ },
+ {
+  "id": "cmp-lazy-column",
+  "topic": "compose",
+  "subtopic": "lists",
+  "question": "How does `LazyColumn` differ from a scrollable `Column`?",
+  "answer": "`LazyColumn` creates and keeps only the visible items, while `Column(Modifier.verticalScroll())` composes the entire list at once.",
+  "example": "```kotlin\nLazyColumn {                        // creates only the visible items\n    items(users) { UserRow(it) }\n}\n\n// This composes the whole list at once — a disaster with a thousand items\nColumn(Modifier.verticalScroll(rememberScrollState())) {\n    users.forEach { UserRow(it) }\n}\n```",
+  "explanation": "It is the counterpart of RecyclerView. On a long list the second version simply destroys performance and memory."
+ },
+ {
+  "id": "cmp-lazy-keys",
+  "topic": "compose",
+  "subtopic": "lists",
+  "question": "What is `key` in a LazyColumn's `items` for?",
+  "answer": "It matches items across list updates: without it, inserting at the front makes Compose reuse the state of the wrong items and lose the scroll position.",
+  "example": "```kotlin\nLazyColumn {\n    items(users, key = { it.id }) { user ->    // without a key, inserting at the front\n        UserRow(user)                          // breaks state and scrolling\n    }\n}\n```",
+  "explanation": "Exactly the same role as `track` in Angular and `key` in React."
+ },
+ {
+  "id": "cmp-content-type",
+  "topic": "compose",
+  "subtopic": "lists",
+  "question": "What does `contentType` give you in a LazyColumn?",
+  "answer": "A hint about an item's kind, so that Compose can reuse the structure of the composition between items of the same kind in a heterogeneous list.",
+  "example": "```kotlin\nLazyColumn {\n    items(rows, key = { it.id }, contentType = { it::class }) { row ->\n        when (row) {\n            is Row.Header -> Header(row)\n            is Row.Item -> Item(row)\n        }\n    }\n}\n```",
+  "explanation": "It noticeably speeds up scrolling in lists with headers, separators and cards of different kinds."
+ },
+ {
+  "id": "cmp-composition-local",
+  "topic": "compose",
+  "subtopic": "DI",
+  "question": "What is a `CompositionLocal`, and when is it appropriate?",
+  "answer": "Implicit passing of a value down the tree without threading parameters through: the theme, dimensions, `LocalContext`. It fits cross-cutting data needed almost everywhere.",
+  "example": "```kotlin\nval LocalSpacing = compositionLocalOf { Spacing() }\n\nCompositionLocalProvider(LocalSpacing provides Spacing(large = 24.dp)) {\n    Screen()\n}\n\n@Composable\nfun Screen() = Box(Modifier.padding(LocalSpacing.current.large))\n```",
+  "explanation": "For passing a screen's data it is harmful: the dependency becomes invisible in the signature and the component non-reusable. It is React's Context with all the same caveats."
+ },
+ {
+  "id": "cmp-theme",
+  "topic": "compose",
+  "subtopic": "theming",
+  "question": "How is theming arranged in Material 3?",
+  "answer": "`MaterialTheme` provides `colorScheme`, `typography` and `shapes` through CompositionLocals. Components take the values from there rather than from arguments.",
+  "example": "```kotlin\nMaterialTheme(\n    colorScheme = if (isSystemInDarkTheme()) darkColorScheme() else lightColorScheme(),\n    typography = Typography,\n) {\n    App()\n}\n\nText(\"A heading\", color = MaterialTheme.colorScheme.primary)\n```",
+  "explanation": "Dynamic colours (Material You) since Android 12 are derived from the user's wallpaper through `dynamicColorScheme`."
+ },
+ {
+  "id": "cmp-preview",
+  "topic": "compose",
+  "subtopic": "tooling",
+  "question": "What does `@Preview` give you, and what are its limits?",
+  "answer": "Rendering a composable in the IDE without running the application, in several configurations at once if you like.",
+  "example": "```kotlin\n@Preview(name = \"Light\")\n@Preview(name = \"Dark\", uiMode = Configuration.UI_MODE_NIGHT_YES)\n@Composable\nprivate fun ProfilePreview() {\n    AppTheme { ProfileContent(user = User(1, \"Anna\")) }   // a stateless component\n}\n```",
+  "explanation": "A preview cannot inject dependencies and does not work with a ViewModel: which is why what you preview should be stateless components taking their data as parameters."
+ },
+ {
+  "id": "cmp-navigation",
+  "topic": "compose",
+  "subtopic": "navigation",
+  "question": "How is navigation arranged in Compose?",
+  "answer": "A `NavHost` describes the graph of routes and a `NavController` performs the transitions. The modern option is type-safe routes built on `@Serializable` objects instead of strings.",
+  "example": "```kotlin\n@Serializable data object Home\n@Serializable data class Details(val id: Long)\n\nNavHost(navController, startDestination = Home) {\n    composable<Home> { HomeScreen(onOpen = { navController.navigate(Details(it)) }) }\n    composable<Details> { entry -> DetailsScreen(entry.toRoute<Details>().id) }\n}\n```",
+  "explanation": "What travels between screens should be identifiers rather than objects: the arguments go into a Bundle, with all of its limitations."
+ },
+ {
+  "id": "cmp-viewmodel-scope-nav",
+  "topic": "compose",
+  "subtopic": "navigation",
+  "question": "How is a ViewModel tied to a navigation destination?",
+  "answer": "`hiltViewModel()` or `viewModel()` inside a `composable(route)` ties it to the back stack entry: it is destroyed when you leave the screen and survives a rotation.",
+  "example": "```kotlin\ncomposable<Details> {\n    val viewModel: DetailsViewModel = hiltViewModel()   // lives with the back stack entry\n    DetailsScreen(viewModel)\n}\n\n// Shared across a subgraph:\nval parentEntry = remember(entry) { navController.getBackStackEntry(Flow) }\nval shared: FlowViewModel = hiltViewModel(parentEntry)\n```",
+  "explanation": "A ViewModel shared by several screens comes from scoping it to the parent graph entry."
+ },
+ {
+  "id": "cmp-interop",
+  "topic": "compose",
+  "subtopic": "interop",
+  "question": "How do you combine Compose and Views?",
+  "answer": "`AndroidView` embeds a View inside Compose, and `ComposeView` embeds Compose inside an XML hierarchy.",
+  "example": "```kotlin\n// A View inside Compose\nAndroidView(factory = { context -> MapView(context) }, update = { it.setMarker(point) })\n\n// Compose inside a View\ncomposeView.setViewCompositionStrategy(\n    ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed,\n)\ncomposeView.setContent { Profile(user) }\n```",
+  "explanation": "A `ComposeView` inside a fragment must be given a `ViewCompositionStrategy`, otherwise the composition outlives the View and leaks."
+ },
+ {
+  "id": "cmp-testing",
+  "topic": "compose",
+  "subtopic": "testing",
+  "question": "How is Compose UI tested?",
+  "answer": "With `createComposeRule()` plus lookups by semantics: `onNodeWithText`, `onNodeWithTag`, the `performClick` action and `assertIsDisplayed` assertions.",
+  "example": "```kotlin\n@get:Rule val rule = createComposeRule()\n\n@Test\nfun `the button opens the profile`() {\n    rule.setContent { AppTheme { Home(onOpen = { opened = true }) } }\n\n    rule.onNodeWithText(\"Profile\").performClick()\n    rule.onNodeWithTag(\"profile\").assertIsDisplayed()\n}\n```",
+  "explanation": "Synchronisation is automatic, but coroutines and animations of your own call for `mainClock` and turning auto-advance off."
+ },
+ {
+  "id": "cmp-semantics",
+  "topic": "compose",
+  "subtopic": "accessibility",
+  "question": "What is the semantics tree?",
+  "answer": "A description of the meaning of the elements that runs parallel to the UI tree: role, text, state. TalkBack and the tests use it.",
+  "example": "```kotlin\nIcon(\n    imageVector = Icons.Default.Search,\n    contentDescription = \"Search\",      // null for a decorative one\n)\n\nRow(Modifier.semantics(mergeDescendants = true) { }) {   // TalkBack reads it as one\n    Text(\"Anna\")\n    Text(\"online\")\n}\n```",
+  "explanation": "A `contentDescription` on icons is mandatory; decorative elements are given `null` so that TalkBack skips them."
+ },
+ {
+  "id": "cmp-immutable-annotations",
+  "topic": "compose",
+  "subtopic": "performance",
+  "question": "How does `@Stable` differ from `@Immutable`?",
+  "answer": "`@Immutable` promises that the object never changes after creation. `@Stable` promises that it may change but will notify Compose of every change.",
+  "example": "```kotlin\n@Immutable                       // I promise: it will never change\ndata class Filter(val query: String)\n\n@Stable                          // it may change, but it notifies Compose\nclass FormState {\n    var query by mutableStateOf(\"\")\n}\n```",
+  "explanation": "These are promises to the compiler that it does not verify: a wrong annotation gives you a screen that never redraws."
+ },
+ {
+  "id": "cmp-recomposition-scope",
+  "topic": "compose",
+  "subtopic": "recomposition",
+  "question": "What is a recomposition scope?",
+  "answer": "The smallest restartable unit — the body of a composable function. A state change restarts the function that **reads** it, not the one where it is declared.",
+  "example": "```kotlin\n@Composable\nfun Screen(viewModel: ScreenViewModel) {\n    val state by viewModel.state.collectAsStateWithLifecycle()\n\n    Column {\n        Header()                 // does not read state — will be skipped\n        Content(state.items)     // restarts when it changes\n    }\n}\n```",
+  "explanation": "Hence the technique of pushing state reads as far down the tree as possible, so that a small piece redraws rather than the whole screen."
+ },
+ {
+  "id": "cmp-snapshot",
+  "topic": "compose",
+  "subtopic": "state",
+  "question": "What is Compose's snapshot system?",
+  "answer": "The mechanism that tracks reads and writes of state: it knows which function read what, and can therefore restart only what is needed.",
+  "example": "```kotlin\nvar count by mutableStateOf(0)\n\nSnapshot.withMutableSnapshot {   // the changes are applied atomically\n    count += 1\n    count += 1\n}\n// The intermediate value never reaches the screen\n```",
+  "explanation": "Changes are applied atomically, so an intermediate state never makes it onto the screen."
+ },
+ {
+  "id": "cmp-mutable-state-list",
+  "topic": "compose",
+  "subtopic": "state",
+  "question": "Why does `mutableStateOf(mutableListOf())` not work?",
+  "answer": "`State` notices only a replacement of the **reference**. Adding an element to the same list notifies nobody, and the screen does not redraw.",
+  "example": "```kotlin\n// Does not work: the reference does not change\nval items = remember { mutableStateOf(mutableListOf<Item>()) }\nitems.value.add(item)            // the screen will not redraw\n\n// Works:\nval items = remember { mutableStateListOf<Item>() }\nitems.add(item)\n\n// Or replacing the list wholesale:\nvar list by remember { mutableStateOf(emptyList<Item>()) }\nlist = list + item\n```",
+  "explanation": "There are two solutions: `mutableStateListOf()`, an observable list, or replacing the list wholesale (`list = list + item`). Exactly the same trap as with `OnPush` in Angular."
+ },
+ {
+  "id": "cmp-box-row-column",
+  "topic": "compose",
+  "subtopic": "layout",
+  "question": "How do `Box`, `Row` and `Column` differ from their View counterparts?",
+  "answer": "They are composable functions rather than View classes: they create no View hierarchy objects and cost almost nothing in terms of nesting.",
+  "example": "```kotlin\nColumn {                          // creates no View objects\n    Row(verticalAlignment = Alignment.CenterVertically) {\n        Avatar()\n        Spacer(Modifier.width(8.dp))\n        Text(user.name)\n    }\n    Box(contentAlignment = Alignment.Center) { Badge() }\n}\n```",
+  "explanation": "That is why Compose has no “the hierarchy is too deep” problem: measurement is single-pass, and nesting does not hit performance the way it does with Views."
+ },
+ {
+  "id": "cmp-intrinsic-measurements",
+  "topic": "compose",
+  "subtopic": "layout",
+  "question": "Why is measurement in Compose single-pass?",
+  "answer": "A child is measured exactly once — which guarantees linear complexity instead of the exponential behaviour of nested weighted `LinearLayout`s.",
+  "example": "```kotlin\nRow(Modifier.height(IntrinsicSize.Min)) {   // an extra measurement pass\n    Divider(Modifier.fillMaxHeight().width(1.dp))\n    Text(\"Text\")\n}\n// The ordinary case gets by with a single pass — that is what makes Compose faster than Views\n```",
+  "explanation": "When you need a sibling's size there is `IntrinsicSize`, but it costs an extra pass — so it is not overused."
+ },
+ {
+  "id": "cmp-compose-vs-view",
+  "topic": "compose",
+  "subtopic": "the basics",
+  "question": "What would you name as Compose's main advantage in an interview?",
+  "answer": "A single source of truth: the screen is a function of the state. A whole class of “the state changed but somebody forgot to update the View” bugs disappears, there is less code, and reuse is simpler.",
+  "example": "```kotlin\n// A single source of truth: the screen is a function of the state\n@Composable\nfun Profile(state: UiState) = when (state) {\n    UiState.Loading -> Spinner()\n    is UiState.Content -> Content(state.user)\n    is UiState.Error -> Error(state.message)\n}\n// “The state changed but the View was not updated” cannot happen\n```",
+  "explanation": "The honest downsides are worth naming too: APK size, the learning curve, and having to understand type stability for the sake of performance."
+ },
+ {
+  "id": "cmp-slot-api",
+  "topic": "compose",
+  "subtopic": "patterns",
+  "question": "What is the slot API in Compose?",
+  "answer": "The technique where a composable takes not data but a content lambda (`content: @Composable () -> Unit`) and decides only where to place it.",
+  "example": "```kotlin\n@Composable\nfun Card(\n    modifier: Modifier = Modifier,\n    header: @Composable () -> Unit,\n    content: @Composable () -> Unit,     // the component decides where, the caller what\n) {\n    Column(modifier) {\n        header()\n        content()\n    }\n}\n```",
+  "explanation": "`Scaffold`, `Card` and `Button` are built this way. It is the counterpart of content projection: the component owns the placement, the caller owns the content."
+ },
+ {
+  "id": "cmp-scaffold",
+  "topic": "compose",
+  "subtopic": "patterns",
+  "question": "What does `Scaffold` give you?",
+  "answer": "A ready-made Material screen skeleton: slots for a top bar, a bottom bar, a FAB and a snackbar, plus correct insets through the `PaddingValues` handed to `content`.",
+  "example": "```kotlin\nScaffold(\n    topBar = { TopAppBar(title = { Text(\"Profile\") }) },\n    floatingActionButton = { FloatingActionButton({}) { Icon(Icons.Default.Add, null) } },\n) { padding ->\n    LazyColumn(Modifier.padding(padding)) { }   // the padding must not be ignored\n}\n```",
+  "explanation": "Ignoring the `paddingValues` you are given is the most common mistake: the content slides under the top bar."
+ },
+ {
+  "id": "cmp-state-in-viewmodel",
+  "topic": "compose",
+  "subtopic": "state",
+  "question": "Where should a screen's state live — in `remember` or in a ViewModel?",
+  "answer": "The state of a UI element (whether a block is expanded, the scroll position) belongs in `remember`. Screen state that survives a rotation and relates to the data belongs in a ViewModel.",
+  "example": "```kotlin\n@Composable\nfun Screen(viewModel: ScreenViewModel) {\n    val state by viewModel.state.collectAsStateWithLifecycle()   // the screen's data\n    var expanded by rememberSaveable { mutableStateOf(false) }   // an element's state\n}\n```",
+  "explanation": "The test: if the state has to be restored after a configuration change or comes from a repository, its place is in the ViewModel."
+ },
+ {
+  "id": "cmp-produce-state",
+  "topic": "compose",
+  "subtopic": "state",
+  "question": "What does `produceState` do?",
+  "answer": "It turns a non-Compose source (a callback, a suspend function) into a `State`: it launches a coroutine and lets you write into the value as the data arrives.",
+  "example": "```kotlin\nval user by produceState<User?>(initialValue = null, userId) {\n    value = repository.load(userId)      // a coroutine plus state in one call\n}\n```",
+  "explanation": "It is `LaunchedEffect` plus `remember { mutableStateOf(...) }` in a single call."
+ },
+ {
+  "id": "cmp-snapshot-flow",
+  "topic": "compose",
+  "subtopic": "state",
+  "question": "What is `snapshotFlow` for?",
+  "answer": "It turns a read of Compose state into a `Flow` — so that operators (`debounce`, `distinctUntilChanged`) can be applied to it or it can be collected in a coroutine.",
+  "example": "```kotlin\nLaunchedEffect(listState) {\n    snapshotFlow { listState.firstVisibleItemIndex }\n        .distinctUntilChanged()\n        .filter { it > items.size - 5 }\n        .collect { viewModel.loadNextPage() }\n}\n```",
+  "explanation": "The typical case is reacting to `listState.firstVisibleItemIndex` in order to load the next page."
+ },
+ {
+  "id": "cmp-remember-updated-state",
+  "topic": "compose",
+  "subtopic": "effects",
+  "question": "What is `rememberUpdatedState` for?",
+  "answer": "So that a long-lived effect sees the current value without restarting. `LaunchedEffect(Unit)` captures the lambda once, and without it a stale one would be called.",
+  "example": "```kotlin\n@Composable\nfun Timer(onTimeout: () -> Unit) {\n    val currentOnTimeout by rememberUpdatedState(onTimeout)\n\n    LaunchedEffect(Unit) {          // does not restart\n        delay(5_000)\n        currentOnTimeout()          // the freshest lambda is called\n    }\n}\n```",
+  "explanation": "The classic example is a timer that has to call the most recent `onTimeout` when it fires."
+ },
+ {
+  "id": "cmp-key-composable",
+  "topic": "compose",
+  "subtopic": "recomposition",
+  "question": "What does the `key()` function do in a composition?",
+  "answer": "It gives a piece of the composition an explicit identity: when the key changes, Compose treats it as new and recreates the state instead of reusing it.",
+  "example": "```kotlin\nColumn {\n    items.forEach { item ->\n        key(item.id) {              // an explicit identity\n            ItemRow(item)           // the state will not get mixed up on an insert\n        }\n    }\n}\n```",
+  "explanation": "It is needed wherever elements of the same kind follow one another and positional identity is misleading."
+ },
+ {
+  "id": "cmp-movable-content",
+  "topic": "compose",
+  "subtopic": "recomposition",
+  "question": "What is `movableContentOf` for?",
+  "answer": "It lets a piece of the composition be moved elsewhere in the tree while keeping its state — when a list goes from one column to two, for example.",
+  "example": "```kotlin\nval content = remember {\n    movableContentOf { Player(state) }   // the state survives the move\n}\n\nif (isWide) Row { content() } else Column { content() }\n```",
+  "explanation": "Without it, moving content resets `remember` and the animations."
+ },
+ {
+  "id": "cmp-custom-layout",
+  "topic": "compose",
+  "subtopic": "layout",
+  "question": "How do you write a custom layout?",
+  "answer": "The `Layout(content) { measurables, constraints -> }` composable: measure the children, compute the size, place them in `layout(w, h) { placeable.place(x, y) }`.",
+  "example": "```kotlin\n@Composable\nfun TwoColumn(content: @Composable () -> Unit) {\n    Layout(content) { measurables, constraints ->\n        val placeables = measurables.map { it.measure(constraints) }  // each one exactly once\n        layout(constraints.maxWidth, placeables.sumOf { it.height }) {\n            var y = 0\n            placeables.forEach { it.place(0, y); y += it.height }\n        }\n    }\n}\n```",
+  "explanation": "The rule: every child is measured exactly once, otherwise Compose throws — that is what guarantees the single pass."
+ },
+ {
+  "id": "cmp-subcompose-layout",
+  "topic": "compose",
+  "subtopic": "layout",
+  "question": "When do you need `SubcomposeLayout`, and what is wrong with it?",
+  "answer": "When which children exist depends on the measurement of others (`LazyColumn`, `BoxWithConstraints`). What is wrong with it is that composition happens during measurement and costs more than usual.",
+  "example": "```kotlin\nBoxWithConstraints {                 // a SubcomposeLayout inside\n    if (maxWidth > 600.dp) TwoPane() else SinglePane()\n}\n// Composition during measurement: expensive in a hot spot\n```",
+  "explanation": "Using it in a hot spot is a sure way to get dropped frames."
+ },
+ {
+  "id": "cmp-box-with-constraints",
+  "topic": "compose",
+  "subtopic": "layout",
+  "question": "What does `BoxWithConstraints` give you?",
+  "answer": "Access to the parent's constraints (`maxWidth`, `maxHeight`) at composition time — so you can pick a different layout for a given width.",
+  "example": "```kotlin\nBoxWithConstraints {\n    when {\n        maxWidth < 400.dp -> CompactList()\n        else -> Grid(columns = 2)\n    }\n}\n```",
+  "explanation": "It uses a `SubcomposeLayout` internally, so for adaptivity it is better to rely on window size classes at the screen level."
+ },
+ {
+  "id": "cmp-window-size-classes",
+  "topic": "compose",
+  "subtopic": "layout",
+  "question": "What are window size classes?",
+  "answer": "Standard categories of window width and height (compact / medium / expanded) that you choose a layout by — instead of checking the screen diagonal or the orientation.",
+  "example": "```kotlin\nval sizeClass = calculateWindowSizeClass(activity)\n\nwhen (sizeClass.widthSizeClass) {\n    WindowWidthSizeClass.Compact -> ListOnly()\n    else -> ListDetail()          // correct in multi-window mode too\n}\n```",
+  "explanation": "They behave correctly in multi-window mode and on foldables, where “tablet” and “phone” stop being reliable notions."
+ },
+ {
+  "id": "cmp-modifier-node",
+  "topic": "compose",
+  "subtopic": "modifiers",
+  "question": "Why is `Modifier.Node` better than `Modifier.composed`?",
+  "answer": "`composed` creates a composition for every application of the modifier and prevents it being reused. `Modifier.Node` is a low-level API with no composition and is noticeably cheaper.",
+  "example": "```kotlin\n// Cheap: no composition per application\nprivate class BorderNode(var color: Color) : DrawModifierNode, Modifier.Node() {\n    override fun ContentDrawScope.draw() {\n        drawContent()\n        drawRect(color, style = Stroke(2f))\n    }\n}\n\n// Modifier.composed { } would create a composition for every item in a list\n```",
+  "explanation": "This matters for libraries and for modifiers applied inside lists."
+ },
+ {
+  "id": "cmp-draw-modifiers",
+  "topic": "compose",
+  "subtopic": "rendering",
+  "question": "How does `drawBehind` differ from `drawWithContent` and `graphicsLayer`?",
+  "answer": "`drawBehind` paints beneath the content, `drawWithContent` gives control over the order (`drawContent()`), and `graphicsLayer` changes transformations and alpha on a separate layer.",
+  "example": "```kotlin\nBox(Modifier.drawBehind { drawCircle(Color.Red) })          // beneath the content\n\nBox(Modifier.drawWithContent {\n    drawContent()\n    drawRect(Color.Black.copy(alpha = 0.3f))                 // on top\n})\n\nBox(Modifier.graphicsLayer { alpha = progress })            // a separate layer\n```",
+  "explanation": "Animating through `graphicsLayer` with a lambda pays off: the state is read during the drawing phase and no recomposition happens at all."
+ },
+ {
+  "id": "cmp-animate-as-state",
+  "topic": "compose",
+  "subtopic": "animation",
+  "question": "What levels of animation API does Compose have?",
+  "answer": "`animate*AsState` for a single value; `updateTransition` for several values of one transition; `Animatable` for imperative control with cancellation; `AnimatedVisibility` and `animateContentSize` for ready-made scenarios.",
+  "example": "```kotlin\nval alpha by animateFloatAsState(if (visible) 1f else 0f)   // a single value\n\nval transition = updateTransition(state)                     // several at once\nval color by transition.animateColor { if (it) Color.Red else Color.Gray }\n\nAnimatedVisibility(visible) { Content() }\n```",
+  "explanation": "For animating between screens there is `AnimatedContent`, and for lists `animateItem` in the Lazy components."
+ },
+ {
+  "id": "cmp-gestures",
+  "topic": "compose",
+  "subtopic": "gestures",
+  "question": "How do you handle gestures in Compose?",
+  "answer": "With ready-made modifiers (`clickable`, `draggable`, `scrollable`, `transformable`) or with the low-level `pointerInput` plus `detectTapGestures`/`detectDragGestures`.",
+  "example": "```kotlin\nBox(Modifier.pointerInput(itemId) {          // the key is mandatory\n    detectTapGestures(\n        onTap = { onOpen(itemId) },\n        onLongPress = { onMenu(itemId) },\n    )\n})\n```",
+  "explanation": "`pointerInput` takes keys just like `LaunchedEffect`: without them the lambda captures stale values."
+ },
+ {
+  "id": "cmp-nested-scroll",
+  "topic": "compose",
+  "subtopic": "gestures",
+  "question": "What problem does `nestedScroll` solve?",
+  "answer": "Coordinating the scrolling of nested areas: a collapsing top bar, for example, has to “eat” part of the list's scroll.",
+  "example": "```kotlin\nval behavior = TopAppBarDefaults.enterAlwaysScrollBehavior()\n\nScaffold(\n    modifier = Modifier.nestedScroll(behavior.nestedScrollConnection),\n    topBar = { TopAppBar(title = { Text(\"A list\") }, scrollBehavior = behavior) },\n) { padding -> LazyColumn(Modifier.padding(padding)) { } }\n```",
+  "explanation": "Without it the nested list and the outer container scroll independently and fight each other."
+ },
+ {
+  "id": "cmp-focus",
+  "topic": "compose",
+  "subtopic": "input",
+  "question": "How do you control focus and the keyboard?",
+  "answer": "A `FocusRequester` moves focus, `focusable`/`onFocusChanged` react to it, and `LocalSoftwareKeyboardController` and `LocalFocusManager` hide the keyboard or leave a field.",
+  "example": "```kotlin\nval focusRequester = remember { FocusRequester() }\nval keyboard = LocalSoftwareKeyboardController.current\n\nLaunchedEffect(Unit) { focusRequester.requestFocus() }   // not in the composable's body\n\nTextField(\n    value = query,\n    onValueChange = { query = it },\n    modifier = Modifier.focusRequester(focusRequester),\n    keyboardActions = KeyboardActions(onSearch = { keyboard?.hide() }),\n)\n```",
+  "explanation": "`FocusRequester.requestFocus()` throws if called before the node is attached to the tree — which is why it is called from a `LaunchedEffect`."
+ },
+ {
+  "id": "cmp-text-field-state",
+  "topic": "compose",
+  "subtopic": "input",
+  "question": "What is the catch with a `TextField`'s state?",
+  "answer": "It is fully controlled: it shows whatever you pass in `value`. If the change from `onValueChange` is not stored, the field looks as though it refuses to accept typing.",
+  "example": "```kotlin\nvar query by remember { mutableStateOf(\"\") }\n\nTextField(\n    value = query,\n    onValueChange = { query = it },   // without this line the field accepts no text\n)\n```",
+  "explanation": "Updating the value asynchronously (over the network or through a debounce) breaks the cursor position — for that there are variants with `TextFieldValue` and a field state object."
+ },
+ {
+  "id": "cmp-compose-lifecycle",
+  "topic": "compose",
+  "subtopic": "the basics",
+  "question": "What is the lifecycle of a composition?",
+  "answer": "Entering the composition → recompositions as the inputs change → leaving the composition. This is not the Activity lifecycle: a composable may leave and come back many times.",
+  "example": "```kotlin\n@Composable\nfun Screen(visible: Boolean) {\n    if (visible) {\n        DisposableEffect(Unit) {\n            onDispose { }      // leaving the composition, not destroying the Activity\n        }\n        Content()\n    }\n}\n```",
+  "explanation": "`LaunchedEffect` and `DisposableEffect` are what tie work to that cycle."
+ },
+ {
+  "id": "cmp-readonly-composable",
+  "topic": "compose",
+  "subtopic": "performance",
+  "question": "What does `@ReadOnlyComposable` mean?",
+  "answer": "The function reads the composition (a `CompositionLocal`, say) but adds nothing to it — so the compiler can generate cheaper code.",
+  "example": "```kotlin\nval colors: ColorScheme\n    @Composable @ReadOnlyComposable get() = LocalColorScheme.current\n```",
+  "explanation": "`MaterialTheme.colorScheme` and similar accessors are marked this way."
+ },
+ {
+  "id": "cmp-compose-metrics",
+  "topic": "compose",
+  "subtopic": "performance",
+  "question": "How do you find out why a composable is recomposing?",
+  "answer": "The Compose compiler reports (`compiler metrics`) show which functions are skippable and which parameters are unstable. Layout Inspector counts recompositions in real time.",
+  "example": "```kotlin\n// build.gradle.kts\ncomposeCompiler {\n    reportsDestination = layout.buildDirectory.dir(\"compose_reports\")\n    metricsDestination = layout.buildDirectory.dir(\"compose_metrics\")\n}\n// The report shows: skippable / restartable, and which parameters are unstable\n```",
+  "explanation": "The usual causes are unstable parameters (`List`, interfaces), freshly allocated lambdas, and reading state too high up the tree."
+ },
+ {
+  "id": "cmp-strong-skipping",
+  "topic": "compose",
+  "subtopic": "performance",
+  "question": "What did strong skipping mode change?",
+  "answer": "Compose began skipping composables even with unstable parameters, comparing them by reference, and remembering lambdas automatically.",
+  "example": "```kotlin\n// A stable collection used to be required:\n@Composable fun List(users: ImmutableList<User>) { }\n\n// With strong skipping a plain List is skipped too — compared by reference\n@Composable fun List(users: List<User>) { }\n```",
+  "explanation": "It takes away part of the pain around stability but does not abolish it: immutable models are still more predictable."
+ },
+ {
+  "id": "cmp-lazy-layouts",
+  "topic": "compose",
+  "subtopic": "lists",
+  "question": "What other lazy containers are there besides `LazyColumn`?",
+  "answer": "`LazyRow`, `LazyVerticalGrid`, `LazyHorizontalGrid`, `LazyVerticalStaggeredGrid`, plus `stickyHeader` inside a Lazy scope.",
+  "example": "```kotlin\nLazyVerticalGrid(columns = GridCells.Adaptive(120.dp)) {\n    items(photos, key = { it.id }) { Photo(it) }\n}\n\nLazyColumn {\n    stickyHeader { Header() }\n    items(items, key = { it.id }) { Row(it) }\n}\n```",
+  "explanation": "They all share the same contract: `key` for identity and `contentType` for reuse."
+ },
+ {
+  "id": "cmp-lazy-scope",
+  "topic": "compose",
+  "subtopic": "lists",
+  "question": "Why can you not wrap `items` in an ordinary `if` with a loop?",
+  "answer": "`LazyListScope` is not a composable context: its block is called to describe the items, not to draw them. Composable functions and `remember` cannot be used inside it.",
+  "example": "```kotlin\nLazyColumn {\n    // val state = remember { }    // error: there is no composition here yet\n    items(users, key = { it.id }) { user ->\n        val expanded = remember { mutableStateOf(false) }   // here it is allowed\n        UserRow(user, expanded)\n    }\n}\n```",
+  "explanation": "An item's state is declared inside the `item { }`, where a composition is already in effect."
+ },
+ {
+  "id": "cmp-padding-values",
+  "topic": "compose",
+  "subtopic": "layout",
+  "question": "How does a list's `contentPadding` differ from `Modifier.padding`?",
+  "answer": "`contentPadding` adds padding inside the scrollable area — items slide underneath it as you scroll. `Modifier.padding` shrinks the area itself.",
+  "example": "```kotlin\nLazyColumn(\n    contentPadding = PaddingValues(bottom = 88.dp),   // items slide under the padding\n) { }\n\n// Modifier.padding would shrink the scrollable area itself\n```",
+  "explanation": "For lists sitting under system bars, `contentPadding` is the right choice."
+ },
+ {
+  "id": "cmp-composition-local-provider",
+  "topic": "compose",
+  "subtopic": "DI",
+  "question": "How do you supply your own value through a `CompositionLocal`?",
+  "answer": "Create a `compositionLocalOf`/`staticCompositionLocalOf` and wrap the subtree in `CompositionLocalProvider(Local provides value)`.",
+  "example": "```kotlin\nval LocalUser = staticCompositionLocalOf<User> { error(\"no user\") }\n\nCompositionLocalProvider(LocalUser provides user) {\n    Screen()   // when it changes, the whole subtree recomposes\n}\n```",
+  "explanation": "`staticCompositionLocalOf` does not track reads: a change recomposes the entire subtree, but reading it is free. For rarely changing values it is preferable."
+ },
+ {
+  "id": "cmp-compose-events",
+  "topic": "compose",
+  "subtopic": "patterns",
+  "question": "How do you show a one-off event (a snackbar, a navigation) in Compose?",
+  "answer": "Either as part of the state, to be “consumed” afterwards, or through a channel/`SharedFlow` collected in a `LaunchedEffect`.",
+  "example": "```kotlin\n// A one-off event is not state\nLaunchedEffect(Unit) {\n    viewModel.events.collect { event ->\n        when (event) {\n            is Event.ShowMessage -> snackbarHostState.showSnackbar(event.text)\n            is Event.NavigateBack -> navController.popBackStack()\n        }\n    }\n}\n```",
+  "explanation": "Keeping a one-off event in a `StateFlow` is dangerous: after a rotation it arrives again and the snackbar shows a second time."
+ },
+ {
+  "id": "cmp-compose-multiplatform",
+  "topic": "compose",
+  "subtopic": "the ecosystem",
+  "question": "How does Compose Multiplatform differ from Jetpack Compose?",
+  "answer": "Jetpack Compose is Google's Android implementation. Compose Multiplatform is JetBrains' layer on top, carrying the same API to iOS, desktop and the web.",
+  "example": "```kotlin\n// commonMain — the very same code on Android, iOS and desktop\n@Composable\nfun Profile(user: User) {\n    Column { Text(user.name) }\n}\n\n// Platform-specific things go through expect/actual\nexpect fun openUrl(url: String)\n```",
+  "explanation": "The UI code and the logic stay shared; platform APIs still require `expect/actual`."
+ },
+ {
+  "id": "cmp-compose-bom",
+  "topic": "compose",
+  "subtopic": "the ecosystem",
+  "question": "What is the Compose BOM for?",
+  "answer": "It pins a consistent set of versions for every Compose artifact in a single line — the runtime, UI, Material and compiler versions have to be compatible.",
+  "example": "```kotlin\ndependencies {\n    val bom = platform(\"androidx.compose:compose-bom:2024.09.00\")\n    implementation(bom)\n    androidTestImplementation(bom)\n\n    implementation(\"androidx.compose.ui:ui\")            // versions come from the BOM\n    implementation(\"androidx.compose.material3:material3\")\n}\n```",
+  "explanation": "Pinning mismatched versions by hand is the classic cause of `NoSuchMethodError` crashes at startup."
+ },
+ {
+  "id": "cmp-compose-testing-sync",
+  "topic": "compose",
+  "subtopic": "testing",
+  "question": "Why does a Compose test hang on an animation?",
+  "answer": "The test rules synchronise with the composition and wait for it to go idle; an endless animation never reaches a resting state.",
+  "example": "```kotlin\n@Test\nfun `an animation does not hang the test`() {\n    rule.mainClock.autoAdvance = false\n    rule.setContent { Screen() }\n\n    rule.mainClock.advanceTimeBy(500)\n    rule.onNodeWithTag(\"banner\").assertIsDisplayed()\n}\n```",
+  "explanation": "The cure is `mainClock.autoAdvance = false` with manual time advancement."
+ },
+ {
+  "id": "cmp-recomposition-loop",
+  "topic": "compose",
+  "subtopic": "recomposition",
+  "question": "Where does an infinite recomposition come from?",
+  "answer": "From writing to state right in the body of a composable: the write triggers a recomposition, which performs the write again.",
+  "example": "```kotlin\n@Composable\nfun Broken(items: List<Item>) {\n    var count by remember { mutableStateOf(0) }\n    count = items.size          // a write in the body — infinite recomposition\n}\n\n@Composable\nfun Fixed(items: List<Item>) {\n    val count = items.size      // just a computation\n}\n```",
+  "explanation": "State may be changed only in effects and event handlers. The same rule as “do not write to a signal inside a computed” in Angular."
+ }
+]

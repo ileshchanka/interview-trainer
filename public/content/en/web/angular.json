@@ -1,0 +1,704 @@
+[
+ {
+  "id": "ng-standalone",
+  "topic": "angular",
+  "subtopic": "components",
+  "question": "What is a standalone component, and what did it change?",
+  "answer": "A component that declares its own dependencies in `imports` and needs no `NgModule`. Since Angular 19 this is the default behaviour.",
+  "example": "```ts\n@Component({\n  selector: 'app-card',\n  imports: [DatePipe, RouterLink], // the component declares its dependencies itself\n  template: `<a [routerLink]=\"link\">{{ date | date }}</a>`,\n})\nexport class CardComponent {}\n```\n\nThe application boots without a root module:\n\n```ts\nbootstrapApplication(AppComponent, {\n  providers: [provideRouter(routes), provideHttpClient()],\n});\n```",
+  "explanation": "The consequences: the dependency tree is visible right in the component, lazy loading can be done per component (`loadComponent`), and `NgModule` survives only for compatibility with older code."
+ },
+ {
+  "id": "ng-component-lifecycle",
+  "topic": "angular",
+  "subtopic": "components",
+  "question": "List the main lifecycle hooks in the order they are called.",
+  "answer": "`ngOnChanges` → `ngOnInit` → `ngDoCheck` → `ngAfterContentInit` → `ngAfterContentChecked` → `ngAfterViewInit` → `ngAfterViewChecked` → `ngOnDestroy`.",
+  "example": "```ts\n@Component({ selector: 'app-demo', template: '<ng-content />' })\nexport class DemoComponent implements OnChanges, OnInit, AfterViewInit, OnDestroy {\n  ngOnChanges(changes: SimpleChanges) {} // on every input change, before ngOnInit\n  ngOnInit() {}                          // once, the inputs are already set\n  ngDoCheck() {}                         // every check cycle — keep it cheap\n  ngAfterContentInit() {}                // the projected content is ready\n  ngAfterViewInit() {}                   // the own template and viewChild are ready\n  ngOnDestroy() {}                       // unsubscribing and cleanup\n}\n```\n\nThe Content hooks come before the View ones: the content from outside is ready first, then the own template.",
+  "explanation": "`ngOnChanges` is called before `ngOnInit` and then on every change of the input properties. `ngAfterViewInit` is the first moment when the child view elements are available. The modern alternative to some of the hooks is `effect()` and `afterNextRender()`."
+ },
+ {
+  "id": "ng-constructor-vs-ngoninit",
+  "topic": "angular",
+  "subtopic": "components",
+  "question": "How does the constructor differ from `ngOnInit`?",
+  "answer": "The constructor runs when the class is created, while the input properties are not yet set. `ngOnInit` runs after the inputs are first set, which is where initialisation depending on an `@Input` belongs.",
+  "example": "```ts\n@Component({ selector: 'app-user', template: '' })\nexport class UserComponent implements OnInit {\n  userId = input.required<string>();\n  private readonly http = inject(HttpClient); // inject works only here\n\n  constructor() {\n    this.userId(); // error: the input is not set yet\n  }\n\n  ngOnInit() {\n    this.http.get(`/api/users/${this.userId()}`); // the input is in place\n  }\n}\n```\n\nWith signal inputs the hook is often unnecessary: `computed` and `effect`\nrecompute themselves once the value arrives.",
+  "explanation": "The constructor is used for dependency injection (or `inject()` in a field), not for logic."
+ },
+ {
+  "id": "ng-input-signal",
+  "topic": "angular",
+  "subtopic": "components",
+  "question": "How does `input()` differ from `@Input()`?",
+  "answer": "`input()` returns a read-only signal: the value is read by calling it, changes are tracked reactively, and `input.required<T>()` gives a requiredness check at the type level.",
+  "example": "```ts\n@Component({ selector: 'app-user', template: '{{ fullName() }}' })\nexport class UserComponent {\n  name = input.required<string>();          // omit it and the template fails to compile\n  age = input(0);                            // with a default, the type inferred as number\n  id = input<string, number>('', { transform: String }); // an input transform\n  label = input('', { alias: 'aria-label' });\n\n  fullName = computed(() => `${this.name()}, ${this.age()}`);\n}\n```\n\n`@Input()` needed an `ngOnChanges` or a setter to notice a change;\na signal input takes part in a `computed` directly.",
+  "explanation": "There is also `transform` for coercing the value (`input(false, { transform: booleanAttribute })`) and `model()` — two-way binding on signals."
+ },
+ {
+  "id": "ng-output-function",
+  "topic": "angular",
+  "subtopic": "components",
+  "question": "How does a component emit an event to the outside?",
+  "answer": "Through `output<T>()` (or the legacy `@Output() x = new EventEmitter<T>()`) and a call to `this.x.emit(value)`. The parent subscribes with the `(x)=\"handler($event)\"` syntax.",
+  "example": "```ts\n@Component({\n  selector: 'app-rating',\n  template: `<button (click)=\"rated.emit(5)\">Rate</button>`,\n})\nexport class RatingComponent {\n  rated = output<number>();               // no EventEmitter and no RxJS\n  closed = output<void>({ alias: 'close' });\n}\n```\n\n```html\n<app-rating (rated)=\"save($event)\" (close)=\"hide()\" />\n```\n\nThere is also `outputFromObservable(source$)` — for when the event already arrives as a stream.",
+  "explanation": "`output()` needs no manual unsubscription and is not an Observable — deliberately so: a component's events should not turn into a stream with history."
+ },
+ {
+  "id": "ng-content-projection",
+  "topic": "angular",
+  "subtopic": "components",
+  "question": "What is content projection, and how do you project into several slots?",
+  "answer": "`<ng-content>` inserts markup passed from outside. Several slots are separated by a selector: `<ng-content select=\"[header]\">`.",
+  "example": "```ts\n@Component({\n  selector: 'app-card',\n  template: `\n    <header><ng-content select=\"[card-title]\" /></header>\n    <div class=\"body\"><ng-content /></div>\n    <footer><ng-content select=\"app-actions\">No actions</ng-content></footer>\n  `,\n})\nexport class CardComponent {}\n```\n\n```html\n<app-card>\n  <h2 card-title>A heading</h2>\n  The body text lands in the slot without a select.\n</app-card>\n```\n\nThe slot without a `select` collects everything the others did not match, and belongs after them\nby intent. The content written inside `<ng-content>` is shown when the slot is empty.",
+  "explanation": "Projected content is created in the **parent's** context: its bindings and dependency injection come from there, not from the receiving component."
+ },
+ {
+  "id": "ng-viewchild-contentchild",
+  "topic": "angular",
+  "subtopic": "components",
+  "question": "How does `viewChild` differ from `contentChild`?",
+  "answer": "`viewChild` looks for an element in the component's own template, `contentChild` looks among the content projected through `ng-content`.",
+  "example": "```ts\n@Component({\n  selector: 'app-form',\n  template: `\n    <input #field />\n    <ng-content />\n  `,\n})\nexport class FormComponent {\n  field = viewChild.required<ElementRef<HTMLInputElement>>('field'); // its own template\n  items = viewChildren(ItemComponent);\n\n  projected = contentChild(ItemComponent); // came from outside through ng-content\n\n  focus() {\n    this.field().nativeElement.focus();\n  }\n}\n```\n\nSignal queries are available inside an `effect` already; with the old `@ViewChild` the value\nappeared only by `ngAfterViewInit`, and with `@ContentChild` by `ngAfterContentInit`.",
+  "explanation": "The signal versions (`viewChild()`, `contentChild()`) get rid of `static: true/false` and are available as ordinary signals."
+ },
+ {
+  "id": "ng-model-signal",
+  "topic": "angular",
+  "subtopic": "components",
+  "question": "What does `model()` do, and how does it differ from an `input()` + `output()` pair?",
+  "answer": "It creates a writable signal that is an input and an output at once: the component can change the value itself, and the parent hooks up with the `[(value)]` syntax. Underneath it is `value` plus `valueChange`.",
+  "example": "```ts\n@Component({\n  selector: 'app-counter',\n  template: `<button (click)=\"value.update((v) => v + 1)\">{{ value() }}</button>`,\n})\nexport class CounterComponent {\n  value = model.required<number>();  // read and written from inside\n  disabled = input(false);            // read-only\n}\n```\n\n```html\n<app-counter [(value)]=\"count\" />\n\n<!-- the same thing spelled out -->\n<app-counter [value]=\"count()\" (valueChange)=\"count.set($event)\" />\n```",
+  "explanation": "This replaces the old `@Input() x` + `@Output() xChange` for control components: dropdowns, toggles, input fields.\n\nDo not confuse it with `ngModel` from forms: `model()` does not make a component a form control — that still requires a `ControlValueAccessor`."
+ },
+ {
+  "id": "ng-destroy-ref",
+  "topic": "angular",
+  "subtopic": "components",
+  "question": "What is `DestroyRef`, and when is it handier than `ngOnDestroy`?",
+  "answer": "An injectable object with an `onDestroy(fn)` method. It lets you register cleanup from anywhere with an injection context — from a service, a function or a directive — without forcing the component to implement a hook.",
+  "example": "```ts\n@Component({ selector: 'app-x', template: '' })\nexport class XComponent {\n  private destroyRef = inject(DestroyRef);\n\n  constructor() {\n    const id = setInterval(tick, 1000);\n    this.destroyRef.onDestroy(() => clearInterval(id)); // right next to the creation\n  }\n}\n\n// a reusable function cleans up after itself\nexport function useResize(fn: (w: number) => void) {\n  const ro = new ResizeObserver(([e]) => fn(e.contentRect.width));\n  inject(DestroyRef).onDestroy(() => ro.disconnect());\n  return ro;\n}\n\n// takeUntilDestroyed outside a constructor needs an explicit reference\nsource$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe();\n```",
+  "explanation": "The main advantage is that cleanup is written where the resource is created rather than in a separate method at the bottom of the file, where it gets forgotten.\n\n`DestroyRef` is tied to the injector's scope: for a component that is its destruction, for a `providedIn: 'root'` service it is the destruction of the application."
+ },
+ {
+  "id": "ng-ngprojectas",
+  "topic": "angular",
+  "subtopic": "components",
+  "question": "What is `ngProjectAs` for?",
+  "answer": "To make an element land in a slot with a particular selector without actually matching it. You need it when the content is wrapped in an `ng-container` or produced by a structural directive and therefore does not match the slot's selector.",
+  "example": "```html\n<!-- the component's slot: <ng-content select=\"app-action\" /> -->\n\n<app-card>\n  <app-action>Save</app-action>\n\n  <!-- the wrapper breaks projection: an ng-container is not an app-action -->\n  @if (canDelete()) {\n    <app-action>Delete</app-action>\n  }\n\n  <!-- the fix -->\n  <ng-container ngProjectAs=\"app-action\">\n    @if (canDelete()) {\n      <app-action>Delete</app-action>\n    }\n  </ng-container>\n</app-card>\n```",
+  "explanation": "Projection is computed statically, from the markup at the usage site: Angular looks at the immediate children rather than at whatever ends up in the DOM once the conditions have run.\n\nHence a second consequence: the content of an `ng-content` is created even when the slot is not rendered. To avoid that, the slot is wrapped in an `@if` inside the component, or a template parameter is used instead."
+ },
+ {
+  "id": "ng-dynamic-components",
+  "topic": "angular",
+  "subtopic": "components",
+  "question": "How do you create a component programmatically?",
+  "answer": "Through `ViewContainerRef.createComponent()` — the component is inserted next to an anchor and lives in Angular's tree. The returned `ComponentRef` gives access to the instance, its inputs and its destruction.",
+  "example": "```ts\n@Component({ selector: 'app-host', template: '<ng-container #anchor />' })\nexport class HostComponent {\n  private anchor = viewChild.required('anchor', { read: ViewContainerRef });\n\n  show(type: Type<DialogComponent>) {\n    const ref = this.anchor().createComponent(type, {\n      injector: this.injector, // providers of your own can be slipped in\n    });\n\n    ref.setInput('title', 'Confirmation'); // works with signal inputs too\n    ref.instance.closed.subscribe(() => ref.destroy());\n    return ref;\n  }\n\n  clear() {\n    this.anchor().clear();\n  }\n}\n```",
+  "explanation": "`ComponentFactoryResolver` is no longer needed: with Ivy a component is created from its class directly, and the class itself is fetched by a dynamic `import()` — that keeps dynamic components out of the main bundle.\n\nDestroying what you created is your job: `destroy()` or `clear()`. For dialogs and tooltips people usually take the CDK Overlay — it also solves positioning, focus and closing on Escape."
+ },
+ {
+  "id": "ng-ng-template-container",
+  "topic": "angular",
+  "subtopic": "templates",
+  "question": "How does `ng-template` differ from `ng-container`?",
+  "answer": "`ng-template` is a fragment whose rendering is deferred: on its own it displays nothing until something instantiates it (`ngTemplateOutlet`, a structural directive). `ng-container` is a grouping element that leaves no markup in the DOM.",
+  "example": "```html\n<!-- ng-container: grouping without an extra div -->\n<ng-container *ngTemplateOutlet=\"row; context: { $implicit: user }\" />\n\n<!-- an ng-template renders nothing by itself -->\n<ng-template #row let-user>\n  <td>{{ user.name }}</td>\n</ng-template>\n\n<!-- an ng-template as a slot parameter of a component -->\n<app-table [rowTemplate]=\"row\" />\n\n<!-- ng-container is handy for grouping under an @if too -->\n@if (ready()) {\n  <ng-container>\n    <th>Name</th>\n    <th>Role</th>\n  </ng-container>\n}\n```\n\nAn `ng-container` disappears from the DOM, an `ng-template` is postponed until it is instantiated.",
+  "explanation": "`ng-container` is what you need when a directive or an `@if` has to be attached without adding an extra `div`."
+ },
+ {
+  "id": "ng-defer",
+  "topic": "angular",
+  "subtopic": "templates",
+  "question": "What does a `@defer` block do?",
+  "answer": "It postpones loading and rendering part of a template, along with its dependencies, until a trigger fires — `on viewport`, `on interaction`, `on idle`, `when condition`.",
+  "example": "```html\n@defer (on viewport) {\n  <app-heavy-chart [data]=\"data()\" />\n} @placeholder (minimum 300ms) {\n  <div class=\"skeleton\"></div>\n} @loading (after 100ms) {\n  <app-spinner />\n} @error {\n  <p>Failed to load</p>\n}\n\n@defer (on interaction; prefetch on idle) { <app-editor /> }\n@defer (when ready()) { <app-report /> }\n```\n\nThe block's dependencies move into a separate chunk, so a component used inside a `@defer`\nmust not also be used outside it in the same template — otherwise it lands in the main\nbundle and the whole point is lost.",
+  "explanation": "The `@placeholder`, `@loading` and `@error` blocks describe the intermediate states. This is lazy loading at the level of a template fragment rather than a route."
+ },
+ {
+  "id": "ng-control-flow",
+  "topic": "angular",
+  "subtopic": "templates",
+  "question": "Why is the built-in `@if`/`@for` better than `*ngIf`/`*ngFor`?",
+  "answer": "It is part of the template syntax rather than a directive: nothing has to be imported, it runs faster (a new list-diffing algorithm) and it supports `@empty`.",
+  "example": "```html\n@if (user(); as u) {\n  <span>{{ u.name }}</span>\n} @else if (loading()) {\n  <app-spinner />\n} @else {\n  <p>Nobody is here</p>\n}\n\n@for (item of items(); track item.id; let i = $index, last = $last) {\n  <li>{{ i }}: {{ item.name }}</li>\n} @empty {\n  <li>The list is empty</li>\n}\n\n@switch (status()) {\n  @case ('ready') { <app-ready /> }\n  @default { <app-idle /> }\n}\n```\n\nImporting `NgIf`/`NgForOf` is no longer necessary — this is template syntax.\n`track` in `@for` is mandatory, unlike the optional `trackBy`.",
+  "explanation": "`track` in `@for` is mandatory: without a correct key Angular recreates DOM nodes instead of reusing them, losing focus and state."
+ },
+ {
+  "id": "ng-trackby",
+  "topic": "angular",
+  "subtopic": "templates",
+  "question": "What is `track` in `@for` for?",
+  "answer": "So that Angular can match list items across renders by a stable key and reuse DOM nodes instead of recreating them.",
+  "example": "```html\n<!-- by a stable key: the nodes are reused -->\n@for (user of users(); track user.id) {\n  <input [value]=\"user.name\" />\n}\n\n<!-- by index: inserting at the front shifts everything and recreates the nodes -->\n@for (user of users(); track $index) {}\n```\n\nThe cost of getting it wrong shows on stateful elements: focus in an input, the scroll\nposition and a running animation are all lost when a node is recreated. For lists of\nprimitives the value itself can be the key — `track item`.",
+  "explanation": "`track $index` is appropriate only for a list with no reordering and no removals; in every other case you need the item's identifier."
+ },
+ {
+  "id": "ng-template-context-typing",
+  "topic": "angular",
+  "subtopic": "templates",
+  "question": "How do you type the context of an `ng-template`?",
+  "answer": "Through a static `ngTemplateContextGuard` field on the directive: it tells the compiler what type the `let-` variables have. Without it, under strict templates they get the type `any`.",
+  "example": "```ts\n@Directive({ selector: '[appRepeat]' })\nexport class RepeatDirective<T> {\n  items = input.required<T[]>({ alias: 'appRepeatOf' });\n\n  static ngTemplateContextGuard<T>(\n    dir: RepeatDirective<T>,\n    ctx: unknown,\n  ): ctx is { $implicit: T; index: number } {\n    return true;\n  }\n}\n```\n\n```html\n<div *appRepeat=\"let user of users; index as i\">\n  {{ user.name }} <!-- the type is User, not any -->\n</div>\n```\n\n```json\n{ \"angularCompilerOptions\": { \"strictTemplates\": true } }\n```",
+  "explanation": "`strictTemplates` turns on type checking inside templates: mismatched inputs, wrong pipe arguments, `$event`. Without it, markup errors are found only at runtime.\n\nA template passed into a component as an input is typed with `TemplateRef<Context>` — then `ngTemplateOutletContext` is checked as well."
+ },
+ {
+  "id": "ng-ngtemplateoutlet",
+  "topic": "angular",
+  "subtopic": "templates",
+  "question": "How do you pass a component a piece of markup with parameters?",
+  "answer": "Through a `TemplateRef` input and `ngTemplateOutlet` with a context. This is how configurable tables and lists are made: the component owns the logic, and the calling code decides how a row is drawn.",
+  "example": "```ts\n@Component({\n  selector: 'app-table',\n  imports: [NgTemplateOutlet],\n  template: `\n    @for (row of rows(); track row.id) {\n      <ng-container *ngTemplateOutlet=\"rowTemplate(); context: { $implicit: row, index: $index }\" />\n    }\n  `,\n})\nexport class TableComponent {\n  rows = input.required<Row[]>();\n  rowTemplate = input.required<TemplateRef<{ $implicit: Row; index: number }>>();\n}\n```\n\n```html\n<app-table [rows]=\"rows()\" [rowTemplate]=\"rowTpl\" />\n\n<ng-template #rowTpl let-row let-i=\"index\">\n  <td>{{ i }}: {{ row.name }}</td>\n</ng-template>\n```",
+  "explanation": "`$implicit` is the value for an unnamed `let-row`; the other context fields are taken by name (`let-i=\"index\"`).\n\nThe alternative is content projection: it is simpler but cannot pass data outwards. A template parameter is exactly what you need when the markup depends on the row of data."
+ },
+ {
+  "id": "ng-change-detection",
+  "topic": "angular",
+  "subtopic": "change detection",
+  "question": "How does change detection work in Angular?",
+  "answer": "Angular walks the component tree from the top down and compares the values of the template bindings with the previous ones. The walk is triggered by an asynchronous event (a click, a timer, an HTTP response) — either through zone.js or, in zoneless mode, by a change notification from a signal.",
+  "example": "```ts\n// zoneless: the walk is started not by intercepting setTimeout but by a signal notification\nbootstrapApplication(App, {\n  providers: [provideZonelessChangeDetection()],\n});\n\n@Component({\n  selector: 'app-counter',\n  template: '{{ count() }}',\n})\nexport class CounterComponent {\n  count = signal(0);\n\n  tick() {\n    this.count.update((c) => c + 1); // the signal reports that a check is needed\n  }\n}\n```\n\nWith zone.js the walk started after any asynchronous event and checked the whole\ntree; with signals Angular knows exactly which templates are affected.",
+  "explanation": "The check goes from the root to the leaves exactly once per cycle; in dev mode a second pass is added that catches `ExpressionChangedAfterItHasBeenCheckedError`."
+ },
+ {
+  "id": "ng-onpush",
+  "topic": "angular",
+  "subtopic": "change detection",
+  "question": "What does `ChangeDetectionStrategy.OnPush` change?",
+  "answer": "The component is no longer checked every time, but only when the reference in an input property changed, an event fired inside it, an `async` pipe emitted, a signal read in the template changed, or `markForCheck()` was called by hand.",
+  "example": "```ts\n@Component({\n  selector: 'app-row',\n  changeDetection: ChangeDetectionStrategy.OnPush,\n  template: '{{ user.name }} {{ counter() }}',\n})\nexport class RowComponent {\n  @Input() user!: User;      // mutating user.name will NOT trigger a re-render\n  counter = signal(0);       // changing the signal will\n\n  private cdr = inject(ChangeDetectorRef);\n\n  external(value: string) {\n    this.user = { ...this.user, name: value }; // a new reference — this works\n    this.cdr.markForCheck();                    // and this is needed for data from outside\n  }\n}\n```\n\nHence the rule about immutability: under OnPush you change the reference, not the object.",
+  "explanation": "Hence the requirement for immutable data: mutating an array without changing the reference will not re-render an `OnPush` component."
+ },
+ {
+  "id": "ng-expression-changed",
+  "topic": "angular",
+  "subtopic": "change detection",
+  "question": "Where does `ExpressionChangedAfterItHasBeenCheckedError` come from?",
+  "answer": "A binding's value changed after Angular had already checked it — usually from an `ngAfterViewInit` hook, or from a parent that a child modified. The error is thrown in dev mode only.",
+  "example": "```ts\n@Component({ selector: 'app-demo', template: '{{ label }}' })\nexport class DemoComponent implements AfterViewInit {\n  label = 'before';\n\n  ngAfterViewInit() {\n    this.label = 'after'; // Angular has already checked the binding → an error in dev mode\n  }\n}\n```\n\nThree usual cures:\n\n```ts\nngOnInit() { this.label = 'after'; }              // move it earlier\nqueueMicrotask(() => (this.label = 'after'));     // into the next cycle\nlabel = signal('before');                          // signals never produce this error\n```",
+  "explanation": "The cure is moving the change into an earlier hook, switching to signals or — as a last resort — an explicit `cdr.detectChanges()`."
+ },
+ {
+  "id": "ng-zone-js",
+  "topic": "angular",
+  "subtopic": "change detection",
+  "question": "What does zone.js do, and why is it being moved away from?",
+  "answer": "It patches the global asynchronous APIs (`setTimeout`, events, XHR) and tells Angular that something may have changed. It is being dropped because of its overhead, the needless checks of the whole tree and the opacity it brings to debugging.",
+  "example": "```ts\n// zone.js patches the asynchronous APIs at load time\nsetTimeout(() => {});           // in fact a ZoneAwareSetTimeout\nelement.addEventListener(...);  // this one too\n\n// stepping outside the zone so a check is not triggered on every frame\nconst zone = inject(NgZone);\nzone.runOutsideAngular(() => {\n  requestAnimationFrame(function loop() {\n    draw();\n    requestAnimationFrame(loop); // 60 tree walks a second — do not do this\n  });\n});\n\n// zoneless: zone.js is not loaded at all\nbootstrapApplication(App, { providers: [provideZonelessChangeDetection()] });\n```\n\nThis project is built zoneless — hence signals in the templates instead of mutable fields.",
+  "explanation": "Zoneless mode (`provideZonelessChangeDetection`) does without patching: Angular learns that a re-render is needed from signals, template events and `markForCheck`."
+ },
+ {
+  "id": "ng-markforcheck-vs-detectchanges",
+  "topic": "angular",
+  "subtopic": "change detection",
+  "question": "How does `markForCheck` differ from `detectChanges`?",
+  "answer": "`markForCheck` marks the component and all its ancestors as needing a check in the nearest cycle. `detectChanges` checks the subtree itself immediately and synchronously.",
+  "example": "```ts\nconst cdr = inject(ChangeDetectorRef);\n\ncdr.markForCheck();    // “check me and my ancestors in the next cycle” — asynchronous\ncdr.detectChanges();   // “check this subtree right now” — synchronous\n\ncdr.detach();          // disconnect the component from automatic checks\ncdr.reattach();\n\n// the typical use of detectChanges: data arrived outside Angular's zone\nzone.runOutsideAngular(() => {\n  socket.onmessage = (e) => {\n    this.data = JSON.parse(e.data);\n    zone.run(() => cdr.detectChanges());\n  };\n});\n```\n\n`detectChanges` in a loop is a common cause of slowness: it is not batched.",
+  "explanation": "`detach`/`reattach` let you exclude a subtree from checks altogether — a trick for very heavy lists."
+ },
+ {
+  "id": "ng-after-render",
+  "topic": "angular",
+  "subtopic": "change detection",
+  "question": "What are `afterRenderEffect` and `afterNextRender` for?",
+  "answer": "To run code that needs a ready DOM after rendering — measuring an element, initialising a third-party library. They do not run on the server and never cause `ExpressionChangedAfterItHasBeenChecked`.",
+  "example": "```ts\n@Component({ selector: 'app-chart', template: '<div #host></div>' })\nexport class ChartComponent {\n  private host = viewChild.required<ElementRef>('host');\n\n  constructor() {\n    afterNextRender(() => {\n      new ThirdPartyChart(this.host().nativeElement); // the DOM is ready, SSR is untouched\n    });\n\n    afterRenderEffect({\n      read: () => this.host().nativeElement.offsetWidth, // the read phase\n      write: (width) => this.resize(width),              // the write phase\n    });\n  }\n}\n```",
+  "explanation": "The split into read and write phases exists because of layout thrashing: Angular performs all the geometry reads first and all the writes afterwards, so the browser recomputes layout once.\n\nThis is the modern replacement for doing such work in `ngAfterViewInit` whenever real sizes and third-party libraries are involved: that hook also runs on the server, where the DOM is different."
+ },
+ {
+  "id": "ng-signals-basics",
+  "topic": "angular",
+  "subtopic": "signals",
+  "question": "What is a signal, and how does it differ from an Observable?",
+  "answer": "A signal is a container of a value that always has a current value and notifies its dependants when it changes. An Observable is a stream of events over time; it may have no current value and it requires a subscription.",
+  "example": "```ts\nconst count = signal(0);\ncount();          // 0 — a current value always exists, synchronously\ncount.set(1);\n\nconst stream$ = new Subject<number>();\nstream$.subscribe(console.log); // nothing: there has been no value yet\n\n// crossing between the worlds\nconst fromStream = toSignal(interval(1000), { initialValue: 0 });\nconst asStream$ = toObservable(count);\n```\n\nA signal answers “what is the value now”, an Observable answers “what happened”.\nFor state you take a signal; for events and request cancellation, a stream.",
+  "explanation": "Signals are synchronous and have no operators; RxJS remains for asynchronous streams — HTTP, events, cancellation and debouncing. The bridges between the worlds are `toSignal` and `toObservable`."
+ },
+ {
+  "id": "ng-computed",
+  "topic": "angular",
+  "subtopic": "signals",
+  "question": "How does `computed` work?",
+  "answer": "It returns a signal whose value is derived from other signals lazily and cached: recomputation happens only on a read, and only if the dependencies really changed.",
+  "example": "```ts\nconst first = signal('Anna');\nconst last = signal('Ivanova');\n\nlet calls = 0;\nconst full = computed(() => {\n  calls++;\n  return `${first()} ${last()}`;\n});\n\nfull(); // calls === 1\nfull(); // calls === 1 — the value is cached\nfirst.set('Maria');\nfull(); // calls === 2 — recomputed on the first read after the change\nfirst.set('Maria');\nfull(); // calls === 2 — the value is the same, dependants were not disturbed\n```\n\nDependencies are collected dynamically: an `if` branch that was not entered does not\nbecome a dependency.",
+  "explanation": "Dependencies are determined dynamically — from the reads that actually happened in the last computation. So an `if` branch can change the set of dependencies from call to call."
+ },
+ {
+  "id": "ng-effect",
+  "topic": "angular",
+  "subtopic": "signals",
+  "question": "What is `effect` for, and what should you avoid doing in it?",
+  "answer": "For side effects on signal changes: logging, synchronising with localStorage, imperative calls. Do not derive state in it — that is what `computed` is for.",
+  "example": "```ts\n@Component({ selector: 'app-theme', template: '' })\nexport class ThemeComponent {\n  theme = signal<'dark' | 'light'>('dark');\n\n  constructor() {\n    effect(() => {\n      localStorage.setItem('theme', this.theme()); // a side effect — appropriate\n    });\n\n    effect((onCleanup) => {\n      const id = setInterval(poll, this.interval());\n      onCleanup(() => clearInterval(id)); // on recomputation and on destruction\n    });\n  }\n\n  // do not do this: derived state belongs in a computed\n  // effect(() => this.fullName.set(this.first() + this.last()));\n}\n```\n\nWriting to a signal from an `effect` is forbidden by default — which saves you from loops.",
+  "explanation": "An effect is destroyed automatically along with its injection context, and `onCleanup` lets you undo the previous run. Writing to signals inside an effect is a source of loops that are hard to track down."
+ },
+ {
+  "id": "ng-untracked",
+  "topic": "angular",
+  "subtopic": "signals",
+  "question": "What is `untracked` for?",
+  "answer": "To read a signal without subscribing to it. Without it, any read inside a `computed`/`effect` becomes a dependency and causes needless recomputation.",
+  "example": "```ts\nconst query = signal('');\nconst page = signal(1);\n\nconst results = computed(() => {\n  const q = query();\n  const p = untracked(page); // read it, but do not restart when the page changes\n  return search(q, p);\n});\n\neffect(() => {\n  const value = this.form(); // this is what we subscribe to\n  untracked(() => this.logger.log(value)); // the logger may read other signals —\n  // they must not become dependencies of the effect\n});\n```\n\nA common cause of “the effect fires one time too many” is a signal read inside a called\nmethod: a dependency is recorded by the fact of the read, not by its position in the code.",
+  "explanation": "The typical case: an effect should react to A but along the way reads the current value of B."
+ },
+ {
+  "id": "ng-signal-update-set",
+  "topic": "angular",
+  "subtopic": "signals",
+  "question": "How does `set` differ from `update`?",
+  "answer": "`set(value)` writes a new value, `update(fn)` derives it from the current one. Both compare by reference and do not notify subscribers when the value has not changed.",
+  "example": "```ts\nconst items = signal<string[]>([]);\n\nitems.set(['a']);                     // a whole new value\nitems.update((list) => [...list, 'b']); // derived from the current one\n\nitems().push('c');   // the reference did not change — nobody finds out\n\n// the comparison is by reference, so for objects you create a new one\nconst user = signal({ name: 'Anna' });\nuser.update((u) => ({ ...u, name: 'Maria' }));\n\n// the comparison rule can be your own\nconst coords = signal({ x: 0 }, { equal: (a, b) => a.x === b.x });\n```",
+  "explanation": "Mutating the object inside a signal without changing the reference triggers no update — the same immutability requirement as with `OnPush`."
+ },
+ {
+  "id": "ng-tosignal",
+  "topic": "angular",
+  "subtopic": "signals",
+  "question": "What does `toSignal` do, and what is important to remember about it?",
+  "answer": "It turns an Observable into a signal, subscribing and unsubscribing itself according to the lifetime of the injection context. Until the first value arrives the signal returns `undefined` unless an `initialValue` is given.",
+  "example": "```ts\n@Component({ selector: 'app-users', template: '@for (u of users(); track u.id) { {{ u.name }} }' })\nexport class UsersComponent {\n  private http = inject(HttpClient);\n\n  users = toSignal(this.http.get<User[]>('/api/users'), { initialValue: [] });\n  // without initialValue the type would be User[] | undefined\n\n  // requireSync — when the source is definitely synchronous (a BehaviorSubject)\n  theme = toSignal(this.themeService.theme$, { requireSync: true });\n}\n```\n\nThe subscription follows the injection context, so `toSignal` has to be called in a class\nfield or in the constructor — otherwise an explicit `injector` is needed. Errors from the\nstream are rethrown when the signal is read.",
+  "explanation": "An error from the stream will be thrown when the signal is read — handle it with an operator inside the Observable itself."
+ },
+ {
+  "id": "ng-linked-signal",
+  "topic": "angular",
+  "subtopic": "signals",
+  "question": "What does `linkedSignal` do, and how does it differ from `computed`?",
+  "answer": "It is a writable signal that is recomputed from a source but allows a local write until the source changes again. A `computed` cannot be written to at all.",
+  "example": "```ts\n@Component({ selector: 'app-list', template: '' })\nexport class ListComponent {\n  items = input.required<Item[]>();\n\n  // the selection resets when the list changes, but the user can change it too\n  selected = linkedSignal(() => this.items()[0]);\n\n  // the extended form: the previous value is available\n  selectedKeepIfPossible = linkedSignal<Item[], Item | undefined>({\n    source: this.items,\n    computation: (items, previous) =>\n      items.find((i) => i.id === previous?.value?.id) ?? items[0],\n  });\n\n  select(item: Item) {\n    this.selected.set(item); // a computed cannot do this\n  }\n}\n```",
+  "explanation": "This answers a very common need — “the state is derived from an input, but the user may override it”: it used to be solved with an effect that wrote to a signal, with the attendant risk of loops and needless recomputation.\n\nThe rule for choosing is simple: derivation only — `computed`; derivation plus a local override — `linkedSignal`; a side effect — `effect`."
+ },
+ {
+  "id": "ng-resource",
+  "topic": "angular",
+  "subtopic": "signals",
+  "question": "What do `resource()` and `httpResource()` give you?",
+  "answer": "Asynchronous loading expressed in signals: the request is restarted when an input signal changes, and the state is available as `value()`, `status()`, `error()` and `isLoading()`. The previous request is cancelled automatically.",
+  "example": "```ts\n@Component({ selector: 'app-user', template: '' })\nexport class UserComponent {\n  userId = input.required<string>();\n\n  user = httpResource<User>(() => `/api/users/${this.userId()}`);\n  // when userId changes the earlier request is cancelled — like switchMap\n\n  custom = resource({\n    params: () => ({ id: this.userId() }),\n    loader: ({ params, abortSignal }) => fetchUser(params.id, abortSignal),\n  });\n\n  reload() {\n    this.user.reload();\n  }\n}\n```\n\n```html\n@if (user.isLoading()) { <app-spinner /> }\n@else if (user.error()) { <p>Error</p> }\n@else { <span>{{ user.value()?.name }}</span> }\n```",
+  "explanation": "This covers the most common scenario RxJS used to be kept in components for: “a parameter changed — reload the data and cancel the previous request”.\n\n`resource` is meant for reading. Mutations (POST, PUT) still go through `HttpClient`, followed by a `reload()`."
+ },
+ {
+  "id": "ng-di-basics",
+  "topic": "angular",
+  "subtopic": "DI",
+  "question": "How does Angular know what to inject into a constructor?",
+  "answer": "From the types of the parameters (through metadata the compiler emits) or from explicit tokens. The instances are created by the injector, not by the class itself.",
+  "example": "```ts\n@Injectable({ providedIn: 'root' })\nexport class UserService {}\n\n@Component({ selector: 'app-page', template: '' })\nexport class PageComponent {\n  private users = inject(UserService);        // the preferred form\n  constructor(private http: HttpClient) {}    // the old one, by parameter type\n}\n```\n\n`inject()` works only in an injection context: class fields, the constructor,\nprovider factories, guards and interceptors. Outside one there is `runInInjectionContext`.\nAn interface cannot be a token: types are erased at compile time.",
+  "explanation": "`inject()` does the same thing in function form and works in an injection context — a class field, a constructor, a provider factory."
+ },
+ {
+  "id": "ng-injector-hierarchy",
+  "topic": "angular",
+  "subtopic": "DI",
+  "question": "How is the injector hierarchy arranged?",
+  "answer": "Two trees: environment injectors (root → route injectors → component environments) and element injectors (following the component tree). The lookup goes from the current element up the element tree, then into the environment.",
+  "example": "```ts\n// environment: root → route providers → ...\nexport const routes: Routes = [\n  { path: 'admin', providers: [AdminService], loadChildren: () => import('./admin') },\n];\n\n// elements: an instance of its own per component\n@Component({\n  selector: 'app-tab',\n  providers: [TabState], // every <app-tab> gets its own TabState\n  template: '',\n})\nexport class TabComponent {}\n```\n\nThe lookup goes up the element tree to the root component, then into the tree of\nenvironment injectors. Found nowhere means `NullInjectorError: No provider for ...`.",
+  "explanation": "A provider declared in a component's `providers` creates a separate instance per component instance — that is how local state for a form or a list is done."
+ },
+ {
+  "id": "ng-provided-in-root",
+  "topic": "angular",
+  "subtopic": "DI",
+  "question": "What does `providedIn: 'root'` give you?",
+  "answer": "It registers the service in the root injector and makes it tree-shakable: if the service is never injected anywhere, it does not reach the bundle.",
+  "example": "```ts\n@Injectable({ providedIn: 'root' })\nexport class Analytics {} // injected nowhere — will not reach the bundle\n\n// this way the service is always in the bundle, even when it is not needed\nbootstrapApplication(App, { providers: [Analytics] });\n```\n\nThere is one instance per application. If you need an instance per component,\nthe provider is declared on the component itself:\n\n```ts\n@Component({ providers: [Analytics], selector: 'app-x', template: '' })\nexport class XComponent {}\n```",
+  "explanation": "Registration through a `providers` array gives no such optimisation — the bundler cannot prove the provider is unnecessary."
+ },
+ {
+  "id": "ng-provider-types",
+  "topic": "angular",
+  "subtopic": "DI",
+  "question": "What kinds of providers are there?",
+  "answer": "`useClass`, `useValue`, `useExisting` (an alias for another token), `useFactory` (with `deps`). A token can be a class or an `InjectionToken`.",
+  "example": "```ts\nproviders: [\n  UserService,                                    // shorthand for useClass\n  { provide: UserService, useClass: MockUserService },\n  { provide: API_URL, useValue: '/api' },\n  { provide: Logger, useExisting: ConsoleLogger }, // the same instance under another name\n  {\n    provide: HTTP_RETRIES,\n    useFactory: (config: Config) => (config.slow ? 5 : 1),\n    deps: [Config],\n  },\n  { provide: PLUGINS, useValue: pluginA, multi: true }, // multi collects an array\n];\n```\n\n`useExisting` aliases an existing provider, whereas `useClass` would create\na second instance.",
+  "explanation": "`multi: true` collects several providers of one token into an array — that is how interceptors and validators work."
+ },
+ {
+  "id": "ng-injection-token",
+  "topic": "angular",
+  "subtopic": "DI",
+  "question": "What is an `InjectionToken` for?",
+  "answer": "To inject things that have no class: configuration, a string, a function, an interface. Interfaces are erased at compile time and cannot be tokens.",
+  "example": "```ts\nexport interface AppConfig {\n  apiUrl: string;\n}\n\n// an interface cannot be a token — it is erased at compile time\nexport const APP_CONFIG = new InjectionToken<AppConfig>('application configuration', {\n  providedIn: 'root',\n  factory: () => ({ apiUrl: '/api' }), // a default, tree-shakable\n});\n\nconst config = inject(APP_CONFIG);\n```\n\n`PROGRESS_STORAGE` in this project is arranged the same way: the storage interface is\na token, the implementation is IndexedDB, and tests substitute a fake.",
+  "explanation": "A token with a factory (`new InjectionToken('X', { providedIn: 'root', factory: () => ... })`) is tree-shakable too."
+ },
+ {
+  "id": "ng-inject-flags",
+  "topic": "angular",
+  "subtopic": "DI",
+  "question": "What do the `optional`, `self`, `skipSelf` and `host` modifiers do?",
+  "answer": "`optional` returns `null` instead of throwing when there is no provider. `self` looks only in the current injector. `skipSelf` starts the search at the parent. `host` does not go above the component's host element.",
+  "example": "```ts\nconst logger = inject(Logger, { optional: true }); // Logger | null instead of an error\nconst own = inject(TabState, { self: true });      // this injector only\nconst parent = inject(TabState, { skipSelf: true }); // start at the parent\nconst host = inject(FormControl, { host: true });  // no higher than the host element\n\n// the classic trick: a recursive component that needs its parent's instance\n@Component({ selector: 'app-tree', providers: [TreeNode], template: '' })\nexport class TreeComponent {\n  private parent = inject(TreeComponent, { optional: true, skipSelf: true });\n}\n```\n\nWithout `skipSelf` the component would find its own provider and get itself.",
+  "explanation": "`skipSelf` together with `optional` is the classic way to catch a module being initialised twice."
+ },
+ {
+  "id": "ng-app-initializer",
+  "topic": "angular",
+  "subtopic": "DI",
+  "question": "How do you run asynchronous work before the application starts?",
+  "answer": "Through `provideAppInitializer`: the function runs before the root component is rendered, and if it returns a promise, Angular waits for it.",
+  "example": "```ts\nbootstrapApplication(App, {\n  providers: [\n    provideAppInitializer(async () => {\n      const config = await inject(ConfigService).load(); // the application waits\n      inject(FeatureFlags).apply(config.flags);\n    }),\n  ],\n});\n```\n\n```ts\n// the old form — through a multi provider of a token\n{\n  provide: APP_INITIALIZER,\n  useFactory: (c: ConfigService) => () => c.load(),\n  deps: [ConfigService],\n  multi: true,\n}\n```",
+  "explanation": "The typical use is loading configuration, the locale and feature flags before any component can read them.\n\nThe cost is direct: everything done here delays the first screen. If the data is not needed on every page, load it in a route resolver instead. An error in an initialiser prevents the application from starting at all — handling it is mandatory."
+ },
+ {
+  "id": "ng-environment-injector",
+  "topic": "angular",
+  "subtopic": "DI",
+  "question": "What are `runInInjectionContext` and `EnvironmentInjector` for?",
+  "answer": "To call `inject()` where there is no injection context: in a callback, an event handler or an asynchronous function. `EnvironmentInjector` is that context itself, which can be stored and used later.",
+  "example": "```ts\nexport class XComponent {\n  private injector = inject(EnvironmentInjector);\n\n  onClick() {\n    inject(Logger); // error: inject() outside an injection context\n\n    runInInjectionContext(this.injector, () => {\n      const logger = inject(Logger); // now it is allowed\n    });\n  }\n\n  // the same is needed for effect and toSignal outside a constructor\n  start() {\n    effect(() => console.log(this.value()), { injector: this.injector });\n  }\n}\n```",
+  "explanation": "An injection context exists only while a class is being created and inside provider factories: fields, the constructor, guards, interceptors, resolvers. Anything that runs later can no longer see it.\n\nMost often this comes up with `effect` and `toSignal` called from a method: they need the context for automatic unsubscription, so they are given an `injector` explicitly."
+ },
+ {
+  "id": "ng-forward-ref",
+  "topic": "angular",
+  "subtopic": "DI",
+  "question": "When do you need `forwardRef`?",
+  "answer": "When a reference to a class is required before it is declared: with a circular dependency between providers, or when a class refers to itself, as in `NG_VALUE_ACCESSOR`.",
+  "example": "```ts\n@Component({\n  selector: 'app-toggle',\n  providers: [\n    {\n      provide: NG_VALUE_ACCESSOR,\n      useExisting: forwardRef(() => ToggleComponent), // the class is not declared yet\n      multi: true,\n    },\n  ],\n  template: '',\n})\nexport class ToggleComponent {}\n\n// a circular dependency between two services\n@Injectable({ providedIn: 'root' })\nexport class A {\n  private b = inject(forwardRef(() => B));\n}\n```",
+  "explanation": "The reason is technical: a decorator is evaluated at the moment the class is declared, while the class name appears in scope only afterwards. `forwardRef` postpones the resolution until the actual injection.\n\nIn a component's `providers`, declared inside its own decorator, it is always needed. Elsewhere, needing `forwardRef` is usually a sign of a circular dependency that is better broken."
+ },
+ {
+  "id": "ng-lazy-loading",
+  "topic": "angular",
+  "subtopic": "routing",
+  "question": "How do you make a route lazy?",
+  "answer": "`loadComponent: () => import('./page').then(m => m.Page)` for a single component, or `loadChildren` for a set of routes. The bundler emits a separate chunk.",
+  "example": "```ts\nexport const routes: Routes = [\n  {\n    path: 'stats',\n    loadComponent: () => import('./features/stats/stats-page').then((m) => m.StatsPage),\n  },\n  {\n    path: 'admin',\n    canMatch: [adminGuard], // before the chunk is fetched: no rights, no download\n    loadChildren: () => import('./admin/routes').then((m) => m.ADMIN_ROUTES),\n  },\n];\n```\n\n`canActivate` would run only after the chunk had been downloaded, so to hide a section\nentirely people use `canMatch`. Preloading is configured separately:\n\n```ts\nprovideRouter(routes, withPreloading(PreloadAllModules));\n```",
+  "explanation": "Lazy loading is the only reliable way to keep the initial bundle small. The preloading strategy is set with `withPreloading(PreloadAllModules)`."
+ },
+ {
+  "id": "ng-route-guards",
+  "topic": "angular",
+  "subtopic": "routing",
+  "question": "What kinds of guard functions are there, and when does each one run?",
+  "answer": "`canActivate` before entering a route, `canActivateChild` before entering a child, `canDeactivate` before leaving, `canMatch` before the route is matched at all (and before its chunk is fetched), `resolve` loads data before activation.",
+  "example": "```ts\nexport const authGuard: CanActivateFn = (route, state) => {\n  const router = inject(Router);\n  return inject(Auth).isLoggedIn() || router.createUrlTree(['/login']);\n};\n\nexport const unsavedGuard: CanDeactivateFn<EditPage> = (component) =>\n  !component.dirty() || confirm('Leave without saving?');\n\nexport const userResolver: ResolveFn<User> = (route) =>\n  inject(HttpClient).get<User>(`/api/users/${route.paramMap.get('id')}`);\n```\n\nA guard returns a `boolean`, a `UrlTree` (a redirect) or an Observable/Promise of either.\nIn this project `syncTrackGuard` does exactly that: it switches the track and **waits**\nfor the content to load before letting the route through.",
+  "explanation": "`canMatch` is preferable to `canActivate` for guarding lazy routes: it prevents downloading a chunk the user has no access to. Modern guards are plain functions with `inject()`; the class-based ones are deprecated."
+ },
+ {
+  "id": "ng-route-params",
+  "topic": "angular",
+  "subtopic": "routing",
+  "question": "How do you read a route parameter, and why is `snapshot` sometimes not enough?",
+  "answer": "Through `route.paramMap` (an Observable) or `withComponentInputBinding()` — then the parameter arrives straight into an `input()`. `snapshot` is read once: navigating to the same route with a different parameter reuses the component, and the value goes stale.",
+  "example": "```ts\n// the shortest way: the parameter arrives as an input\nprovideRouter(routes, withComponentInputBinding());\n\n@Component({ selector: 'app-user', template: '' })\nexport class UserComponent {\n  id = input.required<string>();               // from /users/:id\n  user = computed(() => this.store.byId(this.id()));\n}\n```\n\n```ts\n// or as a stream — this survives navigation to the same route with another id\nprivate route = inject(ActivatedRoute);\nuser$ = this.route.paramMap.pipe(switchMap((p) => this.load(p.get('id')!)));\n\n// and this way the value goes stale: snapshot is read once, at creation\nconst id = this.route.snapshot.paramMap.get('id');\n```",
+  "explanation": "The same catch applies to `queryParamMap` and `data`."
+ },
+ {
+  "id": "ng-router-outlet-nested",
+  "topic": "angular",
+  "subtopic": "routing",
+  "question": "How do nested routes work?",
+  "answer": "Child routes are declared in `children` and rendered into a nested `<router-outlet>` of the parent component. The parent component is not recreated when navigating between its children.",
+  "example": "```ts\nexport const routes: Routes = [\n  {\n    path: 'settings',\n    component: SettingsLayout,   // not recreated when moving between children\n    children: [\n      { path: '', redirectTo: 'profile', pathMatch: 'full' },\n      { path: 'profile', component: ProfilePage },\n      { path: 'theme', component: ThemePage },\n    ],\n  },\n];\n```\n\n```html\n<!-- settings-layout.html -->\n<nav><a routerLink=\"profile\">Profile</a></nav>\n<router-outlet />\n```\n\n`pathMatch: 'full'` on an empty path is mandatory: without it the redirect loops,\nbecause any path matches the prefix.",
+  "explanation": "Named outlets (`outlet: 'sidebar'`) let you keep several independent routing areas."
+ },
+ {
+  "id": "ng-query-params",
+  "topic": "angular",
+  "subtopic": "routing",
+  "question": "How do you work with query parameters and keep them across navigations?",
+  "answer": "They are read through `route.queryParamMap` (or as inputs under `withComponentInputBinding`) and written through `router.navigate` with `queryParams`. To keep the existing ones use `queryParamsHandling: 'merge'` or `'preserve'`.",
+  "example": "```ts\n// reading it as a component input\nexport class ListComponent {\n  page = input(1, { transform: (v: string) => Number(v) || 1 });\n}\n\n// writing without reloading the component\nthis.router.navigate([], {\n  relativeTo: this.route,\n  queryParams: { page: 2 },\n  queryParamsHandling: 'merge', // the other parameters are kept\n  replaceUrl: true,             // do not clutter the browser history\n});\n```\n\n```html\n<a [routerLink]=\"['/items']\" [queryParams]=\"{ sort: 'name' }\" queryParamsHandling=\"merge\">\n  By name\n</a>\n```",
+  "explanation": "Query parameters are the right place for state that must survive a reload and be shareable by link: filters, the page, the sort order. State that need not be shared does not belong there — the URL becomes unreadable.\n\n`replaceUrl: true` matters for filters: otherwise the Back button rewinds one filter change at a time."
+ },
+ {
+  "id": "ng-router-events",
+  "topic": "angular",
+  "subtopic": "routing",
+  "question": "How do you track navigation and show a loading indicator?",
+  "answer": "Through the `router.events` stream, filtering by event classes: `NavigationStart`, `NavigationEnd`, `NavigationCancel`, `NavigationError`. It is important to handle more than the successful ending, otherwise the indicator gets stuck.",
+  "example": "```ts\nexport class AppComponent {\n  private router = inject(Router);\n\n  loading = toSignal(\n    this.router.events.pipe(\n      filter((e) => e instanceof NavigationStart || e instanceof NavigationEnd ||\n                    e instanceof NavigationCancel || e instanceof NavigationError),\n      map((e) => e instanceof NavigationStart),\n    ),\n    { initialValue: false },\n  );\n}\n```\n\n```ts\n// scroll restoration and anchors are configured by a provider\nprovideRouter(routes, withInMemoryScrolling({\n  scrollPositionRestoration: 'enabled',\n  anchorScrolling: 'enabled',\n}));\n```",
+  "explanation": "Forgetting `NavigationCancel` is the classic mistake: a guard returned `false` or a redirect, the navigation was cancelled, and the spinner keeps spinning forever.\n\nThe event stream is also used for analytics (a page view) and for the tab title — for the latter there is a ready-made `TitleStrategy` and a `title` field on the route."
+ },
+ {
+  "id": "ng-forms-comparison",
+  "topic": "angular",
+  "subtopic": "forms",
+  "question": "How do reactive forms differ from template-driven ones?",
+  "answer": "Reactive forms are described in the class, are synchronous, typed and easy to test. Template-driven ones are built by directives in the markup, update asynchronously and are convenient only for the simplest cases.",
+  "example": "```ts\n// reactive: described in the class, the value is available synchronously\nform = new FormGroup({\n  email: new FormControl('', { nonNullable: true, validators: [Validators.email] }),\n  age: new FormControl<number | null>(null),\n});\n\nthis.form.value;          // { email: string; age: number | null } — typed\nthis.form.controls.email.setValue('a@b.c');\n```\n\n```html\n<!-- template-driven: described in the markup, updated asynchronously -->\n<input [(ngModel)]=\"email\" name=\"email\" required email />\n```\n\n`nonNullable: true` matters: without it `reset()` returns `null` rather than an empty\nstring, and the type becomes `string | null`.",
+  "explanation": "Reactive forms give you an explicit model: validators, states and values are available without touching the DOM."
+ },
+ {
+  "id": "ng-form-control-state",
+  "topic": "angular",
+  "subtopic": "forms",
+  "question": "What states does a form control have?",
+  "answer": "`valid`/`invalid`, `pristine`/`dirty` (has the user changed the value), `touched`/`untouched` (has it been focused), `pending` (asynchronous validation in progress), `disabled`.",
+  "example": "```html\n@if (email.invalid && (email.dirty || email.touched)) {\n  <span>Check the address</span>\n}\n```\n\n```ts\nconst email = this.form.controls.email;\n\nemail.valid;    email.invalid;\nemail.pristine; email.dirty;     // has the user changed the value\nemail.touched;  email.untouched; // has it been focused and left\nemail.pending;                    // asynchronous validation in progress\nemail.disabled;                   // such a field will not appear in form.value\n\nemail.markAsTouched();            // show the errors when the form is submitted\nemail.setErrors({ server: 'taken' });\n```\n\nErrors are shown on `dirty || touched`, otherwise an empty form turns red immediately.",
+  "explanation": "An error is usually shown on `invalid && (dirty || touched)` — otherwise an empty form turns red the moment it opens."
+ },
+ {
+  "id": "ng-custom-validator",
+  "topic": "angular",
+  "subtopic": "forms",
+  "question": "How do you write your own validator?",
+  "answer": "A function `(control: AbstractControl) => ValidationErrors | null`. An asynchronous validator returns an Observable or a Promise of the same.",
+  "example": "```ts\nexport function noSpaces(control: AbstractControl): ValidationErrors | null {\n  return control.value?.includes(' ') ? { noSpaces: true } : null; // null means all good\n}\n\n// with a parameter — a factory\nexport const minAge = (min: number): ValidatorFn => (control) =>\n  control.value >= min ? null : { minAge: { min, actual: control.value } };\n\n// asynchronous\nexport const loginTaken: AsyncValidatorFn = (control) =>\n  inject(Api).checkLogin(control.value).pipe(map((busy) => (busy ? { taken: true } : null)));\n\nnew FormControl('', { validators: [noSpaces, minAge(18)], asyncValidators: [loginTaken] });\n```\n\nA validator on a group receives the `FormGroup` — that is how matching passwords are checked.",
+  "explanation": "A group-level validator receives the `FormGroup` and checks relations between fields — for example, that a password and its confirmation match."
+ },
+ {
+  "id": "ng-control-value-accessor",
+  "topic": "angular",
+  "subtopic": "forms",
+  "question": "What is `ControlValueAccessor` for?",
+  "answer": "So that a component of your own can be used in a form as an ordinary control: it implements writing the value (`writeValue`), reporting a change (`registerOnChange`), being touched, and being disabled.",
+  "example": "```ts\n@Component({\n  selector: 'app-toggle',\n  template: `<button (click)=\"toggle()\" [disabled]=\"disabled\">{{ value }}</button>`,\n  providers: [\n    { provide: NG_VALUE_ACCESSOR, useExisting: forwardRef(() => ToggleComponent), multi: true },\n  ],\n})\nexport class ToggleComponent implements ControlValueAccessor {\n  value = false;\n  disabled = false;\n  private onChange: (v: boolean) => void = () => {};\n  private onTouched = () => {};\n\n  writeValue(v: boolean) { this.value = v; }          // form → component\n  registerOnChange(fn: (v: boolean) => void) { this.onChange = fn; }\n  registerOnTouched(fn: () => void) { this.onTouched = fn; }\n  setDisabledState(is: boolean) { this.disabled = is; }\n\n  toggle() {\n    this.value = !this.value;\n    this.onChange(this.value);                         // component → form\n    this.onTouched();\n  }\n}\n```\n\nNow `<app-toggle formControlName=\"active\" />` works like any other control.",
+  "explanation": "It is registered through `NG_VALUE_ACCESSOR` with `multi: true` and `useExisting`."
+ },
+ {
+  "id": "ng-disabled-reactive",
+  "topic": "angular",
+  "subtopic": "forms",
+  "question": "Why can you not use `[disabled]` together with a reactive form?",
+  "answer": "The control's state is owned by the form: a `disabled` attribute in the template fights with it, and Angular logs a warning. The right way is `control.disable()` / `enable()`.",
+  "example": "```html\n<!-- a console warning: the attribute argues with the form -->\n<input [formControl]=\"email\" [disabled]=\"isLocked\" />\n```\n\n```ts\n// the right way — through the control itself\nthis.form.controls.email.disable();\nthis.form.controls.email.enable();\n\n// and remember: a disabled control drops out of value\nthis.form.value;        // there is no email field\nthis.form.getRawValue(); // here there is\n```\n\nReactively this is expressed with an effect:\n\n```ts\neffect(() => (this.locked() ? this.email.disable() : this.email.enable()));\n```",
+  "explanation": "A disabled control is excluded from `form.value` — for the complete snapshot there is `getRawValue()`."
+ },
+ {
+  "id": "ng-form-array",
+  "topic": "angular",
+  "subtopic": "forms",
+  "question": "How do you handle a dynamic list of fields in a reactive form?",
+  "answer": "Through a `FormArray`: items are added and removed at runtime, and in the template they are iterated over `controls` with the index given in `formGroupName`/`formControlName`.",
+  "example": "```ts\nform = new FormGroup({\n  title: new FormControl('', { nonNullable: true }),\n  tags: new FormArray<FormControl<string>>([]),\n});\n\naddTag() {\n  this.form.controls.tags.push(new FormControl('', { nonNullable: true }));\n}\n\nremoveTag(i: number) {\n  this.form.controls.tags.removeAt(i);\n}\n```\n\n```html\n<div formArrayName=\"tags\">\n  @for (control of form.controls.tags.controls; track $index) {\n    <input [formControlName]=\"$index\" />\n    <button (click)=\"removeTag($index)\">Remove</button>\n  }\n</div>\n```",
+  "explanation": "Tracking by `$index` is appropriate here precisely because the index *is* the control's name: `formControlName` is bound to the position in the array.\n\nRemoving items in a loop over ascending indices is a source of bugs: after `removeAt(i)` the rest shift down. Remove from the end, or rebuild the whole array from a filtered list."
+ },
+ {
+  "id": "ng-typed-forms",
+  "topic": "angular",
+  "subtopic": "forms",
+  "question": "What do typed forms give you, and what is `nonNullable` for?",
+  "answer": "The type of the form's value is derived from its structure: `form.value`, `controls` and `patchValue` are checked by the compiler. `nonNullable: true` removes `null` from the type and makes `reset()` return the initial value instead of `null`.",
+  "example": "```ts\nconst form = new FormGroup({\n  email: new FormControl('', { nonNullable: true }),\n  age: new FormControl<number | null>(null),\n});\n\nform.value;         // { email?: string; age?: number | null } — the fields are optional!\nform.getRawValue(); // { email: string; age: number | null }\n\nform.controls.email.reset();  // '' — thanks to nonNullable\nform.controls.age.reset();    // null\n\nform.patchValue({ emial: 'x' }); // a compile error: the typo is caught\n\n// a dynamic form whose keys are not known in advance\nconst dynamic = new FormRecord<FormControl<string>>({});\n```",
+  "explanation": "The fields in `form.value` are optional not by oversight: disabled controls drop out of the value. The complete object comes from `getRawValue()` — and that is what gets sent to the server.\n\nWithout `nonNullable` every control's type includes `null`, and you end up writing either `?? ''` everywhere or `!`. Setting the flag at creation is simpler — or building the form with `FormBuilder.nonNullable`."
+ },
+ {
+  "id": "ng-form-update-on",
+  "topic": "angular",
+  "subtopic": "forms",
+  "question": "What does the `updateOn` option do, and how does `valueChanges` differ from `statusChanges`?",
+  "answer": "`updateOn` sets when the value is updated and validation runs: `change` (the default), `blur` or `submit`. `valueChanges` is a stream of values, `statusChanges` a stream of validity states.",
+  "example": "```ts\nconst email = new FormControl('', {\n  nonNullable: true,\n  updateOn: 'blur',            // do not fire the async check on every keystroke\n  asyncValidators: [uniqueEmail],\n});\n\nemail.valueChanges.pipe(debounceTime(300)).subscribe(save);\nemail.statusChanges.subscribe((s) => console.log(s)); // VALID | INVALID | PENDING | DISABLED\n\n// a programmatic change emits an event too\nemail.setValue('a@b.c');\nemail.setValue('a@b.c', { emitEvent: false }); // this one does not\n\n// otherwise an infinite loop is easy to get\nthis.form.valueChanges.subscribe(() => this.form.patchValue(calc(), { emitEvent: false }));\n```",
+  "explanation": "`emitEvent: false` is the main tool against loops: a `valueChanges` subscription that writes back into the form loops forever without it.\n\n`updateOn: 'submit'` is handy for large forms: the user sees no red until the button is pressed, and validation runs once."
+ },
+ {
+  "id": "ng-flattening-operators",
+  "topic": "angular",
+  "subtopic": "RxJS",
+  "question": "How do `switchMap`, `mergeMap`, `concatMap` and `exhaustMap` differ?",
+  "answer": "`switchMap` cancels the previous inner stream when a new value arrives. `mergeMap` runs them all in parallel. `concatMap` queues them and runs them one at a time. `exhaustMap` ignores new values while the current one is running.",
+  "example": "```ts\n// search: only the latest request matters, cancel the earlier ones\nthis.query$.pipe(switchMap((q) => this.http.get(`/search?q=${q}`)));\n\n// parallel loading of independent items, order does not matter\nthis.ids$.pipe(mergeMap((id) => this.load(id)));\n\n// strict ordering: saves must not overtake one another\nthis.changes$.pipe(concatMap((patch) => this.save(patch)));\n\n// protection against a double click: while a request is in flight, new presses are ignored\nthis.submit$.pipe(exhaustMap(() => this.send(this.form.value)));\n```\n\nThe bug “search sometimes shows a stale result” is a `mergeMap` where a `switchMap`\nwas needed: the responses arrive in a different order from the requests.",
+  "explanation": "In practice: search-as-you-type is `switchMap` (the old answer is useless), loading independent items is `mergeMap`, sequential writes are `concatMap`, and guarding a submit button against double clicks is `exhaustMap`."
+ },
+ {
+  "id": "ng-cold-vs-hot",
+  "topic": "angular",
+  "subtopic": "RxJS",
+  "question": "How does a cold Observable differ from a hot one?",
+  "answer": "A cold one creates its source anew for every subscription (two subscribers means two HTTP requests). A hot one shares a single source among all subscribers.",
+  "example": "```ts\nconst cold$ = this.http.get('/api/users'); // every subscription is a new request\ncold$.subscribe(); // request 1\ncold$.subscribe(); // request 2\n\nconst hot$ = cold$.pipe(shareReplay({ bufferSize: 1, refCount: true }));\nhot$.subscribe(); // a request\nhot$.subscribe(); // the same result, no second request\n```\n\n```html\n<!-- two async pipes on a cold stream means two requests -->\n{{ (users$ | async)?.length }}\n@for (u of users$ | async; track u.id) {}\n```\n\n`refCount: true` matters: without it the subscription to the source stays alive after\nthe last subscriber leaves.",
+  "explanation": "`share`, `shareReplay` and `Subject` turn a cold stream hot. `shareReplay({ refCount: true })` makes the stream stop once no subscribers are left."
+ },
+ {
+  "id": "ng-subject-types",
+  "topic": "angular",
+  "subtopic": "RxJS",
+  "question": "How do `Subject`, `BehaviorSubject`, `ReplaySubject` and `AsyncSubject` differ?",
+  "answer": "`Subject` stores no values. `BehaviorSubject` keeps the current one and hands it to a new subscriber immediately. `ReplaySubject` replays the last N. `AsyncSubject` emits only the last value, and only on completion.",
+  "example": "```ts\nconst s = new Subject<number>();\ns.next(1);\ns.subscribe(console.log); // nothing: the value has already gone by\n\nconst b = new BehaviorSubject(0);\nb.subscribe(console.log);  // 0 — the current value straight away\nb.value;                    // readable synchronously\n\nconst r = new ReplaySubject<number>(2);\nr.next(1); r.next(2); r.next(3);\nr.subscribe(console.log);  // 2, 3\n\nconst a = new AsyncSubject<number>();\na.next(1); a.next(2);\na.subscribe(console.log);  // silence\na.complete();               // 2\n```\n\nFor state people nowadays reach for a `signal` and leave `Subject` to events.",
+  "explanation": "For state the usual choice is a `BehaviorSubject` — or, in modern code, a signal."
+ },
+ {
+  "id": "ng-unsubscribe",
+  "topic": "angular",
+  "subtopic": "RxJS",
+  "question": "How do you avoid leaking subscriptions?",
+  "answer": "The `async` pipe in a template, `takeUntilDestroyed()` and `toSignal` all unsubscribe by themselves. A manual subscription needs a `Subscription` and an unsubscribe in `ngOnDestroy`.",
+  "example": "```ts\n@Component({ selector: 'app-x', template: '{{ value() }}' })\nexport class XComponent {\n  value = toSignal(this.service.data$, { initialValue: null }); // unsubscribes itself\n\n  constructor() {\n    this.service.events$\n      .pipe(takeUntilDestroyed()) // in a field or the constructor — an injection context\n      .subscribe(handle);\n  }\n\n  onClick() {\n    this.service.events$\n      .pipe(takeUntilDestroyed(inject(DestroyRef))) // outside a constructor a DestroyRef is needed\n      .subscribe(handle);\n  }\n}\n```\n\nStreams that complete on their own need no unsubscribing: `HttpClient`\nand `route.params` when the route is destroyed.",
+  "explanation": "`HttpClient` completes the stream after the response, but the subscription still lives until that response: without cancellation a destroyed component's request keeps running."
+ },
+ {
+  "id": "ng-async-pipe",
+  "topic": "angular",
+  "subtopic": "RxJS",
+  "question": "What does the `async` pipe do?",
+  "answer": "It subscribes to an Observable or a Promise, hands the latest value to the template, marks the component for checking and unsubscribes itself on destruction.",
+  "example": "```html\n<!-- subscribing, unsubscribing and markForCheck — all inside the pipe -->\n@if (user$ | async; as user) {\n  <span>{{ user.name }}</span>\n}\n\n<!-- a common mistake: three subscriptions to one stream and three requests -->\n{{ (user$ | async)?.name }}\n{{ (user$ | async)?.email }}\n```\n\n```ts\n// nowadays the same thing is more often written with a signal\nuser = toSignal(this.user$);\n```\n\nUnder `OnPush` the `async` pipe is mandatory: without it the template never learns about a new value.",
+  "explanation": "Several `async` pipes over one stream in a template means several subscriptions: use either `@if (data$ | async; as data)` or signals."
+ },
+ {
+  "id": "ng-signal-rxjs-interop",
+  "topic": "angular",
+  "subtopic": "RxJS",
+  "question": "When are signals not enough and RxJS is needed?",
+  "answer": "When events over time and operators on them matter: debouncing, cancelling the previous request, combining streams, retries. Signals describe the current state, not a sequence of events.",
+  "example": "```ts\nexport class SearchComponent {\n  query = signal('');\n\n  results = toSignal(\n    toObservable(this.query).pipe(\n      debounceTime(300),          // signals have no such notion\n      distinctUntilChanged(),\n      switchMap((q) => this.http.get<Item[]>(`/api/search?q=${q}`)),\n    ),\n    { initialValue: [] },\n  );\n}\n```\n\n```ts\n// the same thing without RxJS — through a resource with cancellation\nresults = resource({\n  params: () => ({ q: this.debouncedQuery() }),\n  loader: ({ params, abortSignal }) => search(params.q, abortSignal),\n});\n```",
+  "explanation": "`toObservable` works through an effect, so it never sees intermediate values set within a single cycle: only the last one goes out. For signals that is fine; for a stream of events it is not.\n\nThe practical division: component state in signals, events and their composition in RxJS, data loading in `resource`."
+ },
+ {
+  "id": "ng-http-interceptor",
+  "topic": "angular",
+  "subtopic": "HTTP",
+  "question": "What is an interceptor, and how is it registered?",
+  "answer": "A function every HTTP request passes through: it can modify the request, handle the response or an error, or retry the request. It is registered with `provideHttpClient(withInterceptors([authInterceptor]))`.",
+  "example": "```ts\nexport const authInterceptor: HttpInterceptorFn = (req, next) => {\n  const token = inject(Auth).token();\n  const authed = token ? req.clone({ setHeaders: { Authorization: `Bearer ${token}` } }) : req;\n\n  return next(authed).pipe(\n    retry({ count: 2, delay: 1000 }),\n    catchError((e: HttpErrorResponse) => {\n      if (e.status === 401) inject(Router).navigate(['/login']);\n      return throwError(() => e);\n    }),\n  );\n};\n\nprovideHttpClient(withInterceptors([authInterceptor, loggingInterceptor]));\n```\n\nA request is immutable — it can only be changed through `clone`. The order in the array\nsets the order they are traversed in.",
+  "explanation": "The order in the array determines the order of the calls: the request travels top to bottom, the response comes back up."
+ },
+ {
+  "id": "ng-http-client-observable",
+  "topic": "angular",
+  "subtopic": "HTTP",
+  "question": "Why does an `HttpClient` request not run without a subscription?",
+  "answer": "The returned Observable is cold: the request itself starts at the moment of subscription. Without a `subscribe` (or an `async` pipe, `toSignal`, `firstValueFrom`) nothing happens at all.",
+  "example": "```ts\nthis.http.post('/api/items', body); // there will be NO request: nobody subscribed\n\nthis.http.post('/api/items', body).subscribe();\nawait firstValueFrom(this.http.post('/api/items', body));\nitems = toSignal(this.http.get<Item[]>('/api/items'), { initialValue: [] });\n```\n\n```html\n{{ items$ | async }}\n```\n\nThe flip side of coldness is that `retry()` works: the operator simply subscribes\nagain, and the whole request is repeated. Unsubscribing genuinely cancels the request.",
+  "explanation": "Unsubscribing aborts the request — that is what cancelling stale search requests through `switchMap` is built on."
+ },
+ {
+  "id": "ng-http-params",
+  "topic": "angular",
+  "subtopic": "HTTP",
+  "question": "What is the right way to pass query parameters to `HttpClient`?",
+  "answer": "Through `params` — as an object or as `HttpParams`. Encoding happens automatically; building the query string by concatenation is not an option, or values containing `&`, `+` or non-Latin characters break the URL.",
+  "example": "```ts\nthis.http.get<Item[]>('/api/items', {\n  params: { page: 1, q: 'coffee & tea', tags: ['a', 'b'] }, // an array gives tags=a&tags=b\n});\n\n// HttpParams is immutable: every method returns a new object\nlet params = new HttpParams();\nparams = params.set('page', 1).append('tag', 'a').append('tag', 'b');\nparams.set('page', 2); // the result is lost — the assignment was forgotten\n\n// headers work the same way\nconst headers = new HttpHeaders().set('X-Trace', id);\n\n// typing the response and getting the full response object\nthis.http.get<Item[]>('/api/items', { observe: 'response' }); // HttpResponse<Item[]>\nthis.http.get('/api/file', { responseType: 'blob' });\n```",
+  "explanation": "The immutability of `HttpParams` and `HttpHeaders` is a frequent source of confusion: `params.set(...)` without an assignment changes nothing. It is deliberate, so that interceptors cannot spoil somebody else's request.\n\nParameters whose value is `undefined` are skipped in the object form, while `null` is turned into a string — worth keeping in mind when assembling filters."
+ },
+ {
+  "id": "ng-http-caching",
+  "topic": "angular",
+  "subtopic": "HTTP",
+  "question": "How do you cache an HTTP request so it is not sent again?",
+  "answer": "With `shareReplay` at the service level for a single shared stream, or with an interceptor holding a map of responses for a cross-cutting cache. The crucial detail is not forgetting invalidation.",
+  "example": "```ts\n@Injectable({ providedIn: 'root' })\nexport class DictService {\n  private cache$ = this.http.get<Dict>('/api/dict').pipe(\n    shareReplay({ bufferSize: 1, refCount: false }), // keep the response forever\n  );\n\n  load() {\n    return this.cache$; // however many subscribers there are — one request\n  }\n}\n```\n\n```ts\nexport const cacheInterceptor: HttpInterceptorFn = (req, next) => {\n  if (req.method !== 'GET') return next(req);\n\n  const cache = inject(HttpCache);\n  const hit = cache.get(req.urlWithParams);\n  if (hit) return of(hit.clone());\n\n  return next(req).pipe(tap((e) => e instanceof HttpResponse && cache.set(req.urlWithParams, e)));\n};\n```",
+  "explanation": "`refCount: false` means “hold the result even when there are no subscribers” — and that is precisely a cache. With `refCount: true` the request runs again once the last subscriber leaves.\n\nA cache without invalidation is more dangerous than no cache: after a POST the matching entries must be dropped, or the interface shows stale data. Errors should not be cached — otherwise a single network glitch sticks until a reload."
+ },
+ {
+  "id": "ng-ssr-hydration",
+  "topic": "angular",
+  "subtopic": "SSR",
+  "question": "What is hydration, and what does it give you?",
+  "answer": "Server-side rendering delivers ready HTML, and the browser application reuses the existing markup instead of wiping it and drawing everything anew. The page does not flash, and the LCP/CLS metrics improve.",
+  "example": "```ts\nbootstrapApplication(App, {\n  providers: [provideClientHydration(withEventReplay())],\n});\n```\n\n```ts\n// there is no window on the server — touching it directly breaks rendering\nif (isPlatformBrowser(inject(PLATFORM_ID))) {\n  localStorage.getItem('theme');\n}\n```\n\nThe server's markup and the client's must match, otherwise you get a hydration error;\nfor nodes owned by a third-party library there is `ngSkipHydration`.\n`withEventReplay()` records the clicks that happened before the JS loaded and replays\nthem afterwards.",
+  "explanation": "Incremental hydration lets parts of the page come alive on demand (`@defer` with triggers). The condition for it to work is that the server and client markup agree; direct access to `window` inside components breaks that."
+ },
+ {
+  "id": "ng-ssr-transfer-state",
+  "topic": "angular",
+  "subtopic": "SSR",
+  "question": "How do you avoid running the same request twice under server-side rendering?",
+  "answer": "Through state transfer: the response obtained on the server is serialised into the HTML and picked up in the browser. For `HttpClient` this is one line — `withHttpTransferCacheOptions`.",
+  "example": "```ts\nbootstrapApplication(App, {\n  providers: [\n    provideClientHydration(withHttpTransferCacheOptions({ includePostRequests: false })),\n    provideHttpClient(withFetch()), // on the server you need fetch, not XHR\n  ],\n});\n```\n\n```ts\n// arbitrary data — by hand\nconst state = inject(TransferState);\nconst KEY = makeStateKey<Config>('config');\n\nif (state.hasKey(KEY)) {\n  this.config = state.get(KEY, defaults); // in the browser we take it from the HTML\n} else {\n  this.config = await load();\n  state.set(KEY, this.config);            // on the server we put it into the HTML\n}\n```",
+  "explanation": "Without state transfer the page flashes: the server rendered the data, the browser requested it again and showed an empty screen until the response arrived — which defeats the point of hydration.\n\nEverything in the transferred state is visible in the page source: personal data and tokens must not go there."
+ },
+ {
+  "id": "ng-pure-pipe",
+  "topic": "angular",
+  "subtopic": "pipes",
+  "question": "How does a pure pipe differ from an impure one?",
+  "answer": "A pure one (the default) is recomputed only when the reference to its argument changes. An impure one (`pure: false`) is called on every change-detection cycle.",
+  "example": "```ts\n@Pipe({ name: 'md' }) // pure by default\nexport class MarkdownPipe implements PipeTransform {\n  transform(value: string): string {\n    return render(value); // called only for a new reference to value\n  }\n}\n\n@Pipe({ name: 'filter', pure: false })\nexport class FilterPipe implements PipeTransform {\n  transform(items: Item[], q: string) {\n    return items.filter((i) => i.name.includes(q)); // on EVERY check cycle\n  }\n}\n```\n\nAn impure pipe in a list of a thousand rows is called a thousand times per cycle. What you\nusually want instead is a `computed`:\n\n```ts\nvisible = computed(() => this.items().filter((i) => i.name.includes(this.query())));\n```",
+  "explanation": "That is why impure pipes are a frequent cause of slowness: filtering an array in a template runs dozens of times a second."
+ },
+ {
+  "id": "ng-directive-types",
+  "topic": "angular",
+  "subtopic": "directives",
+  "question": "What kinds of directives are there?",
+  "answer": "Components (a directive with a template), attribute directives (they change the behaviour or the look of an element) and structural ones (they change the structure of the DOM — `@if`, `@for`, `ngTemplateOutlet`).",
+  "example": "```ts\n// attribute: changes the behaviour of an existing element\n@Directive({\n  selector: '[appAutofocus]',\n  host: { '(focus)': 'onFocus()' },\n})\nexport class AutofocusDirective {\n  private el = inject(ElementRef<HTMLElement>);\n  constructor() { queueMicrotask(() => this.el.nativeElement.focus()); }\n}\n\n// structural: controls the creation of a template\n@Directive({ selector: '[appRepeat]' })\nexport class RepeatDirective {\n  private tpl = inject(TemplateRef<unknown>);\n  private vcr = inject(ViewContainerRef);\n\n  appRepeat = input.required<number>();\n\n  constructor() {\n    effect(() => {\n      this.vcr.clear();\n      for (let i = 0; i < this.appRepeat(); i++) this.vcr.createEmbeddedView(this.tpl);\n    });\n  }\n}\n```\n\nA component is a directive with a template; `@Component` extends `@Directive`.",
+  "explanation": "Directives can be standalone too and are wired in through `imports`; `hostDirectives` let you reuse behaviour without inheritance."
+ },
+ {
+  "id": "ng-host-binding",
+  "topic": "angular",
+  "subtopic": "directives",
+  "question": "How does a directive affect its host element?",
+  "answer": "Through the `host` property in the decorator (or the legacy `@HostBinding`/`@HostListener`): binding classes, styles and attributes, and subscribing to the host's events.",
+  "example": "```ts\n@Component({\n  selector: 'app-badge',\n  host: {\n    '[class.active]': 'isActive()',       // a conditional class\n    '[attr.aria-disabled]': 'disabled()',\n    '[style.--size.px]': 'size()',\n    '(click)': 'onClick($event)',\n    '(document:keydown.escape)': 'close()', // a global listener\n    role: 'status',                          // a static attribute\n  },\n  template: '',\n})\nexport class BadgeComponent {}\n```\n\nThe `host` property is preferable to `@HostBinding`/`@HostListener`: all the host's\nbehaviour is visible in one place. Global listeners are removed automatically when the\ncomponent is destroyed.",
+  "explanation": "For example: `host: { '[class.active]': 'isActive()', '(click)': 'toggle()' }`."
+ },
+ {
+  "id": "ng-host-directives",
+  "topic": "angular",
+  "subtopic": "directives",
+  "question": "What are `hostDirectives`, and what problem do they solve?",
+  "answer": "A way to attach a directive's behaviour to a component without inheritance: the directive is applied to the host element declaratively, and its inputs and outputs can be selectively exposed.",
+  "example": "```ts\n@Directive({ selector: '[appTooltip]' })\nexport class TooltipDirective {\n  text = input.required<string>({ alias: 'appTooltip' });\n}\n\n@Component({\n  selector: 'app-icon-button',\n  hostDirectives: [\n    CdkOverlayOrigin,\n    {\n      directive: TooltipDirective,\n      inputs: ['appTooltip: tooltip'], // exposed under a name of our own\n      outputs: ['shown'],\n    },\n  ],\n  template: '<ng-content />',\n})\nexport class IconButtonComponent {}\n```\n\n```html\n<app-icon-button tooltip=\"Save\" />\n```",
+  "explanation": "Before this, behaviour was reused by inheriting from a base component — with tight coupling and clashing lifecycle hooks. `hostDirectives` give you composition instead.\n\nInputs and outputs that are not listed explicitly stay unavailable from the outside: the directive remains an implementation detail. The directive itself has to be standalone."
+ },
+ {
+  "id": "ng-view-encapsulation",
+  "topic": "angular",
+  "subtopic": "styles",
+  "question": "What style encapsulation modes are there?",
+  "answer": "`Emulated` (the default — marker attributes on elements), `ShadowDom` (the browser's real Shadow DOM) and `None` (the styles become global).",
+  "example": "```ts\n@Component({\n  selector: 'app-card',\n  encapsulation: ViewEncapsulation.Emulated, // the default\n  styles: `.title { color: red }`,\n  template: '<h2 class=\"title\"></h2>',\n})\nexport class CardComponent {}\n```\n\n```css\n/* what Emulated turns into */\n.title[_ngcontent-abc] { color: red }\n\n/* reaching into a child component */\n:host(.compact) .title { font-size: 12px }\n::ng-deep .third-party-widget { margin: 0 }  /* deprecated, leaks globally */\n```\n\n`ShadowDom` gives real browser isolation, but global styles and themes cannot get\ninside; `None` makes a component's styles global forever.",
+  "explanation": "`None` in a reusable component is almost always a mistake: its styles start affecting the whole application."
+ },
+ {
+  "id": "ng-host-context-styles",
+  "topic": "angular",
+  "subtopic": "styles",
+  "question": "How do you style a component differently depending on the theme?",
+  "answer": "Through CSS custom properties declared higher up the tree — they pass through encapsulation. The `:host-context()` selector lets you react to a class on any ancestor.",
+  "example": "```css\n/* global styles */\n:root { --surface: #fff; --text: #111; }\n:root[data-theme='dark'] { --surface: #1b1b1b; --text: #eee; }\n```\n\n```css\n/* component styles: custom properties are not blocked by encapsulation */\n:host {\n  background: var(--surface);\n  color: var(--text);\n}\n\n:host(.compact) { padding: 4px }          /* a class on the host itself */\n:host-context(.rtl) .title { text-align: right } /* a class on any ancestor */\n```",
+  "explanation": "CSS custom properties are the only theming mechanism that survives both `Emulated` and `ShadowDom`: ordinary global rules never reach into a Shadow DOM, while custom properties are inherited.\n\n`::ng-deep` for the same job is deprecated: it leaks globally and styles other people's components if you forget to scope it with `:host`."
+ },
+ {
+  "id": "ng-standalone-testing",
+  "topic": "angular",
+  "subtopic": "testing",
+  "question": "How do you test a standalone component?",
+  "answer": "`TestBed.configureTestingModule({ imports: [Component] })` — the component is imported rather than declared. Dependencies are swapped through `providers` with `useValue`/`useClass`.",
+  "example": "```ts\ndescribe('UserComponent', () => {\n  beforeEach(() =>\n    TestBed.configureTestingModule({\n      imports: [UserComponent],                       // imported, not declared\n      providers: [\n        { provide: UserService, useValue: fakeService },\n        provideHttpClientTesting(),\n      ],\n    }),\n  );\n\n  it('shows the name', () => {\n    const fixture = TestBed.createComponent(UserComponent);\n    fixture.componentRef.setInput('name', 'Anna');    // this is how a signal input is set\n    fixture.detectChanges();\n    expect(fixture.nativeElement.textContent).toContain('Anna');\n  });\n});\n```\n\nA dependency declared in the component's own `imports` can be replaced with\n`TestBed.overrideComponent`.",
+  "explanation": "`TestBed.overrideComponent` lets you swap a component import for a stub — useful when a child component is heavy."
+ },
+ {
+  "id": "ng-testing-harness",
+  "topic": "angular",
+  "subtopic": "testing",
+  "question": "What is a component harness, and why is it better than querying the DOM?",
+  "answer": "It is an API for interacting with a component in a test that hides its markup: the test clicks a button and reads text through methods rather than selectors. The markup may change and the tests survive.",
+  "example": "```ts\nconst loader = TestbedHarnessEnvironment.loader(fixture);\n\nconst button = await loader.getHarness(MatButtonHarness.with({ text: 'Save' }));\nawait button.click();\n\nconst input = await loader.getHarness(MatInputHarness);\nawait input.setValue('Anna');\nexpect(await input.getValue()).toBe('Anna');\n```\n\n```ts\n// compare with the brittle version\nconst btn = fixture.nativeElement.querySelector('.mat-mdc-button-base');\nbtn.click(); // breaks on a Material update\n```",
+  "explanation": "A harness waits for stability itself: `detectChanges` and waiting for asynchronous tasks already happen inside the calls, so manual `fixture.detectChanges()` between steps is unnecessary.\n\nThe same harness also works in end-to-end tests through a different environment — the interaction API is described once."
+ },
+ {
+  "id": "ng-testing-async",
+  "topic": "angular",
+  "subtopic": "testing",
+  "question": "How does `fakeAsync` differ from `waitForAsync`, and what does `tick` do?",
+  "answer": "`fakeAsync` creates a zone with virtual time: `tick(1000)` fast-forwards the timers instantly, `flush()` runs everything that was scheduled. `waitForAsync` simply waits for the real asynchronous tasks to finish.",
+  "example": "```ts\nit('shows the tooltip after a second', fakeAsync(() => {\n  component.hover();\n  expect(component.visible()).toBe(false);\n\n  tick(1000);            // time is fast-forwarded instantly\n  expect(component.visible()).toBe(true);\n\n  discardPeriodicTasks(); // otherwise the test fails: intervals are still pending\n}));\n\nit('loads the user', async () => {\n  const http = TestBed.inject(HttpTestingController);\n  component.load();\n  http.expectOne('/api/user').flush({ name: 'Anna' });\n  await fixture.whenStable();\n  expect(component.user()?.name).toBe('Anna');\n});\n```",
+  "explanation": "`fakeAsync` cannot handle real network latency, nor `requestAnimationFrame` in some environments — it is perfect for promises and timers, useless for real I/O.\n\nIn a zoneless application like this one the zone helpers are not needed at all: `await fixture.whenStable()` and reading the signals directly is enough. Domain logic is tested without TestBed altogether — in this project all of it lives in `domain/`."
+ },
+ {
+  "id": "ng-testing-signals",
+  "topic": "angular",
+  "subtopic": "testing",
+  "question": "How do you test signals, `computed` and `effect`?",
+  "answer": "Signals and `computed` by simply reading them: they are synchronous and need no TestBed. An `effect` runs asynchronously, so it needs `TestBed.tick()` (or `fixture.detectChanges()`) and an injection context.",
+  "example": "```ts\nit('computes the total', () => {\n  const price = signal(100);\n  const qty = signal(2);\n  const total = computed(() => price() * qty());\n\n  expect(total()).toBe(200);\n  qty.set(3);\n  expect(total()).toBe(300);   // neither TestBed nor a fixture is needed\n});\n\nit('writes the theme to storage', () => {\n  TestBed.runInInjectionContext(() => {\n    const theme = signal('dark');\n    effect(() => storage.set(theme()));\n\n    TestBed.tick();            // effects do not run immediately\n    expect(storage.set).toHaveBeenCalledWith('dark');\n  });\n});\n```",
+  "explanation": "The synchronicity of `computed` is the practical reason for moving logic into pure functions and signals: such tests need neither a fixture nor rendering, and run in milliseconds.\n\nThe `domain/` layer of this project is built on the same principle: SM-2, building the review queue and comparing output are tested as ordinary TypeScript, without Angular."
+ },
+ {
+  "id": "ng-error-handler",
+  "topic": "angular",
+  "subtopic": "error handling",
+  "question": "How do you intercept unhandled errors across the whole application?",
+  "answer": "By replacing the `ErrorHandler` provider: its `handleError` method receives every error that was not caught in code, rejected promises and template errors included.",
+  "example": "```ts\n@Injectable()\nexport class ReportingErrorHandler implements ErrorHandler {\n  private reporter = inject(Reporter);\n\n  handleError(error: unknown) {\n    if (error instanceof HttpErrorResponse) return; // the interceptor handles those\n    this.reporter.send(error);\n    console.error(error); // otherwise the error vanishes from the console\n  }\n}\n\nbootstrapApplication(App, {\n  providers: [{ provide: ErrorHandler, useClass: ReportingErrorHandler }],\n});\n```",
+  "explanation": "A custom implementation must either log or explicitly decide not to: a silent `handleError` turns debugging into guesswork, because it replaces the default console output.\n\nHTTP errors reach it only when nobody handled the stream; centrally they are usually caught in an interceptor, where the request context is available and a retry is possible."
+ },
+ {
+  "id": "ng-optimized-image",
+  "topic": "angular",
+  "subtopic": "performance",
+  "question": "What does the `NgOptimizedImage` directive do?",
+  "answer": "It replaces `src` with `ngSrc` and takes care of lazy loading, priority for the LCP image, a `srcset` for screen densities and warnings about wrong dimensions.",
+  "example": "```html\n<img ngSrc=\"/hero.jpg\" width=\"800\" height=\"400\" priority alt=\"Cover\" />\n\n<!-- the rest are lazily loaded automatically -->\n<img ngSrc=\"/thumb.jpg\" width=\"120\" height=\"120\" alt=\"Thumbnail\" />\n\n<!-- the size comes from styles — then fill is needed -->\n<div class=\"cover\"><img ngSrc=\"/bg.jpg\" fill alt=\"\" /></div>\n```\n\n```ts\nprovideImgixLoader('https://cdn.example.com/'); // sizes substituted into the CDN URL\n```",
+  "explanation": "The mandatory `width` and `height` are not pedantry: without them the browser does not know the height in advance, the page jumps as images load, and the CLS metric suffers.\n\n`priority` goes on exactly one image — the one above the fold: it gets `fetchpriority=\"high\"` and a preload, while the rest get `loading=\"lazy\"`. The directive warns in the console when the LCP image turns out to be lazy."
+ }
+]

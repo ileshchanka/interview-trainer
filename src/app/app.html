@@ -9,7 +9,7 @@
     type="button"
     class="track-button"
     [matMenuTriggerFor]="trackMenu"
-    aria-label="Направление подготовки"
+    [attr.aria-label]="t().nav.trackAria"
   >
     {{ trackTitles[track()] }}
     <mat-icon iconPositionEnd>expand_more</mat-icon>
@@ -25,33 +25,57 @@
               <mat-icon class="selected">check</mat-icon>
             }
           </span>
-          <span class="track-subtitle">{{ trackSubtitles[item] }}</span>
+          <span class="track-subtitle">{{ t().tracks.subtitle[item] }}</span>
         </span>
       </button>
     }
   </mat-menu>
 
   <nav class="nav">
-    <a mat-button routerLink="/decks" routerLinkActive="active">Колоды</a>
-    <a mat-button routerLink="/code" routerLinkActive="active">Задачи</a>
-    <a mat-button routerLink="/stats" routerLinkActive="active">Прогресс</a>
+    <a mat-button routerLink="/decks" routerLinkActive="active">{{ t().nav.decks }}</a>
+    <a mat-button routerLink="/code" routerLinkActive="active">{{ t().nav.tasks }}</a>
+    <a mat-button routerLink="/stats" routerLinkActive="active">{{ t().nav.stats }}</a>
   </nav>
 
   <span class="spacer"></span>
 
   <button
+    mat-button
+    type="button"
+    class="track-button"
+    [matMenuTriggerFor]="langMenu"
+    [attr.aria-label]="t().nav.langAria"
+  >
+    {{ langCodes[lang()] }}
+    <mat-icon iconPositionEnd>expand_more</mat-icon>
+  </button>
+
+  <mat-menu #langMenu="matMenu">
+    @for (item of allLangs; track item) {
+      <button mat-menu-item type="button" (click)="selectLang(item)">
+        <span class="track-title">
+          {{ langTitles[item] }}
+          @if (item === lang()) {
+            <mat-icon class="selected">check</mat-icon>
+          }
+        </span>
+      </button>
+    }
+  </mat-menu>
+
+  <button
     mat-icon-button
     type="button"
     (click)="toggleTheme()"
-    [attr.aria-label]="'Тема: ' + themeLabel()"
-    [title]="'Тема: ' + themeLabel()"
+    [attr.aria-label]="t().nav.theme(themeLabel())"
+    [title]="t().nav.theme(themeLabel())"
   >
     <mat-icon>{{ themeIcon() }}</mat-icon>
   </button>
 </mat-toolbar>
 
 @if (content.error(); as error) {
-  <div class="content-error" role="alert">Не удалось загрузить корпус вопросов: {{ error }}</div>
+  <div class="content-error" role="alert">{{ t().content.error(error) }}</div>
 }
 
 <main class="page">

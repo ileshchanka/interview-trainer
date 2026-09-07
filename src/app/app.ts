@@ -5,7 +5,9 @@ import { MatMenuModule } from '@angular/material/menu';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { ContentService } from './core/content/content.service';
-import { TRACKS, TRACK_SUBTITLES, TRACK_TITLES, Track } from './domain/tracks';
+import { LANGS, LANG_CODES, LANG_TITLES, Lang } from './domain/languages';
+import { TRACKS, TRACK_TITLES, Track } from './domain/tracks';
+import { LanguageService } from './shared/language.service';
 import { ThemeService } from './shared/theme.service';
 import { TrackService } from './shared/track.service';
 
@@ -27,6 +29,7 @@ import { TrackService } from './shared/track.service';
 export class App {
   private readonly theme = inject(ThemeService);
   private readonly tracks = inject(TrackService);
+  private readonly languages = inject(LanguageService);
   private readonly router = inject(Router);
   protected readonly content = inject(ContentService);
 
@@ -36,10 +39,16 @@ export class App {
     inject(MatIconRegistry).setDefaultFontSetClass('material-symbols-outlined');
   }
 
+  protected readonly t = this.languages.t;
+
   protected readonly allTracks = TRACKS;
   protected readonly trackTitles = TRACK_TITLES;
-  protected readonly trackSubtitles = TRACK_SUBTITLES;
   protected readonly track = this.tracks.track;
+
+  protected readonly allLangs = LANGS;
+  protected readonly langTitles = LANG_TITLES;
+  protected readonly langCodes = LANG_CODES;
+  protected readonly lang = this.languages.lang;
 
   /**
    * Смена трека уводит на экран колод: маршрут вроде `/review/js` в
@@ -53,14 +62,20 @@ export class App {
     await this.router.navigate(['/decks']);
   }
 
+  /**
+   * Язык, в отличие от трека, никуда не уводит: набор карточек тот же,
+   * `id` у перевода те же, и текущий маршрут остаётся валидным.
+   */
+  protected selectLang(lang: Lang): void {
+    this.languages.set(lang);
+  }
+
   protected readonly themeIcon = computed(
     () =>
       ({ system: 'brightness_auto', light: 'light_mode', dark: 'dark_mode' })[this.theme.mode()],
   );
 
-  protected readonly themeLabel = computed(
-    () => ({ system: 'системная', light: 'светлая', dark: 'тёмная' })[this.theme.mode()],
-  );
+  protected readonly themeLabel = computed(() => this.t().nav.themeNames[this.theme.mode()]);
 
   protected toggleTheme(): void {
     this.theme.toggle();

@@ -1,5 +1,5 @@
 <header class="head">
-  <h1>Кодовые задачи</h1>
+  <h1>{{ t().tasks.heading }}</h1>
   <p class="muted">{{ blurb() }}</p>
 </header>
 
@@ -8,15 +8,15 @@
   [value]="filter()"
   (change)="setFilter($any($event).value ?? 'all')"
 >
-  <mat-chip-option value="all" [selected]="filter() === 'all'">Все</mat-chip-option>
+  <mat-chip-option value="all" [selected]="filter() === 'all'">{{ t().tasks.all }}</mat-chip-option>
   @for (topic of topics(); track topic) {
     <mat-chip-option [value]="topic" [selected]="filter() === topic">{{
-      titles[topic]
+      t().topics[topic]
     }}</mat-chip-option>
   }
 </mat-chip-listbox>
 
-<p class="muted small">Решено {{ solvedCount() }} из {{ tasks().length }}</p>
+<p class="muted small">{{ t().tasks.solved(solvedCount(), tasks().length) }}</p>
 
 <div class="tasks">
   @for (task of tasks(); track task.id) {
@@ -29,7 +29,7 @@
             </mat-icon>
             <div class="text">
               <div class="title">{{ task.title }}</div>
-              <div class="meta">{{ titles[task.topic] }} · {{ task.subtopic }}</div>
+              <div class="meta">{{ t().topics[task.topic] }} · {{ task.subtopic }}</div>
             </div>
             <span class="lang">{{ languages[task.language] }}</span>
           </div>
@@ -37,6 +37,6 @@
       </mat-card>
     </a>
   } @empty {
-    <p class="muted">Задач по этой теме пока нет.</p>
+    <p class="muted">{{ t().tasks.empty }}</p>
   }
 </div>

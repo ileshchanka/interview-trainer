@@ -1,7 +1,7 @@
 <header class="head">
   <a mat-button routerLink="/decks">
     <mat-icon>arrow_back</mat-icon>
-    Колоды
+    {{ t().nav.decks }}
   </a>
   <span class="title">{{ title() }}</span>
   <span class="counter">{{ total() === 0 ? 0 : index() + 1 }} / {{ total() }}</span>
@@ -9,10 +9,14 @@
 
 <mat-progress-bar mode="determinate" [value]="percent()" />
 
+@if (fallback()) {
+  <p class="fallback">{{ t().content.fallback }}</p>
+}
+
 @if (current(); as card) {
   <div class="jump">
     <mat-form-field appearance="outline" subscriptSizing="dynamic">
-      <mat-label>Перейти к вопросу</mat-label>
+      <mat-label>{{ t().browse.jump }}</mat-label>
       <mat-select [value]="index()" (selectionChange)="go($event.value)">
         @for (item of jumpItems(); track item.index) {
           <mat-option [value]="item.index">{{ item.label }}</mat-option>
@@ -41,30 +45,30 @@
 
   @if (!revealed()) {
     <button mat-flat-button class="reveal" type="button" (click)="reveal()">
-      Показать ответ
-      <span class="hotkey">пробел</span>
+      {{ t().browse.reveal }}
+      <span class="hotkey">{{ t().browse.space }}</span>
     </button>
   }
 
   <nav class="nav">
     <button mat-stroked-button type="button" (click)="previous()" [disabled]="!hasPrevious()">
       <mat-icon>chevron_left</mat-icon>
-      Назад
+      {{ t().browse.previous }}
     </button>
 
-    <span class="hint">Стрелки листают, пробел показывает ответ</span>
+    <span class="hint">{{ t().browse.hint }}</span>
 
     @if (hasNext()) {
       <button mat-flat-button type="button" (click)="next()">
-        Далее
+        {{ t().browse.next }}
         <mat-icon iconPositionEnd>chevron_right</mat-icon>
       </button>
     } @else {
-      <a mat-flat-button routerLink="/decks">Колода пройдена</a>
+      <a mat-flat-button routerLink="/decks">{{ t().browse.finished }}</a>
     }
   </nav>
 } @else {
   <p class="muted">
-    В этой колоде пока нет карточек. <a routerLink="/decks">Вернуться к колодам</a>
+    {{ t().browse.empty }} <a routerLink="/decks">{{ t().browse.backToDecks }}</a>
   </p>
 }

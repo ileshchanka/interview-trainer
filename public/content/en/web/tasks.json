@@ -1,0 +1,435 @@
+[
+ {
+  "id": "task-event-loop-basic",
+  "topic": "js",
+  "subtopic": "event loop",
+  "title": "Order: a timer, a promise, synchronous code",
+  "language": "js",
+  "prompt": "The classic opening question about the event loop.",
+  "code": "console.log('start');\n\nsetTimeout(() => console.log('timeout'), 0);\n\nPromise.resolve().then(() => console.log('promise'));\n\nconsole.log('end');",
+  "expectedOutput": [
+   "start",
+   "end",
+   "promise",
+   "timeout"
+  ],
+  "explanation": "The synchronous code runs to completion: `start`, `end`. Then the engine drains the microtask queue — the `then` callback is there, hence `promise`. The `setTimeout` macrotask gets its turn last, even with a zero delay."
+ },
+ {
+  "id": "task-event-loop-nested",
+  "topic": "js",
+  "subtopic": "event loop",
+  "title": "Microtasks inside a macrotask",
+  "language": "js",
+  "prompt": "What matters here is that the microtask queue is drained **between** macrotasks.",
+  "code": "setTimeout(() => {\n  console.log('t1');\n  Promise.resolve().then(() => console.log('p1'));\n}, 0);\n\nsetTimeout(() => console.log('t2'), 0);\n\nPromise.resolve().then(() => console.log('p0'));",
+  "expectedOutput": [
+   "p0",
+   "t1",
+   "p1",
+   "t2"
+  ],
+  "explanation": "The microtask `p0` goes first. Then the first macrotask prints `t1` and queues a microtask. Before moving on to the second macrotask the engine must drain the microtask queue — which is why `p1` comes before `t2`."
+ },
+ {
+  "id": "task-async-await-order",
+  "topic": "js",
+  "subtopic": "event loop",
+  "title": "async/await and the order of execution",
+  "language": "js",
+  "prompt": "`await` cuts the function in two: everything after it becomes a microtask.",
+  "code": "async function f() {\n  console.log('1');\n  await null;\n  console.log('2');\n}\n\nf();\nconsole.log('3');\nPromise.resolve().then(() => console.log('4'));",
+  "expectedOutput": [
+   "1",
+   "3",
+   "2",
+   "4"
+  ],
+  "explanation": "The body of an `async` function up to the first `await` runs synchronously — hence `1`. Then the function is suspended, control returns to the caller and `3` is printed. The continuation after `await null` was queued as a microtask before the `then`, so `2` comes before `4`."
+ },
+ {
+  "id": "task-this-method-arrow",
+  "topic": "js",
+  "subtopic": "this",
+  "title": "this in a method and in an arrow",
+  "language": "js",
+  "prompt": "An arrow function has no `this` of its own.",
+  "code": "const obj = {\n  name: 'obj',\n  regular() {\n    return this?.name;\n  },\n  scoped() {\n    const arrow = () => this?.name;\n    const plain = function () {\n      return this?.name;\n    };\n    return arrow() + ' / ' + plain();\n  },\n};\n\nconsole.log(obj.regular());\nconsole.log(obj.scoped());\n\nconst detached = obj.regular;\nconsole.log(detached());",
+  "expectedOutput": [
+   "obj",
+   "obj / undefined",
+   "undefined"
+  ],
+  "explanation": "`obj.regular()` is called as a method — `this` is `obj`. Inside `scoped` the arrow takes `this` from the surrounding method and also sees `obj`, while the plain function is called with no receiver: in strict mode its `this` is `undefined`. The detached `detached()` loses its receiver for the same reason."
+ },
+ {
+  "id": "task-closure-var-loop",
+  "topic": "js",
+  "subtopic": "closures",
+  "title": "A closure in a loop",
+  "language": "js",
+  "prompt": "The difference between `var` and `let` in a single line.",
+  "code": "for (var i = 0; i < 3; i++) {\n  setTimeout(() => console.log('var:', i), 0);\n}\n\nfor (let j = 0; j < 3; j++) {\n  setTimeout(() => console.log('let:', j), 0);\n}",
+  "expectedOutput": [
+   "var: 3",
+   "var: 3",
+   "var: 3",
+   "let: 0",
+   "let: 1",
+   "let: 2"
+  ],
+  "explanation": "`var i` is a single variable for the whole function scope: all three callbacks closed over it, and by the time they run the loop has pushed `i` to 3. `let j` creates a fresh binding on every iteration, so each callback sees its own value."
+ },
+ {
+  "id": "task-hoisting",
+  "topic": "js",
+  "subtopic": "scope",
+  "title": "Hoisting of declarations",
+  "language": "js",
+  "prompt": "What is hoisted whole and what is hoisted by name only.",
+  "code": "console.log(typeof fn);\nconsole.log(typeof value);\n\nfunction fn() {}\nvar value = 1;\n\ntry {\n  console.log(later);\n} catch (e) {\n  console.log(e.constructor.name);\n}\nlet later = 2;",
+  "expectedOutput": [
+   "function",
+   "undefined",
+   "ReferenceError"
+  ],
+  "explanation": "A function declaration is hoisted whole, so `typeof fn` is already `function`. `var value` is hoisted without its value — `undefined`. `let later` is hoisted too, but it sits in the temporal dead zone: touching it before the declaration throws a `ReferenceError`."
+ },
+ {
+  "id": "task-coercion",
+  "topic": "js",
+  "subtopic": "types",
+  "title": "Type coercion in comparisons",
+  "language": "js",
+  "prompt": "Every line is a separate `==` trap.",
+  "code": "console.log([] == false);\nconsole.log([] == ![]);\nconsole.log('0' == false);\nconsole.log(null == undefined);\nconsole.log(null == 0);\nconsole.log(NaN == NaN);",
+  "expectedOutput": [
+   "true",
+   "true",
+   "true",
+   "true",
+   "false",
+   "false"
+  ],
+  "explanation": "`[]` is coerced to an empty string, which becomes `0`, and `false` becomes `0` as well. `![]` is `false`, and from there it is the same story. `'0'` is coerced to the number `0`. `null == undefined` is a special rule of the language; with any other value, `0` included, `null` equals nothing. `NaN` equals nothing, itself included."
+ },
+ {
+  "id": "task-promise-all-reject",
+  "topic": "js",
+  "subtopic": "promises",
+  "title": "Promise.all versus allSettled",
+  "language": "js",
+  "prompt": "What happens to the other promises when one of them fails.",
+  "code": "const ok = Promise.resolve('ok');\nconst fail = Promise.reject(new Error('boom'));\n\nPromise.all([ok, fail])\n  .then((r) => console.log('all:', r))\n  .catch((e) => console.log('all catch:', e.message));\n\nPromise.allSettled([ok, fail]).then((r) => {\n  console.log('settled:', r.map((x) => x.status).join(','));\n});",
+  "expectedOutput": [
+   "settled: fulfilled,rejected",
+   "all catch: boom"
+  ],
+  "explanation": "`Promise.all` rejects on the very first error — the other promises are not cancelled, their results are simply of no use to anyone. `allSettled` waits for all of them and never rejects: it hands back a list of objects with a `status` and a `value`/`reason`.\n\nThe order of the output here is not obvious: `allSettled` gets there first because both chains consist of microtasks, and `all` has one extra step before it reaches `catch`."
+ },
+ {
+  "id": "task-promise-chain-values",
+  "topic": "js",
+  "subtopic": "promises",
+  "title": "What flows down a then chain",
+  "language": "js",
+  "prompt": "The value returned by each handler becomes the input of the next one.",
+  "code": "Promise.resolve(1)\n  .then((v) => { console.log('a', v); })\n  .then((v) => { console.log('b', v); return 2; })\n  .then((v) => { console.log('c', v); throw new Error('x'); })\n  .catch((e) => { console.log('d', e.message); return 3; })\n  .finally(() => { console.log('e'); return 99; })\n  .then((v) => console.log('f', v));",
+  "expectedOutput": [
+   "a 1",
+   "b undefined",
+   "c 2",
+   "d x",
+   "e",
+   "f 3"
+  ],
+  "explanation": "A handler without a `return` yields `undefined` — hence `b undefined`. A thrown error takes the chain to the nearest `catch`, which swallows it and returns `3`. `finally` receives the outcome as is and ignores its own return value — so `f` gets `3`, not `99`."
+ },
+ {
+  "id": "task-sort-default",
+  "topic": "js",
+  "subtopic": "arrays",
+  "title": "sort without a comparator",
+  "language": "js",
+  "prompt": "Why numbers do not sort the way you expect.",
+  "code": "const nums = [10, 9, 1, 100];\nconsole.log(nums.sort());\nconsole.log([10, 9, 1, 100].sort((a, b) => a - b));\nconsole.log(nums === nums.sort());",
+  "expectedOutput": [
+   "[ 1, 10, 100, 9 ]",
+   "[ 1, 9, 10, 100 ]",
+   "true"
+  ],
+  "explanation": "Without a comparator `sort` converts the elements to strings: `'10' < '9'` lexicographically. With the comparator `a - b` you get numeric order. The third line is a reminder that `sort` mutates the original array and returns that very array — the reference is the same."
+ },
+ {
+  "id": "task-shallow-copy",
+  "topic": "js",
+  "subtopic": "objects",
+  "title": "Shallow copying",
+  "language": "js",
+  "prompt": "What exactly does spread copy.",
+  "code": "const source = { a: 1, nested: { b: 2 } };\nconst copy = { ...source };\n\ncopy.a = 99;\ncopy.nested.b = 99;\n\nconsole.log(source.a);\nconsole.log(source.nested.b);\nconsole.log(source.nested === copy.nested);",
+  "expectedOutput": [
+   "1",
+   "99",
+   "true"
+  ],
+  "explanation": "Spread copies only the top level: `a` became independent, while `nested` stayed a shared reference — a change through the copy is visible in the original. For an independent copy you need `structuredClone`."
+ },
+ {
+  "id": "task-object-key-order",
+  "topic": "js",
+  "subtopic": "objects",
+  "title": "The order of an object's keys",
+  "language": "js",
+  "prompt": "Integer-like keys behave differently from the rest.",
+  "code": "const obj = { b: 1, 2: 2, a: 3, 1: 4 };\nconsole.log(Object.keys(obj));\n\nconst map = new Map([['b', 1], [2, 2], ['a', 3]]);\nconsole.log([...map.keys()]);",
+  "expectedOutput": [
+   "[ '1', '2', 'b', 'a' ]",
+   "[ 'b', 2, 'a' ]"
+  ],
+  "explanation": "In an object the integer-like keys come first in ascending order, and the other string keys follow in insertion order. An object's keys are always strings, so `2` became `'2'`. A `Map` preserves both the insertion order and the types of the keys."
+ },
+ {
+  "id": "task-reduce-no-initial",
+  "topic": "js",
+  "subtopic": "arrays",
+  "title": "reduce without an initial value",
+  "language": "js",
+  "prompt": "The initial value is not a formality.",
+  "code": "console.log([1, 2, 3].reduce((a, b) => a + b));\nconsole.log(['a', 'b'].reduce((a, b) => a + b, ''));\n\ntry {\n  console.log([].reduce((a, b) => a + b));\n} catch (e) {\n  console.log(e.constructor.name);\n}",
+  "expectedOutput": [
+   "6",
+   "ab",
+   "TypeError"
+  ],
+  "explanation": "Without an initial value the first element becomes the first accumulator and the iteration starts from the second one. On an empty array there is nothing to take — `reduce` throws a `TypeError`."
+ },
+ {
+  "id": "task-destructuring-default",
+  "topic": "js",
+  "subtopic": "objects",
+  "title": "A default value in destructuring",
+  "language": "js",
+  "prompt": "The default does not fire for every kind of “emptiness”.",
+  "code": "const { a = 'def' } = { a: undefined };\nconst { b = 'def' } = { b: null };\nconst { c = 'def' } = { c: 0 };\nconst { d = 'def' } = {};\n\nconsole.log(a, b, c, d);",
+  "expectedOutput": [
+   "def null 0 def"
+  ],
+  "explanation": "A default value is substituted strictly for `undefined`. `null`, `0` and an empty string pass through as they are — the same distinction as between `||` and `??`."
+ },
+ {
+  "id": "task-generator",
+  "topic": "js",
+  "subtopic": "generators",
+  "title": "The values of a generator",
+  "language": "js",
+  "prompt": "`next(value)` can pass a value back in.",
+  "code": "function* gen() {\n  const x = yield 1;\n  console.log('received:', x);\n  yield x * 2;\n  return 'the end';\n}\n\nconst it = gen();\nconsole.log(it.next());\nconsole.log(it.next(10));\nconsole.log(it.next());\nconsole.log(it.next());",
+  "expectedOutput": [
+   "{ value: 1, done: false }",
+   "received: 10",
+   "{ value: 20, done: false }",
+   "{ value: 'the end', done: true }",
+   "{ value: undefined, done: true }"
+  ],
+  "explanation": "The first `next()` runs to the first `yield` and hands back `1`; the argument of that call is lost — there is nobody to receive it. `next(10)` supplies `10` as the result of the `yield 1` expression. After the `return` the generator is finished, and further calls give `undefined` with `done: true`."
+ },
+ {
+  "id": "task-class-field-order",
+  "topic": "js",
+  "subtopic": "prototypes",
+  "title": "The order class fields are initialised in",
+  "language": "js",
+  "prompt": "The base constructor runs before the subclass's fields.",
+  "code": "class Base {\n  constructor() {\n    this.describe();\n  }\n  describe() {\n    console.log('Base');\n  }\n}\n\nclass Child extends Base {\n  label = 'child';\n  describe() {\n    console.log('Child', this.label);\n  }\n}\n\nnew Child();",
+  "expectedOutput": [
+   "Child undefined"
+  ],
+  "explanation": "The method is resolved dynamically, so the subclass's overridden `describe` is called. But the subclass's fields are initialised **after** `super()` returns, and at the moment of the call `label` has not been assigned yet. This is one of the most common traps of inheritance."
+ },
+ {
+  "id": "task-closure-counter",
+  "topic": "js",
+  "subtopic": "closures",
+  "title": "Independent closures",
+  "language": "js",
+  "prompt": "Every call to the factory creates its own environment.",
+  "code": "function makeCounter() {\n  let count = 0;\n  return () => ++count;\n}\n\nconst a = makeCounter();\nconst b = makeCounter();\n\nconsole.log(a(), a(), a());\nconsole.log(b());\nconsole.log(typeof count);",
+  "expectedOutput": [
+   "1 2 3",
+   "1",
+   "undefined"
+  ],
+  "explanation": "Each call to `makeCounter` creates a new `count` variable and a new closure, so the counters are independent. From outside, `count` is unreachable — `typeof` is the one operator that does not throw a `ReferenceError` on an undeclared variable and returns `'undefined'` instead."
+ },
+ {
+  "id": "task-try-finally",
+  "topic": "js",
+  "subtopic": "errors",
+  "title": "return inside finally",
+  "language": "js",
+  "prompt": "`finally` is able to override the result.",
+  "code": "function f() {\n  try {\n    return 'try';\n  } finally {\n    console.log('finally');\n  }\n}\n\nfunction g() {\n  try {\n    return 'try';\n  } finally {\n    return 'finally';\n  }\n}\n\nconsole.log(f());\nconsole.log(g());",
+  "expectedOutput": [
+   "finally",
+   "try",
+   "finally"
+  ],
+  "explanation": "`finally` always runs, but it substitutes its own value only when it contains an explicit `return`. In `g` the value returned from `try` is lost — and this is a reliable way to swallow an exception by accident too, which is why a `return` inside `finally` is considered an anti-pattern."
+ },
+ {
+  "id": "task-timeout-try-catch",
+  "topic": "js",
+  "subtopic": "errors",
+  "title": "try/catch and asynchrony",
+  "language": "js",
+  "prompt": "Why the wrapper does not catch the callback's error.",
+  "code": "function safe() {\n  try {\n    setTimeout(() => {\n      try {\n        throw new Error('from the timer');\n      } catch (e) {\n        console.log('caught inside the callback:', e.message);\n      }\n    }, 0);\n  } catch (e) {\n    console.log('caught outside');\n  }\n  console.log('left the try');\n}\n\nsafe();\n\nsetTimeout(() => console.log('the next macrotask'), 10);",
+  "expectedOutput": [
+   "left the try",
+   "caught inside the callback: from the timer",
+   "the next macrotask"
+  ],
+  "explanation": "The outer `catch` never fires: `setTimeout` merely queues the callback and returns, and by the time it runs the stack holding the `try` has been unwound. The error can only be caught inside the callback itself — or, if it is not caught, it goes to the global handler without disturbing the surrounding code."
+ },
+ {
+  "id": "task-map-set-dedup",
+  "topic": "js",
+  "subtopic": "objects",
+  "title": "Set, NaN and objects",
+  "language": "js",
+  "prompt": "A Set compares by SameValueZero.",
+  "code": "const set = new Set([1, '1', 1, NaN, NaN, {}, {}]);\nconsole.log(set.size);\nconsole.log(set.has(NaN));\nconsole.log(set.has({}));",
+  "expectedOutput": [
+   "5",
+   "true",
+   "false"
+  ],
+  "explanation": "The numeric `1` and the string `'1'` are different values, and the duplicate `1` was dropped. Two `NaN`s count as the same value (SameValueZero), so `has(NaN)` is true. Two empty object literals are different references, and the third `{}` inside `has` is a new reference as well."
+ },
+ {
+  "id": "task-getter-spread",
+  "topic": "js",
+  "subtopic": "objects",
+  "title": "Getters and spread",
+  "language": "js",
+  "prompt": "Spread evaluates getters.",
+  "code": "let calls = 0;\nconst source = {\n  get value() {\n    calls++;\n    return 42;\n  },\n};\n\nconst copy = { ...source };\nconsole.log(calls);\nconsole.log(copy.value, copy.value);\nconsole.log(calls);",
+  "expectedOutput": [
+   "1",
+   "42 42",
+   "1"
+  ],
+  "explanation": "Spread copies the **result** of the getter rather than the getter itself: it is called exactly once, and the copy is left with an ordinary property holding a value. To preserve the accessor you need `Object.defineProperties` with `Object.getOwnPropertyDescriptors`."
+ },
+ {
+  "id": "task-array-holes",
+  "topic": "js",
+  "subtopic": "arrays",
+  "title": "Sparse arrays",
+  "language": "js",
+  "prompt": "Holes in an array do not behave like `undefined`.",
+  "code": "const arr = [1, , 3];\nconsole.log(arr.length);\nconsole.log(arr.map((x) => x * 2));\nconsole.log(1 in arr);\nconsole.log(Object.keys(arr));",
+  "expectedOutput": [
+   "3",
+   "[ 2, , 6 ]",
+   "false",
+   "[ '0', '2' ]"
+  ],
+  "explanation": "A skipped element is not an `undefined` but a missing index. `map` preserves the hole and does not call the callback for it (which is why the output has a gap there), `in` returns `false`, and `Object.keys` skips the index. This is exactly why `Array(3).map(...)` fills nothing — you need `Array.from({ length: 3 })`."
+ },
+ {
+  "id": "task-ts-enum-reverse",
+  "topic": "ts",
+  "subtopic": "enums",
+  "title": "The reverse mapping of an enum",
+  "language": "ts",
+  "prompt": "A numeric `enum` produces a runtime object with two kinds of keys.",
+  "code": "enum Direction {\n  Up,\n  Down,\n}\n\nenum Level {\n  Low = 'low',\n  High = 'high',\n}\n\nconsole.log(Direction.Up);\nconsole.log(Direction[0]);\nconsole.log(Object.keys(Direction));\nconsole.log(Object.keys(Level));",
+  "expectedOutput": [
+   "0",
+   "Up",
+   "[ '0', '1', 'Up', 'Down' ]",
+   "[ 'Low', 'High' ]"
+  ],
+  "explanation": "A numeric enum compiles into an object holding both a forward and a reverse mapping — hence four keys instead of two. A string enum has no reverse mapping. This is one of the reasons people often take a union of literals with `as const` instead of an `enum`."
+ },
+ {
+  "id": "task-ts-param-properties",
+  "topic": "ts",
+  "subtopic": "classes",
+  "title": "Parameter properties and field initialisation",
+  "language": "ts",
+  "prompt": "The shorthand `constructor(private label)` assigns the field somewhere other than where it looks.",
+  "code": "class Service {\n  private readonly created = this.label?.toUpperCase();\n\n  constructor(private readonly label: string) {}\n\n  describe(): string {\n    return `${this.label} / ${this.created}`;\n  }\n}\n\nconsole.log(new Service('api').describe());",
+  "expectedOutput": [
+   "api / undefined"
+  ],
+  "explanation": "With a modern target (`useDefineForClassFields`, ES2022 and newer) field initialisers run **before** the constructor body, while a parameter property is assigned inside that body. At the moment `created` is computed, `label` is still empty.\n\nThe compiler emits this:\n\n```js\nclass Service {\n  label;\n  created = this.label?.toUpperCase();\n  constructor(label) {\n    this.label = label;\n  }\n}\n```\n\nWith an older target (ES2015) both assignments landed in the constructor in the opposite order, and the same source printed `api / API`. Hence the rule: do not derive fields from parameter properties — move the computation into the constructor body or into a getter."
+ },
+ {
+  "id": "task-ts-satisfies",
+  "topic": "ts",
+  "subtopic": "the type system",
+  "title": "as const and satisfies at runtime",
+  "language": "ts",
+  "prompt": "A check that type-level constructs add nothing to the output.",
+  "code": "const config = { port: 3000, host: 'localhost' } as const;\n\ntype Config = { port: number; host: string };\nconst checked = { port: 8080, host: 'example.com' } satisfies Config;\n\nconsole.log(typeof config.port, config.port);\nconsole.log(Object.isFrozen(config));\nconsole.log(checked.host.toUpperCase());",
+  "expectedOutput": [
+   "number 3000",
+   "false",
+   "EXAMPLE.COM"
+  ],
+  "explanation": "`as const` is a type-level construct: it makes the fields `readonly` for the compiler but never calls `Object.freeze`, so the object is not frozen. `satisfies` verifies conformance to a type and disappears entirely at compile time. Neither of them emits any code."
+ },
+ {
+  "id": "task-ts-generic-erasure",
+  "topic": "ts",
+  "subtopic": "generics",
+  "title": "Type erasure",
+  "language": "ts",
+  "prompt": "Generics exist at compile time only.",
+  "code": "function firstOf<T>(items: T[]): T | undefined {\n  return items[0];\n}\n\nclass Box<T> {\n  constructor(public value: T) {}\n}\n\nconst box = new Box<string>('a');\n\nconsole.log(firstOf([1, 2]));\nconsole.log(firstOf<string>([]));\nconsole.log(box.constructor.name);\nconsole.log(typeof box.value);",
+  "expectedOutput": [
+   "1",
+   "undefined",
+   "Box",
+   "string"
+  ],
+  "explanation": "After compilation nothing is left of `T`: inspecting a type parameter at runtime is impossible, and `box.constructor.name` gives plain `Box`. Hence `firstOf<string>([])` returning `undefined` despite the `T | undefined` signature — the compiler knows nothing about the array being empty."
+ },
+ {
+  "id": "task-ts-optional-nullish",
+  "topic": "ts",
+  "subtopic": "narrowing",
+  "title": "Optional chaining and ??",
+  "language": "ts",
+  "prompt": "Zero and an empty string are valid values.",
+  "code": "interface User {\n  name?: string;\n  score?: number;\n  address?: { city?: string };\n}\n\nconst user: User = { name: '', score: 0 };\n\nconsole.log(user.name || 'anonymous');\nconsole.log(user.name ?? 'anonymous');\nconsole.log(user.score || -1);\nconsole.log(user.score ?? -1);\nconsole.log(user.address?.city);\nconsole.log(user.address?.city ?? 'not given');",
+  "expectedOutput": [
+   "anonymous",
+   "",
+   "-1",
+   "0",
+   "undefined",
+   "not given"
+  ],
+  "explanation": "`||` substitutes the fallback for any falsy value, so an empty string and a zero are lost. `??` reacts only to `null` and `undefined`. Optional chaining on a missing `address` yields `undefined` without throwing."
+ },
+ {
+  "id": "task-ts-private-runtime",
+  "topic": "ts",
+  "subtopic": "classes",
+  "title": "private in TypeScript and a #field",
+  "language": "ts",
+  "prompt": "One restriction exists only for the compiler, the other one for real.",
+  "code": "class Account {\n  private secret = 'ts-private';\n  #hidden = 'real-private';\n\n  reveal(): string {\n    return this.#hidden;\n  }\n}\n\nconst account = new Account();\n\nconsole.log(Object.keys(account));\nconsole.log((account as any).secret);\nconsole.log(account.reveal());\nconsole.log(JSON.stringify(account));",
+  "expectedOutput": [
+   "[ 'secret' ]",
+   "ts-private",
+   "real-private",
+   "{\"secret\":\"ts-private\"}"
+  ],
+  "explanation": "`private` in TypeScript is a compile-time agreement: at runtime it is an ordinary enumerable property, reachable through a cast to `any` and included in `JSON.stringify`. A `#` field is a genuine private field of the language: it appears neither in `Object.keys` nor in the serialisation."
+ }
+]

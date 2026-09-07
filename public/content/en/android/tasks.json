@@ -1,0 +1,338 @@
+[
+ {
+  "id": "task-kt-launch-order",
+  "topic": "coroutines",
+  "subtopic": "structured concurrency",
+  "title": "The order coroutines start in",
+  "language": "kotlin",
+  "prompt": "`launch` does not run its body immediately.",
+  "code": "import kotlinx.coroutines.*\n\nfun main() = runBlocking {\n    println(\"1\")\n    launch {\n        println(\"3\")\n    }\n    println(\"2\")\n    delay(50)\n    println(\"4\")\n}",
+  "expectedOutput": [
+   "1",
+   "2",
+   "3",
+   "4"
+  ],
+  "explanation": "`launch` creates a coroutine and by default (`CoroutineStart.DEFAULT`) queues it on the dispatcher rather than running it at once. The current coroutine carries on to its first suspension point — printing `2` — and only at the `delay` does control pass to the launched one. With `start = CoroutineStart.UNDISPATCHED` the order would be `1 3 2 4`."
+ },
+ {
+  "id": "task-kt-async-await",
+  "topic": "coroutines",
+  "subtopic": "launch and async",
+  "title": "async and parallelism",
+  "language": "kotlin",
+  "prompt": "Two requests of 100 ms each — how long do they take together?",
+  "code": "import kotlinx.coroutines.*\n\nsuspend fun load(name: String): String {\n    delay(100)\n    return name\n}\n\nfun main() = runBlocking {\n    val start = System.currentTimeMillis()\n\n    val a = async { load(\"A\") }\n    val b = async { load(\"B\") }\n    println(a.await() + b.await())\n\n    val slow = load(\"C\") + load(\"D\")\n    println(slow)\n\n    println(System.currentTimeMillis() - start >= 300)\n}",
+  "expectedOutput": [
+   "AB",
+   "CD",
+   "true"
+  ],
+  "explanation": "The two `async` calls start at the same time, and `await` waits for computations already under way — about 100 ms together. The sequential `load` calls add up to 200 ms, so the total exceeds 300 ms. That is exactly how `async` differs from simply calling a suspend function: `suspend` on its own parallelises nothing."
+ },
+ {
+  "id": "task-kt-cancel-finally",
+  "topic": "coroutines",
+  "subtopic": "cancellation",
+  "title": "Cancellation and finally",
+  "language": "kotlin",
+  "prompt": "What still gets printed during a cancellation.",
+  "code": "import kotlinx.coroutines.*\n\nfun main() = runBlocking {\n    val job = launch {\n        try {\n            repeat(100) { i ->\n                println(\"tick $i\")\n                delay(50)\n            }\n        } finally {\n            println(\"cleanup\")\n        }\n    }\n    delay(120)\n    job.cancelAndJoin()\n    println(\"done\")\n}",
+  "expectedOutput": [
+   "tick 0",
+   "tick 1",
+   "tick 2",
+   "cleanup",
+   "done"
+  ],
+  "explanation": "Cancellation in coroutines is cooperative: `delay` is a suspension point, it checks for cancellation and throws a `CancellationException`. The `finally` block runs, so resources can be released. But another suspend function cannot be called inside it — the coroutine is already cancelled; that needs `withContext(NonCancellable)`."
+ },
+ {
+  "id": "task-kt-cooperative-cancel",
+  "topic": "coroutines",
+  "subtopic": "cancellation",
+  "title": "Non-cooperative cancellation",
+  "language": "kotlin",
+  "prompt": "Cancelling a computational loop with no suspension points.",
+  "code": "import kotlinx.coroutines.*\n\nfun main() = runBlocking {\n    val job = launch(Dispatchers.Default) {\n        var i = 0\n        while (i < 3) {\n            // Not a single suspension point: there is nowhere to check for cancellation.\n            Thread.sleep(60)\n            println(\"counting $i\")\n            i++\n        }\n        println(\"finished counting\")\n    }\n    delay(80)\n    job.cancelAndJoin()\n    println(\"cancelled\")\n}",
+  "expectedOutput": [
+   "counting 0",
+   "counting 1",
+   "counting 2",
+   "finished counting",
+   "cancelled"
+  ],
+  "explanation": "`cancel` only raises a flag: a thread cannot be stopped by force. Code with no suspension points never sees that flag and runs to the end — the “cancelled” coroutine keeps burning CPU. The cure is checking `isActive`, or calling `ensureActive()` or `yield()` inside the loop."
+ },
+ {
+  "id": "task-kt-supervisor",
+  "topic": "coroutines",
+  "subtopic": "error handling",
+  "title": "SupervisorJob and a failing child",
+  "language": "kotlin",
+  "prompt": "How one coroutine's error affects its neighbour.",
+  "code": "import kotlinx.coroutines.*\n\nfun main() = runBlocking {\n    val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)\n    val handler = CoroutineExceptionHandler { _, e -> println(\"caught: ${e.message}\") }\n\n    scope.launch(handler) { throw RuntimeException(\"failed\") }\n    val alive = scope.launch { delay(100); println(\"survived\") }\n\n    alive.join()\n    println(\"the end\")\n}",
+  "expectedOutput": [
+   "caught: failed",
+   "survived",
+   "the end"
+  ],
+  "explanation": "With an ordinary `Job` the failure of any child cancels the parent and all the other children. A `SupervisorJob` isolates the children from one another: the neighbouring coroutine lives to the end. A `CoroutineExceptionHandler` works only for a `launch` at the root of a scope — with `async` the error goes to whoever calls `await`."
+ },
+ {
+  "id": "task-kt-withcontext",
+  "topic": "coroutines",
+  "subtopic": "dispatchers",
+  "title": "withContext and its return value",
+  "language": "kotlin",
+  "prompt": "How `withContext` differs from `launch`.",
+  "code": "import kotlinx.coroutines.*\n\nsuspend fun compute(): Int = withContext(Dispatchers.Default) {\n    (1..10).sum()\n}\n\nfun main() = runBlocking {\n    println(\"before\")\n    val result = compute()\n    println(\"result: $result\")\n\n    val job = launch(Dispatchers.Default) { println(\"inside launch\") }\n    job.join()\n    println(\"after\")\n}",
+  "expectedOutput": [
+   "before",
+   "result: 55",
+   "inside launch",
+   "after"
+  ],
+  "explanation": "`withContext` switches the context, **waits** for the result and returns it — an ordinary sequential call that merely happens on another dispatcher. `launch` returns a `Job` and waits for nothing. Hence the rule: for a result use `withContext`, for a background task use `launch`."
+ },
+ {
+  "id": "task-kt-stateflow-conflate",
+  "topic": "coroutines",
+  "subtopic": "Flow",
+  "title": "StateFlow drops intermediate values",
+  "language": "kotlin",
+  "prompt": "Will the subscriber see every value?",
+  "code": "import kotlinx.coroutines.*\nimport kotlinx.coroutines.flow.*\n\nfun main() = runBlocking {\n    val state = MutableStateFlow(0)\n\n    val job = launch {\n        state.collect { println(\"received $it\") }\n    }\n    delay(50)\n\n    state.value = 1\n    state.value = 2\n    state.value = 3\n    delay(50)\n\n    job.cancel()\n    println(\"final ${state.value}\")\n}",
+  "expectedOutput": [
+   "received 0",
+   "received 3",
+   "final 3"
+  ],
+  "explanation": "A `StateFlow` keeps only the latest value and conflates rapid updates: the subscriber gets the initial `0` and the current `3`, while `1` and `2` are lost. That is right for screen state and wrong for events — those call for a `SharedFlow` or a channel. A `StateFlow` also drops a repeat of the same value by `equals`."
+ },
+ {
+  "id": "task-kt-collect-latest",
+  "topic": "coroutines",
+  "subtopic": "Flow",
+  "title": "collectLatest versus collect",
+  "language": "kotlin",
+  "prompt": "What happens to a slow handler.",
+  "code": "import kotlinx.coroutines.*\nimport kotlinx.coroutines.flow.*\n\nfun main() = runBlocking {\n    val source = flow {\n        emit(1)\n        delay(30)\n        emit(2)\n    }\n\n    source.collectLatest { value ->\n        println(\"started $value\")\n        delay(100)\n        println(\"finished $value\")\n    }\n    println(\"done\")\n}",
+  "expectedOutput": [
+   "started 1",
+   "started 2",
+   "finished 2",
+   "done"
+  ],
+  "explanation": "`collectLatest` cancels the previous handler as soon as a new value arrives: the processing of `1` never reaches “finished”. A plain `collect` would wait for each of them and print all four lines, holding the flow up. It is the counterpart of RxJS's `switchMap`."
+ },
+ {
+  "id": "task-kt-flow-cold",
+  "topic": "coroutines",
+  "subtopic": "Flow",
+  "title": "A cold flow",
+  "language": "kotlin",
+  "prompt": "How many times does the body of `flow { }` run?",
+  "code": "import kotlinx.coroutines.*\nimport kotlinx.coroutines.flow.*\n\nfun main() = runBlocking {\n    var builds = 0\n    val numbers = flow {\n        builds++\n        emit(1)\n        emit(2)\n    }\n\n    println(numbers.toList())\n    println(numbers.toList())\n    println(\"body ran times: $builds\")\n}",
+  "expectedOutput": [
+   "[1, 2]",
+   "[1, 2]",
+   "body ran times: 2"
+  ],
+  "explanation": "A `Flow` is cold: the builder's body runs anew for every terminal operator. Two `toList` calls mean two independent runs — and therefore two network requests, if there was a request inside. `shareIn`/`stateIn` are what share a single source between subscribers."
+ },
+ {
+  "id": "task-kt-extension-dispatch",
+  "topic": "kotlin",
+  "subtopic": "extension functions",
+  "title": "Static dispatch of extensions",
+  "language": "kotlin",
+  "prompt": "An extension is chosen by the declared type, not by the actual one.",
+  "code": "open class Animal\nclass Dog : Animal()\n\nfun Animal.name() = \"an animal\"\nfun Dog.name() = \"a dog\"\n\nopen class Base {\n    open fun speak() = \"base\"\n}\nclass Child : Base() {\n    override fun speak() = \"child\"\n}\n\nfun main() {\n    val pet: Animal = Dog()\n    println(pet.name())\n\n    val obj: Base = Child()\n    println(obj.speak())\n}",
+  "expectedOutput": [
+   "an animal",
+   "child"
+  ],
+  "explanation": "Extension functions are not virtual: the compiler picks them by the **static** type of the variable, so `pet.name()` gives “an animal” even though a `Dog` is inside. Ordinary methods are resolved dynamically, and `obj.speak()` prints “child”. An extension never overrides a class's method: when the signatures match, the member wins."
+ },
+ {
+  "id": "task-kt-data-copy",
+  "topic": "kotlin",
+  "subtopic": "data classes",
+  "title": "copy and a nested reference",
+  "language": "kotlin",
+  "prompt": "How deep is a `data class` copy?",
+  "code": "data class Address(var city: String)\ndata class User(val name: String, val address: Address)\n\nfun main() {\n    val original = User(\"Anna\", Address(\"Minsk\"))\n    val copy = original.copy(name = \"Boris\")\n\n    copy.address.city = \"Vilnius\"\n\n    println(original)\n    println(copy)\n    println(original.address === copy.address)\n}",
+  "expectedOutput": [
+   "User(name=Anna, address=Address(city=Vilnius))",
+   "User(name=Boris, address=Address(city=Vilnius))",
+   "true"
+  ],
+  "explanation": "`copy` is shallow: it copies the references to nested objects rather than the objects themselves. A change through the copy is visible in the original — exactly as with spread in JavaScript. Hence the rule: a data class's fields are best made `val` and of immutable types, or the “immutable model” turns out to be imaginary."
+ },
+ {
+  "id": "task-kt-data-equals-array",
+  "topic": "kotlin",
+  "subtopic": "data classes",
+  "title": "equals of a data class holding an array",
+  "language": "kotlin",
+  "prompt": "Comparison through the generated `equals`.",
+  "code": "data class WithArray(val items: IntArray)\ndata class WithList(val items: List<Int>)\n\nfun main() {\n    println(WithArray(intArrayOf(1, 2)) == WithArray(intArrayOf(1, 2)))\n    println(WithList(listOf(1, 2)) == WithList(listOf(1, 2)))\n    println(intArrayOf(1, 2).contentEquals(intArrayOf(1, 2)))\n}",
+  "expectedOutput": [
+   "false",
+   "true",
+   "true"
+  ],
+  "explanation": "The generated `equals` compares the fields through their own `equals`, and an array's is reference-based — two different arrays with identical contents are not equal. A `List` is compared by content. Arrays need `contentEquals`, and inside a data class hand-written `equals`/`hashCode`; the compiler even warns about it."
+ },
+ {
+  "id": "task-kt-lazy-init",
+  "topic": "kotlin",
+  "subtopic": "delegates",
+  "title": "by lazy and the order of initialisation",
+  "language": "kotlin",
+  "prompt": "When is a `lazy` value actually computed?",
+  "code": "class Config {\n    init {\n        println(\"constructor\")\n    }\n\n    val eager = log(\"eager\")\n    val lazyValue: String by lazy { log(\"lazy\") }\n\n    private fun log(name: String): String {\n        println(\"computing $name\")\n        return name\n    }\n}\n\nfun main() {\n    val config = Config()\n    println(\"created\")\n    println(config.lazyValue)\n    println(config.lazyValue)\n}",
+  "expectedOutput": [
+   "constructor",
+   "computing eager",
+   "created",
+   "computing lazy",
+   "lazy",
+   "lazy"
+  ],
+  "explanation": "Field initialisers and `init` blocks run in declaration order when the object is created — `eager` is computed straight away even though it is declared after the `init`. `by lazy` defers the computation until first access and remembers the result: the second read computes nothing. By default `lazy` is thread-safe (`SYNCHRONIZED`)."
+ },
+ {
+  "id": "task-kt-scope-functions",
+  "topic": "kotlin",
+  "subtopic": "scope functions",
+  "title": "What scope functions return",
+  "language": "kotlin",
+  "prompt": "`let`, `run`, `apply`, `also` — the difference in the return value.",
+  "code": "data class Box(var value: Int)\n\nfun main() {\n    val box = Box(1)\n\n    val fromLet = box.let { it.value + 1 }\n    val fromRun = box.run { value + 10 }\n    val fromApply = box.apply { value = 100 }\n    val fromAlso = box.also { it.value += 1 }\n\n    println(fromLet)\n    println(fromRun)\n    println(fromApply)\n    println(fromAlso === box)\n}",
+  "expectedOutput": [
+   "2",
+   "11",
+   "Box(value=101)",
+   "true"
+  ],
+  "explanation": "`let` and `run` return the lambda's result and differ only in how the object is reached (`it` versus `this`). `apply` and `also` return the object itself and are for configuration and side actions. Here `apply` assigned 100 and then `also` added one — so 101 is printed, and it is the very same object."
+ },
+ {
+  "id": "task-kt-nullable-let",
+  "topic": "kotlin",
+  "subtopic": "null safety",
+  "title": "let on a nullable",
+  "language": "kotlin",
+  "prompt": "The `?.let` idiom and what it returns.",
+  "code": "fun describe(text: String?): String {\n    return text?.let { \"length ${it.length}\" } ?: \"no value\"\n}\n\nfun main() {\n    println(describe(\"hello!\"))\n    println(describe(null))\n    println(describe(\"\"))\n\n    val list: List<String>? = null\n    println(list?.size ?: -1)\n    println(list.orEmpty().size)\n}",
+  "expectedOutput": [
+   "length 6",
+   "no value",
+   "length 0",
+   "-1",
+   "0"
+  ],
+  "explanation": "`?.let` runs the block only for a non-null value, and `?:` supplies the fallback. An empty string is a perfectly good value, so it does get into the `let`: that is the difference from JavaScript, where `||` would have caught it too. `orEmpty()` is the short form of `?: emptyList()`."
+ },
+ {
+  "id": "task-kt-sealed-when",
+  "topic": "kotlin",
+  "subtopic": "sealed classes",
+  "title": "when over a sealed hierarchy",
+  "language": "kotlin",
+  "prompt": "Why a `when` over a sealed type needs no `else`.",
+  "code": "sealed interface Result\ndata class Ok(val value: Int) : Result\ndata class Failure(val message: String) : Result\ndata object Loading : Result\n\nfun render(result: Result): String = when (result) {\n    is Ok -> \"ok: ${result.value}\"\n    is Failure -> \"error: ${result.message}\"\n    Loading -> \"loading\"\n}\n\nfun main() {\n    println(render(Ok(42)))\n    println(render(Failure(\"no network\")))\n    println(render(Loading))\n    println(Loading.toString())\n}",
+  "expectedOutput": [
+   "ok: 42",
+   "error: no network",
+   "loading",
+   "Loading"
+  ],
+  "explanation": "The compiler knows every direct subclass of a sealed type, so it checks the `when` for exhaustiveness itself: add a new variant and compilation breaks wherever it was forgotten. It is the same as the `never` exhaustiveness check in TypeScript, only built in. A `data object` gives a meaningful `toString` instead of an address."
+ },
+ {
+  "id": "task-kt-inline-return",
+  "topic": "kotlin",
+  "subtopic": "inline",
+  "title": "A non-local return from an inline function",
+  "language": "kotlin",
+  "prompt": "Which function does the `return` leave?",
+  "code": "inline fun repeatTwice(action: () -> Unit) {\n    action()\n    action()\n}\n\nfun findFirst(numbers: List<Int>): Int? {\n    numbers.forEach { n ->\n        if (n > 1) return n\n    }\n    return null\n}\n\nfun run(): String {\n    repeatTwice {\n        println(\"step\")\n        return \"left run\"\n    }\n    return \"never reached\"\n}\n\nfun main() {\n    println(findFirst(listOf(1, 2, 3)))\n    println(run())\n}",
+  "expectedOutput": [
+   "2",
+   "step",
+   "left run"
+  ],
+  "explanation": "A lambda inside an `inline` function is substituted at the call site, so a `return` in it leaves the **enclosing** function rather than the lambda: “step” is printed once and the second `action()` is never reached. That is also why a `return` works inside `forEach` — it is `inline` too. `crossinline` forbids this behaviour."
+ },
+ {
+  "id": "task-kt-string-template-null",
+  "topic": "kotlin",
+  "subtopic": "null safety",
+  "title": "Platform types and !!",
+  "language": "kotlin",
+  "prompt": "How `!!` differs from `?:`, and when it crashes.",
+  "code": "fun main() {\n    val values: List<String?> = listOf(\"a\", null, \"c\")\n\n    println(values.filterNotNull())\n    println(values.map { it ?: \"-\" })\n    println(values.mapNotNull { it?.uppercase() })\n\n    try {\n        val broken: String? = null\n        println(broken!!.length)\n    } catch (e: NullPointerException) {\n        println(\"NPE\")\n    }\n}",
+  "expectedOutput": [
+   "[a, c]",
+   "[a, -, c]",
+   "[A, C]",
+   "NPE"
+  ],
+  "explanation": "`filterNotNull` removes the nulls and narrows the type to `List<String>`, `?:` supplies a replacement, and `mapNotNull` combines transformation with filtering. `!!` is the one operator that deliberately throws a `NullPointerException`: it says “I take responsibility for this not being null”, and when the author is wrong, the crash happens on exactly that line."
+ },
+ {
+  "id": "task-kt-list-mutability",
+  "topic": "kotlin",
+  "subtopic": "collections",
+  "title": "A read-only List is not immutable",
+  "language": "kotlin",
+  "prompt": "What does a `List` actually guarantee?",
+  "code": "fun main() {\n    val mutable = mutableListOf(1, 2, 3)\n    val readOnly: List<Int> = mutable\n\n    mutable.add(4)\n    println(readOnly)\n\n    val copy = readOnly.toList()\n    mutable.add(5)\n    println(copy)\n    println(readOnly)\n}",
+  "expectedOutput": [
+   "[1, 2, 3, 4]",
+   "[1, 2, 3, 4]",
+   "[1, 2, 3, 4, 5]"
+  ],
+  "explanation": "`List` is a read-only interface rather than an immutable collection: if a `MutableList` sits underneath, the contents change for everyone holding a reference. It is exactly the same promise as `readonly` in TypeScript. A real snapshot comes from `toList()`."
+ },
+ {
+  "id": "task-kt-sequence-lazy",
+  "topic": "kotlin",
+  "subtopic": "collections",
+  "title": "Sequence versus List",
+  "language": "kotlin",
+  "prompt": "The order of the calls under lazy processing.",
+  "code": "fun main() {\n    println(\"list:\")\n    listOf(1, 2, 3)\n        .map { println(\"map $it\"); it * 2 }\n        .first { it > 2 }\n\n    println(\"sequence:\")\n    listOf(1, 2, 3)\n        .asSequence()\n        .map { println(\"map $it\"); it * 2 }\n        .first { it > 2 }\n}",
+  "expectedOutput": [
+   "list:",
+   "map 1",
+   "map 2",
+   "map 3",
+   "sequence:",
+   "map 1",
+   "map 2"
+  ],
+  "explanation": "Operations on a `List` are intermediate and eager: `map` builds a whole new list, and only then does `first` search through it. A `Sequence` computes element by element and stops as soon as the result is found — on large collections that is a difference of several times over. On short lists a sequence is slower instead, because of the overhead."
+ },
+ {
+  "id": "task-kt-companion-static",
+  "topic": "kotlin",
+  "subtopic": "objects",
+  "title": "A companion object and when it is initialised",
+  "language": "kotlin",
+  "prompt": "When is the companion created?",
+  "code": "class Repository private constructor(val name: String) {\n    companion object {\n        init {\n            println(\"companion initialised\")\n        }\n\n        val DEFAULT_NAME = \"repo\"\n\n        fun create(): Repository {\n            println(\"creating\")\n            return Repository(DEFAULT_NAME)\n        }\n    }\n}\n\nobject Singleton {\n    init {\n        println(\"singleton initialised\")\n    }\n\n    fun hello() = \"hello\"\n}\n\nfun main() {\n    println(\"start\")\n    println(Repository.create().name)\n    println(Singleton.hello())\n}",
+  "expectedOutput": [
+   "start",
+   "companion initialised",
+   "creating",
+   "repo",
+   "singleton initialised",
+   "hello"
+  ],
+  "explanation": "Both a `companion object` and an `object` are initialised lazily — on first access rather than at program start. A private constructor plus a factory in the companion is the standard replacement for Java's static methods. In the bytecode the companion remains a nested class, so real statics need the `@JvmStatic` annotation."
+ }
+]

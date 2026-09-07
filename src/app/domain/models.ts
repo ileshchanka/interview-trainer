@@ -19,16 +19,6 @@ export const TOPICS: readonly Topic[] = [
   'coroutines',
 ] as const;
 
-export const TOPIC_TITLES: Record<Topic, string> = {
-  js: 'JavaScript',
-  ts: 'TypeScript',
-  angular: 'Angular',
-  kotlin: 'Kotlin',
-  android: 'Android SDK',
-  compose: 'Compose',
-  coroutines: 'Корутины и Flow',
-};
-
 /** Самооценка после показа ответа — четыре градации, как в Anki. */
 export type Grade = 'again' | 'hard' | 'good' | 'easy';
 

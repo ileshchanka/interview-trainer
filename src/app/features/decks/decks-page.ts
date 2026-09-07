@@ -6,16 +6,19 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { RouterLink } from '@angular/router';
 import { ContentService } from '../../core/content/content.service';
 import { ProgressStore } from '../../core/storage/progress.store';
-import { TOPIC_TITLES, Topic } from '../../domain/models';
-import { TRACK_TASKS_BLURB, TRACK_TITLES } from '../../domain/tracks';
+import { Topic } from '../../domain/models';
+import { TRACK_TITLES } from '../../domain/tracks';
 import { dueCount, newCount } from '../../domain/session';
 import { streakDays } from '../../domain/stats';
 import { isMastered } from '../../domain/srs';
+import { LanguageService } from '../../shared/language.service';
 import { TrackService } from '../../shared/track.service';
 
 interface DeckView {
   readonly topic: Topic;
   readonly title: string;
+  /** Показан ли по этой теме русский оригинал вместо выбранного языка. */
+  readonly fallback: boolean;
   readonly total: number;
   readonly due: number;
   readonly fresh: number;
@@ -34,12 +37,14 @@ export class DecksPage {
   private readonly content = inject(ContentService);
   private readonly progress = inject(ProgressStore);
   private readonly tracks = inject(TrackService);
+  private readonly languages = inject(LanguageService);
 
-  protected readonly titles = TOPIC_TITLES;
+  protected readonly t = this.languages.t;
   protected readonly trackTitle = computed(() => TRACK_TITLES[this.tracks.track()]);
-  protected readonly tasksBlurb = computed(() => TRACK_TASKS_BLURB[this.tracks.track()]);
+  protected readonly tasksBlurb = computed(() => this.t().tracks.tasksBlurb[this.tracks.track()]);
 
   protected readonly decks = computed<DeckView[]>(() => {
+    const titles = this.t().topics;
     const states = this.progress.states();
     const now = Date.now();
 
@@ -48,7 +53,8 @@ export class DecksPage {
       const mastered = cards.filter((card) => isMastered(states.get(card.id))).length;
       return {
         topic,
-        title: TOPIC_TITLES[topic],
+        title: titles[topic],
+        fallback: this.content.isFallback(topic),
         total: cards.length,
         due: dueCount(cards, states, now),
         fresh: newCount(cards, states),

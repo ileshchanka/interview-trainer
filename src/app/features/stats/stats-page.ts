@@ -5,9 +5,9 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { RouterLink } from '@angular/router';
 import { ContentService } from '../../core/content/content.service';
 import { ProgressStore } from '../../core/storage/progress.store';
-import { TOPIC_TITLES } from '../../domain/models';
 import { TRACK_TITLES } from '../../domain/tracks';
 import { streakDays, topicProgress, weakSpots } from '../../domain/stats';
+import { LanguageService } from '../../shared/language.service';
 import { TrackService } from '../../shared/track.service';
 
 @Component({
@@ -21,8 +21,9 @@ export class StatsPage {
   private readonly content = inject(ContentService);
   private readonly progress = inject(ProgressStore);
   private readonly tracks = inject(TrackService);
+  private readonly languages = inject(LanguageService);
 
-  protected readonly titles = TOPIC_TITLES;
+  protected readonly t = this.languages.t;
   protected readonly trackTitle = computed(() => TRACK_TITLES[this.tracks.track()]);
 
   protected readonly progressByTopic = computed(() =>
@@ -66,7 +67,7 @@ export class StatsPage {
   });
 
   protected async reset(): Promise<void> {
-    if (confirm('Удалить весь прогресс? Действие необратимо.')) {
+    if (confirm(this.t().stats.resetConfirm)) {
       await this.progress.reset();
     }
   }

@@ -1,0 +1,569 @@
+[
+ {
+  "id": "co-suspend",
+  "topic": "coroutines",
+  "subtopic": "the basics",
+  "question": "What does the `suspend` modifier do?",
+  "answer": "It lets a function be suspended without blocking the thread, and makes it callable only from a coroutine or another suspend function.",
+  "example": "```kotlin\nsuspend fun load(id: Long): User {\n    delay(100)                 // suspension, not blocking of the thread\n    return api.user(id)\n}\n\n// It can only be called from a coroutine or another suspend function\nviewModelScope.launch { val user = load(1) }\n```",
+  "explanation": "Underneath, the compiler turns it into a state machine and adds a hidden `Continuation` parameter (the CPS transformation). `suspend` by itself switches no threads and parallelises nothing."
+ },
+ {
+  "id": "co-coroutine-vs-thread",
+  "topic": "coroutines",
+  "subtopic": "the basics",
+  "question": "How does a coroutine differ from a thread?",
+  "answer": "A coroutine is an object in memory rather than an OS resource: hundreds of thousands of them can be created. Suspending a coroutine frees the thread for other work, whereas blocking a thread does not.",
+  "example": "```kotlin\n// A hundred thousand coroutines is normal\nrepeat(100_000) { launch { delay(1000) } }\n\n// A hundred thousand threads is an OutOfMemoryError\n// repeat(100_000) { thread { Thread.sleep(1000) } }\n```",
+  "explanation": "Hence the rule: inside a coroutine you must not call blocking APIs (`Thread.sleep`, synchronous HTTP) on a dispatcher that is not meant for blocking."
+ },
+ {
+  "id": "co-structured-concurrency",
+  "topic": "coroutines",
+  "subtopic": "the basics",
+  "question": "What is structured concurrency?",
+  "answer": "Every coroutine belongs to a scope, and the scope does not finish until all of its children have. Cancelling the parent cancels the children, and a child's failure cancels the parent.",
+  "example": "```kotlin\nsuspend fun loadAll(): Pair<User, Settings> = coroutineScope {\n    val user = async { api.user() }\n    val settings = async { api.settings() }\n    user.await() to settings.await()   // leaving here without awaiting the children is impossible\n}\n```",
+  "explanation": "The main benefit is that there are no orphaned tasks: you cannot “forget” a coroutine still running after the screen has closed."
+ },
+ {
+  "id": "co-scope",
+  "topic": "coroutines",
+  "subtopic": "scopes",
+  "question": "What scopes exist on Android, and when do you use which?",
+  "answer": "`viewModelScope` for the lifetime of a ViewModel, `lifecycleScope` for that of an Activity/Fragment, `rememberCoroutineScope` for that of a composable. `GlobalScope` should almost never be used.",
+  "example": "```kotlin\nclass ProfileViewModel : ViewModel() {\n    init {\n        viewModelScope.launch { }      // cancelled in onCleared\n    }\n}\n\nlifecycleScope.launch { }              // cancelled with the Activity/Fragment\n// GlobalScope.launch { }              // never cancelled — do not do this\n```",
+  "explanation": "`GlobalScope` lives for the whole process, is never cancelled and breaks structured concurrency — a direct road to leaks."
+ },
+ {
+  "id": "co-launch-async",
+  "topic": "coroutines",
+  "subtopic": "the basics",
+  "question": "How does `launch` differ from `async`?",
+  "answer": "`launch` starts the work and returns a `Job` — fire and forget. `async` returns a `Deferred<T>` whose result you request through `await`.",
+  "example": "```kotlin\nval job: Job = scope.launch { sync() }                 // fire and forget\nval deferred: Deferred<User> = scope.async { load() }  // with a result\n\njob.join()\nval user = deferred.await()   // an exception, if there was one, surfaces right here\n```",
+  "explanation": "An exception from `async` is delivered at the `await`, while one from `launch` goes straight up the hierarchy. That is why an unhandled `Deferred` can quietly swallow an error."
+ },
+ {
+  "id": "co-runblocking",
+  "topic": "coroutines",
+  "subtopic": "the basics",
+  "question": "Where is `runBlocking` acceptable?",
+  "answer": "In the `main` function of a console application and in tests. In Android code it blocks the thread, and on the main thread it causes an ANR.",
+  "example": "```kotlin\nfun main() = runBlocking {          // acceptable: an entry point\n    launch { println(\"work\") }\n}\n\n@Test fun test() = runTest { }      // in tests — runTest with virtual time\n\n// In Android code runBlocking on the main thread means an ANR\n```",
+  "explanation": "For tests the right choice nowadays is `runTest` from `kotlinx-coroutines-test`: it has virtual time and fast-forwards `delay` instantly."
+ },
+ {
+  "id": "co-dispatchers",
+  "topic": "coroutines",
+  "subtopic": "dispatchers",
+  "question": "What dispatchers are there, and what is each one for?",
+  "answer": "`Main` is the UI thread, `Default` is for computation (a pool sized by the number of cores), `IO` is for blocking operations (a pool of up to 64 threads), and `Unconfined` performs no switching and is almost never needed.",
+  "example": "```kotlin\nwithContext(Dispatchers.IO) { file.readText() }          // blocking operations\nwithContext(Dispatchers.Default) { list.sortedBy { } }   // computation\nwithContext(Dispatchers.Main) { textView.text = text }   // the UI\n```",
+  "explanation": "`IO` and `Default` share their threads: a `withContext(IO)` from `Default` often does not switch threads at all."
+ },
+ {
+  "id": "co-withcontext",
+  "topic": "coroutines",
+  "subtopic": "dispatchers",
+  "question": "How do you choose the thread inside a suspend function?",
+  "answer": "The function is responsible for its own context: it wraps the heavy part in `withContext(Dispatchers.IO)`. The caller should not need to know which thread it runs on.",
+  "example": "```kotlin\n// The function owns its thread — it is safe to call from anywhere\nsuspend fun loadUsers(): List<User> = withContext(Dispatchers.IO) {\n    dao.all()\n}\n\n// The caller needs to know nothing about dispatchers:\nviewModelScope.launch { val users = loadUsers() }\n```",
+  "explanation": "This is the principle of main-safety: any suspend function must be safe to call from the main thread."
+ },
+ {
+  "id": "co-job",
+  "topic": "coroutines",
+  "subtopic": "cancellation",
+  "question": "What is a `Job`, and what states does it have?",
+  "answer": "A handle on a coroutine with a lifecycle: New → Active → Completing → Completed, plus a separate branch Cancelling → Cancelled. `join()` waits for completion, `cancel()` requests cancellation.",
+  "example": "```kotlin\nval job = scope.launch { work() }\n\nprintln(job.isActive)\njob.invokeOnCompletion { cause -> println(cause ?: \"success\") }\njob.cancel()\njob.join()\n```",
+  "explanation": "`Job`s form a hierarchy: a scope has a parent Job, and every coroutine has its own, attached to the parent."
+ },
+ {
+  "id": "co-cancellation-cooperative",
+  "topic": "coroutines",
+  "subtopic": "cancellation",
+  "question": "Why is coroutine cancellation cooperative?",
+  "answer": "`cancel` only raises a flag. The coroutine finishes once it reaches a suspension point (every suspend function from kotlinx checks for cancellation) or checks `isActive` itself.",
+  "example": "```kotlin\nval job = scope.launch(Dispatchers.Default) {\n    while (isActive) {            // without the check the cancellation does nothing\n        heavyStep()\n        ensureActive()            // or like this — it throws a CancellationException\n    }\n}\njob.cancel()\n```",
+  "explanation": "A computational loop with no suspension points keeps running. `ensureActive()`, `yield()` or an `isActive` check in the loop save the day."
+ },
+ {
+  "id": "co-cancellation-exception",
+  "topic": "coroutines",
+  "subtopic": "cancellation",
+  "question": "How should a `CancellationException` be handled?",
+  "answer": "It should not be — it must be rethrown. It signals an orderly cancellation rather than an error, and catching it with a blanket `catch (e: Exception)` breaks the cancellation mechanism.",
+  "example": "```kotlin\ntry {\n    api.load()\n} catch (e: CancellationException) {\n    throw e                       // always rethrow cancellation\n} catch (e: Exception) {\n    report(e)\n}\n```",
+  "explanation": "`try/catch (Exception)` and `runCatching` are both dangerous: they swallow cancellation. Check the type and rethrow `CancellationException`."
+ },
+ {
+  "id": "co-noncancellable",
+  "topic": "coroutines",
+  "subtopic": "cancellation",
+  "question": "How do you run suspend code during cancellation?",
+  "answer": "Wrap it in `withContext(NonCancellable)` inside a `finally`. In a cancelled coroutine ordinary suspend calls throw a `CancellationException` immediately.",
+  "example": "```kotlin\ntry {\n    stream()\n} finally {\n    withContext(NonCancellable) {    // an ordinary suspend call would fail here\n        repository.saveProgress()\n    }\n}\n```",
+  "explanation": "It is used for closing resources and writing a final state — but the block must be short."
+ },
+ {
+  "id": "co-exception-propagation",
+  "topic": "coroutines",
+  "subtopic": "errors",
+  "question": "How do exceptions propagate in coroutines?",
+  "answer": "An error in a `launch` travels upwards and cancels the parent and all its children. An error in an `async` is kept in the `Deferred` and surfaces at the `await`.",
+  "example": "```kotlin\nscope.launch { throw IOException() }        // travels up and cancels the parent\n\nval deferred = scope.async { throw IOException() }\n// until await is called, the exception disturbs nobody\ntry { deferred.await() } catch (e: IOException) { }\n```",
+  "explanation": "The propagation can be stopped with a `SupervisorJob` or a `supervisorScope`."
+ },
+ {
+  "id": "co-supervisor",
+  "topic": "coroutines",
+  "subtopic": "errors",
+  "question": "How does `supervisorScope` differ from `coroutineScope`?",
+  "answer": "In a `coroutineScope` the failure of any child cancels the rest. In a `supervisorScope` the children are independent: one fails, the others carry on.",
+  "example": "```kotlin\ncoroutineScope {                 // one fails and all are cancelled\n    launch { api.a() }\n    launch { api.b() }\n}\n\nsupervisorScope {                // independent of one another\n    launch { api.a() }\n    launch { api.b() }\n}\n```",
+  "explanation": "The first is for when you need the whole result (load everything or nothing), the second for independent operations where a partial result is acceptable."
+ },
+ {
+  "id": "co-exception-handler",
+  "topic": "coroutines",
+  "subtopic": "errors",
+  "question": "Where does a `CoroutineExceptionHandler` work?",
+  "answer": "Only for a root coroutine of a scope started with `launch`. For `async` and for child coroutines it is ignored.",
+  "example": "```kotlin\nval handler = CoroutineExceptionHandler { _, e -> report(e) }\nval scope = CoroutineScope(SupervisorJob() + Dispatchers.Default + handler)\n\nscope.launch { throw IOException() }     // the handler fires\nscope.async { throw IOException() }      // here it does not — the error waits for await\n```",
+  "explanation": "It is a last line of defence, not a replacement for `try/catch`: a local error is better handled where it happened."
+ },
+ {
+  "id": "co-flow-basics",
+  "topic": "coroutines",
+  "subtopic": "Flow",
+  "question": "What is a `Flow`, and how does it differ from a sequence?",
+  "answer": "An asynchronous stream of values: it can suspend between elements. A `Sequence` is synchronous and blocks the thread.",
+  "example": "```kotlin\nval numbers: Flow<Int> = flow {\n    repeat(3) {\n        delay(100)        // suspension is allowed — a Sequence cannot do this\n        emit(it)\n    }\n}\n\nnumbers.collect { println(it) }\n```",
+  "explanation": "A Flow is cold: the builder's body runs anew for every collection. The terminal operators are `collect`, `toList`, `first`."
+ },
+ {
+  "id": "co-statyflow-sharedflow",
+  "topic": "coroutines",
+  "subtopic": "Flow",
+  "question": "How does `StateFlow` differ from `SharedFlow`?",
+  "answer": "`StateFlow` is state: it always has a current value, hands it to a new subscriber, conflates rapid updates and drops repeats by `equals`. `SharedFlow` is events: a configurable buffer, and repeats are not dropped.",
+  "example": "```kotlin\nprivate val _state = MutableStateFlow(UiState.Loading)   // state\nval state = _state.asStateFlow()\n\nprivate val _events = MutableSharedFlow<Event>()          // events\nval events = _events.asSharedFlow()\n```",
+  "explanation": "The rule: screen state is a `StateFlow`, one-off events (navigation, a snackbar) are a `SharedFlow` or a channel."
+ },
+ {
+  "id": "co-hot-cold",
+  "topic": "coroutines",
+  "subtopic": "Flow",
+  "question": "How does a cold flow differ from a hot one?",
+  "answer": "A cold one starts separately for each subscriber (two collectors means two network requests). A hot one exists independently and shares its values with everyone.",
+  "example": "```kotlin\nval cold: Flow<User> = flow { emit(api.load()) }    // a request per subscriber\n\nval hot: StateFlow<User?> = cold.stateIn(\n    viewModelScope,\n    SharingStarted.WhileSubscribed(5_000),\n    null,\n)   // one request for everyone\n```",
+  "explanation": "`shareIn` and `stateIn` turn a cold flow hot — they take a scope and a start strategy."
+ },
+ {
+  "id": "co-sharing-started",
+  "topic": "coroutines",
+  "subtopic": "Flow",
+  "question": "What does `SharingStarted.WhileSubscribed(5000)` do?",
+  "answer": "It keeps the flow active for another 5 seconds after the last subscriber leaves — so that a screen rotation does not restart the data loading.",
+  "example": "```kotlin\nval users = repository.users.stateIn(\n    scope = viewModelScope,\n    started = SharingStarted.WhileSubscribed(5_000),  // survives a screen rotation\n    initialValue = emptyList(),\n)\n// Eagerly — always active, Lazily — from the first subscriber onwards, forever\n```",
+  "explanation": "`Eagerly` runs always, `Lazily` starts with the first subscriber and never stops. The five-second grace period is Google's standard recommendation."
+ },
+ {
+  "id": "co-flowon",
+  "topic": "coroutines",
+  "subtopic": "Flow",
+  "question": "What does the `flowOn` operator do?",
+  "answer": "It changes the context of the operators **preceding** it (upstream). It does not touch the collector's context — that is decided by the scope where `collect` was called.",
+  "example": "```kotlin\nflow { emit(dao.all()) }\n    .map(::toDomain)\n    .flowOn(Dispatchers.IO)     // applies to everything ABOVE\n    .collect { render(it) }     // and this runs in the caller's context\n```",
+  "explanation": "Changing the context inside a `flow { }` with `withContext` is forbidden: the builder checks for it and throws an exception about context preservation being violated."
+ },
+ {
+  "id": "co-buffer-conflate",
+  "topic": "coroutines",
+  "subtopic": "Flow",
+  "question": "How does `buffer` differ from `conflate` and `collectLatest`?",
+  "answer": "`buffer` lets the producer run ahead, stacking values in a buffer. `conflate` keeps only the latest one, skipping the intermediate values. `collectLatest` cancels the processing of the previous value when a new one arrives.",
+  "example": "```kotlin\nsource.buffer().collect { slow(it) }         // the producer runs ahead\nsource.conflate().collect { slow(it) }       // take only the freshest one\nsource.collectLatest { slow(it) }            // cancel the processing of the old one\n```",
+  "explanation": "All three solve the same problem — a slow consumer — in different ways: lose nothing, take the freshest, cancel the old."
+ },
+ {
+  "id": "co-combine-zip",
+  "topic": "coroutines",
+  "subtopic": "Flow",
+  "question": "How does `combine` differ from `zip`?",
+  "answer": "`combine` emits a result whenever **any** source changes, using the latest values of the others. `zip` builds pairs strictly in order and waits for both.",
+  "example": "```kotlin\ncombine(user, settings) { u, s -> UiState(u, s) }   // on a change of either one\n\nuser.zip(settings) { u, s -> u to s }               // strictly pairwise\n```",
+  "explanation": "To combine several pieces of screen state you need `combine`; `zip` fits pairwise processing."
+ },
+ {
+  "id": "co-flatmap-operators",
+  "topic": "coroutines",
+  "subtopic": "Flow",
+  "question": "What are the Flow counterparts of `switchMap`?",
+  "answer": "`flatMapLatest` cancels the previous inner flow, `flatMapConcat` runs them sequentially, and `flatMapMerge` runs them in parallel.",
+  "example": "```kotlin\nquery\n    .debounce(300)\n    .distinctUntilChanged()\n    .flatMapLatest { api.search(it) }   // cancels the previous request\n    .collect(::show)\n```",
+  "explanation": "`flatMapLatest` is the standard answer for search-as-you-type, paired with `debounce`."
+ },
+ {
+  "id": "co-callbackflow",
+  "topic": "coroutines",
+  "subtopic": "Flow",
+  "question": "How do you wrap a callback API in a Flow?",
+  "answer": "With `callbackFlow`: a listener is registered inside, values are sent through `trySend`, and the mandatory `awaitClose` removes the listener.",
+  "example": "```kotlin\nfun locations(): Flow<Location> = callbackFlow {\n    val callback = LocationCallback { trySend(it) }\n    client.requestUpdates(callback)\n\n    awaitClose { client.removeUpdates(callback) }   // without this — an error and a leak\n}\n```",
+  "explanation": "Without an `awaitClose` the builder throws — a safeguard against exactly that leaked subscription."
+ },
+ {
+  "id": "co-suspendcancellable",
+  "topic": "coroutines",
+  "subtopic": "integration",
+  "question": "How do you turn a single-result callback into a suspend function?",
+  "answer": "With `suspendCancellableCoroutine`: the result is delivered through `continuation.resume`, and `invokeOnCancellation` cancels the underlying operation.",
+  "example": "```kotlin\nsuspend fun load(): User = suspendCancellableCoroutine { continuation ->\n    val call = api.enqueue(\n        onSuccess = { continuation.resume(it) },\n        onError = { continuation.resumeWithException(it) },\n    )\n    continuation.invokeOnCancellation { call.cancel() }\n}\n```",
+  "explanation": "A plain `suspendCoroutine` does not support cancellation — when the coroutine is cancelled the request keeps running."
+ },
+ {
+  "id": "co-repeat-on-lifecycle",
+  "topic": "coroutines",
+  "subtopic": "Android",
+  "question": "What is `repeatOnLifecycle` for?",
+  "answer": "It collects a flow only while the screen is in the required state (usually `STARTED`) and **cancels** the collection when the screen goes to the background, resuming it on return.",
+  "example": "```kotlin\nviewLifecycleOwner.lifecycleScope.launch {\n    viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {\n        viewModel.state.collect(::render)   // collection stops in the background\n    }\n}\n```",
+  "explanation": "Without it, `lifecycleScope.launch { flow.collect { } }` keeps collecting in the background and updating an invisible UI. In Compose the same role is played by `collectAsStateWithLifecycle`."
+ },
+ {
+  "id": "co-viewmodelscope",
+  "topic": "coroutines",
+  "subtopic": "Android",
+  "question": "What happens to `viewModelScope` when a screen closes?",
+  "answer": "It is cancelled in `onCleared`, and every coroutine launched in it goes with it. That is exactly why it is used instead of a scope of your own.",
+  "example": "```kotlin\nclass ProfileViewModel : ViewModel() {\n    init { viewModelScope.launch { load() } }\n\n    override fun onCleared() {\n        // viewModelScope is cancelled here automatically\n    }\n}\n```",
+  "explanation": "Work that must finish regardless of the screen (sending analytics, saving) belongs in an application-wide scope or in WorkManager."
+ },
+ {
+  "id": "co-mutex",
+  "topic": "coroutines",
+  "subtopic": "concurrency",
+  "question": "How do you protect shared state in coroutines?",
+  "answer": "A `Mutex` with `withLock` — it suspends the coroutine instead of blocking the thread, unlike `synchronized`. The alternatives are keeping the state on a single thread through `withContext`, or using atomic types.",
+  "example": "```kotlin\nprivate val mutex = Mutex()\nprivate var balance = 0\n\nsuspend fun deposit(amount: Int) = mutex.withLock {   // suspension, not blocking\n    balance += amount\n}\n// synchronized around a suspend call is not allowed\n```",
+  "explanation": "`synchronized` around a suspend call is unacceptable: the coroutine may resume on a different thread, and the lock would never be released."
+ },
+ {
+  "id": "co-channel",
+  "topic": "coroutines",
+  "subtopic": "channels",
+  "question": "When do you need a `Channel` rather than a `Flow`?",
+  "answer": "When a value must be received exactly once by exactly one receiver: navigation events, one-off messages. A `Flow` broadcasts to every subscriber.",
+  "example": "```kotlin\nprivate val events = Channel<Event>(Channel.BUFFERED)\nval eventsFlow = events.receiveAsFlow()   // exactly one subscriber receives it\n\nsuspend fun navigateBack() = events.send(Event.NavigateBack)\n```",
+  "explanation": "A channel has a buffer and an overflow strategy. For UI events people nowadays usually take `Channel(BUFFERED).receiveAsFlow()`."
+ },
+ {
+  "id": "co-testing-coroutines",
+  "topic": "coroutines",
+  "subtopic": "testing",
+  "question": "How do you test coroutines?",
+  "answer": "`runTest` from `kotlinx-coroutines-test` gives virtual time: `delay` is fast-forwarded instantly. Dispatchers are swapped through injection or `Dispatchers.setMain`.",
+  "example": "```kotlin\n@Test\nfun `state is updated`() = runTest {\n    val viewModel = ProfileViewModel(FakeRepository(), StandardTestDispatcher(testScheduler))\n\n    viewModel.load()\n    advanceUntilIdle()          // delay is fast-forwarded instantly\n\n    assertEquals(UiState.Content(user), viewModel.state.value)\n}\n```",
+  "explanation": "Reaching for `Dispatchers.IO` directly inside a class makes it untestable — the dispatcher is better passed through the constructor."
+ },
+ {
+  "id": "co-debounce-throttle",
+  "topic": "coroutines",
+  "subtopic": "Flow",
+  "question": "How do you do debounce and throttle in Flow?",
+  "answer": "`debounce(300)` lets a value through only after a pause. There is no ready-made throttle — it is assembled from `sample(period)` or written by hand.",
+  "example": "```kotlin\nquery\n    .debounce(300)     // fires after a pause in typing\n    .collect(::search)\n\nticks.sample(1_000)    // at most once a second — this replaces throttle\n```",
+  "explanation": "The classic search chain is `debounce` → `distinctUntilChanged` → `flatMapLatest`."
+ },
+ {
+  "id": "co-distinct",
+  "topic": "coroutines",
+  "subtopic": "Flow",
+  "question": "What does `distinctUntilChanged` do?",
+  "answer": "It drops consecutive identical values, comparing by `equals`. For data classes this works out of the box.",
+  "example": "```kotlin\nflowOf(1, 1, 2, 2, 1)\n    .distinctUntilChanged()\n    .toList()          // [1, 2, 1] — consecutive repeats dropped\n\n// StateFlow does this by itself\n```",
+  "explanation": "`StateFlow` does this by itself, so it needs no extra operator."
+ },
+ {
+  "id": "co-continuation",
+  "topic": "coroutines",
+  "subtopic": "internals",
+  "question": "How does the compiler implement suspend functions?",
+  "answer": "By the CPS transformation: the function receives a hidden `Continuation` parameter and turns into a state machine where every suspension point is a separate state that preserves the local variables.",
+  "example": "```kotlin\n// What we write\nsuspend fun load(): User { }\n\n// What the compiler turns it into (simplified)\nfun load(continuation: Continuation<User>): Any   // a state machine plus a continuation\n```",
+  "explanation": "That is why coroutines need no support from the JVM and work on any Android version. Knowing about the state machine explains why suspension is cheap and the thread is not blocked."
+ },
+ {
+  "id": "co-delay-vs-sleep",
+  "topic": "coroutines",
+  "subtopic": "the basics",
+  "question": "How does `delay` differ from `Thread.sleep`?",
+  "answer": "`delay` suspends the coroutine and frees the thread for other work; `Thread.sleep` blocks the thread entirely.",
+  "example": "```kotlin\nlaunch { delay(1000) }          // the thread is free, cancellation works\n\nlaunch { Thread.sleep(1000) }   // the thread is busy and will not notice a cancellation\n```",
+  "explanation": "`delay` is a suspension point, which means cancellation works through it. `Thread.sleep` will not notice a cancellation."
+ },
+ {
+  "id": "co-coroutine-context",
+  "topic": "coroutines",
+  "subtopic": "the basics",
+  "question": "What is a `CoroutineContext` made of?",
+  "answer": "Of a set of elements: a `Job`, a `CoroutineDispatcher`, a `CoroutineName`, a `CoroutineExceptionHandler`. The elements are combined with the `+` operator.",
+  "example": "```kotlin\nval context = Dispatchers.IO + CoroutineName(\"sync\") + SupervisorJob()\n\nscope.launch(context) { }\n\n// A child inherits the parent's context, but its Job is always its own\n```",
+  "explanation": "A child coroutine inherits its parent's context with the named elements replaced, but its `Job` is always a new one, subordinate to the parent's."
+ },
+ {
+  "id": "co-coroutine-scope-builder",
+  "topic": "coroutines",
+  "subtopic": "the basics",
+  "question": "How does `coroutineScope { }` differ from `CoroutineScope(...)`?",
+  "answer": "`coroutineScope` is a suspend function: it creates a nested scope, waits for all children and returns a result. `CoroutineScope(...)` is a constructor for a long-lived scope whose cancellation is your responsibility.",
+  "example": "```kotlin\nsuspend fun load() = coroutineScope {     // waits for the children and returns a result\n    val a = async { api.a() }\n    a.await()\n}\n\nval appScope = CoroutineScope(SupervisorJob())   // long-lived, cancel it yourself\n```",
+  "explanation": "Inside a suspend function you almost always want the first: it guarantees that no coroutines are still running once the function returns."
+ },
+ {
+  "id": "co-await-all",
+  "topic": "coroutines",
+  "subtopic": "the basics",
+  "question": "How do you await several `async`s at once?",
+  "answer": "`awaitAll(a, b)` or `listOf(a, b).awaitAll()`. It throws the very first exception without waiting for the rest.",
+  "example": "```kotlin\nval users = listOf(1L, 2L, 3L)\n    .map { id -> async { api.user(id) } }\n    .awaitAll()          // throws the very first exception\n\nval (a, b) = awaitAll(deferredA, deferredB)\n```",
+  "explanation": "Sequential `a.await(); b.await()` gives the same result, but you see the second one's error later — and only if the first succeeded."
+ },
+ {
+  "id": "co-coroutine-start",
+  "topic": "coroutines",
+  "subtopic": "the basics",
+  "question": "What start modes does a coroutine have?",
+  "answer": "`DEFAULT` queues it on the dispatcher; `LAZY` does not start it until `start()`/`await()`; `ATOMIC` begins even when the scope is already cancelled; `UNDISPATCHED` runs it synchronously up to the first suspension.",
+  "example": "```kotlin\nval lazy = scope.async(start = CoroutineStart.LAZY) { expensive() }\n// computed only on lazy.await() or lazy.start()\n\nscope.launch(start = CoroutineStart.UNDISPATCHED) {\n    println(\"runs synchronously up to the first suspension\")\n}\n```",
+  "explanation": "`LAZY` is useful for an `async` whose result may never be needed."
+ },
+ {
+  "id": "co-job-vs-deferred",
+  "topic": "coroutines",
+  "subtopic": "the basics",
+  "question": "How does a `Job` differ from a `Deferred`?",
+  "answer": "A `Deferred<T>` is a `Job` with a result. A `Job` has `join()`, a `Deferred` also has `await()`, which returns the value or throws.",
+  "example": "```kotlin\nval job: Job = scope.launch { }\njob.join()                    // wait; it throws nothing\n\nval deferred: Deferred<User> = scope.async { load() }\nval user = deferred.await()   // wait and get the result (or the exception)\n```",
+  "explanation": "`join` never throws the coroutine's own exception — you can use it to wait for completion without handling the error."
+ },
+ {
+  "id": "co-invoke-on-completion",
+  "topic": "coroutines",
+  "subtopic": "the basics",
+  "question": "What does `invokeOnCompletion` do?",
+  "answer": "It registers a callback for a `Job`'s completion, with the cause (`null` on success, a `CancellationException` on cancellation, the exception on failure).",
+  "example": "```kotlin\njob.invokeOnCompletion { cause ->\n    when (cause) {\n        null -> log(\"success\")\n        is CancellationException -> log(\"cancelled\")\n        else -> report(cause)\n    }\n}\n```",
+  "explanation": "The callback runs synchronously and cannot be a suspend function: heavy work must not go into it."
+ },
+ {
+  "id": "co-yield",
+  "topic": "coroutines",
+  "subtopic": "cancellation",
+  "question": "What does `yield()` do?",
+  "answer": "It gives the thread to other coroutines and checks for cancellation. It is the cheapest way to make a computational loop cooperative.",
+  "example": "```kotlin\nlaunch(Dispatchers.Default) {\n    repeat(1_000_000) {\n        compute(it)\n        if (it % 1000 == 0) yield()   // give up the thread and check for cancellation\n    }\n}\n```",
+  "explanation": "The alternative is `ensureActive()`, which only checks for cancellation without giving up the thread."
+ },
+ {
+  "id": "co-with-timeout",
+  "topic": "coroutines",
+  "subtopic": "cancellation",
+  "question": "How does `withTimeout` differ from `withTimeoutOrNull`?",
+  "answer": "The first throws a `TimeoutCancellationException`, the second returns `null`. Both cancel the nested work once the time is up.",
+  "example": "```kotlin\nval user = withTimeoutOrNull(3_000) { api.load() } ?: return showTimeout()\n\ntry {\n    withTimeout(3_000) { api.load() }\n} catch (e: TimeoutCancellationException) {\n    showTimeout()\n}\n```",
+  "explanation": "`TimeoutCancellationException` is a subclass of `CancellationException`, so a blanket `catch (e: CancellationException)` catches it too — which is often unexpected."
+ },
+ {
+  "id": "co-limited-parallelism",
+  "topic": "coroutines",
+  "subtopic": "dispatchers",
+  "question": "What is `limitedParallelism` for?",
+  "answer": "It makes a view of a dispatcher with a limited number of concurrent tasks — no more than four simultaneous API requests, say.",
+  "example": "```kotlin\nprivate val apiDispatcher = Dispatchers.IO.limitedParallelism(4)\n\nsuspend fun load(id: Long) = withContext(apiDispatcher) { api.user(id) }\n// No more than four concurrent requests; the threads come from the shared pool\n```",
+  "explanation": "People used to create separate pools for this; `limitedParallelism` reuses the shared pool's threads and does not multiply them."
+ },
+ {
+  "id": "co-main-immediate",
+  "topic": "coroutines",
+  "subtopic": "dispatchers",
+  "question": "How does `Dispatchers.Main.immediate` differ from `Dispatchers.Main`?",
+  "answer": "`immediate` runs the block right away if we are already on the main thread, without queueing it. Plain `Main` always schedules a task.",
+  "example": "```kotlin\nwithContext(Dispatchers.Main.immediate) {\n    textView.text = value    // if we are already on the main thread, it runs at once\n}\n```",
+  "explanation": "This removes an extra frame of delay when updating the UI, and flicker in tests."
+ },
+ {
+  "id": "co-single-thread-context",
+  "topic": "coroutines",
+  "subtopic": "dispatchers",
+  "question": "When do you need a single-threaded dispatcher of your own?",
+  "answer": "When a library requires being called strictly from one thread, or when access to state has to be serialised without locks.",
+  "example": "```kotlin\nval dispatcher = newSingleThreadContext(\"db\")   // the thread must be closed\ntry {\n    withContext(dispatcher) { legacyLibrary.call() }\n} finally {\n    dispatcher.close()\n}\n\n// Usually simpler: Dispatchers.IO.limitedParallelism(1)\n```",
+  "explanation": "`newSingleThreadContext` creates a thread that has to be closed (`close()`), or it leaks. `limitedParallelism(1)` is usually simpler."
+ },
+ {
+  "id": "co-thread-local",
+  "topic": "coroutines",
+  "subtopic": "dispatchers",
+  "question": "What happens to a `ThreadLocal` in coroutines?",
+  "answer": "A coroutine may resume on a different thread, so the `ThreadLocal` is lost. `asContextElement()` carries the value across.",
+  "example": "```kotlin\nval requestId = ThreadLocal<String>()\n\nwithContext(requestId.asContextElement(\"req-42\")) {\n    // the value survives thread switches inside the coroutine\n    log(requestId.get())\n}\n```",
+  "explanation": "MDC logging and tracing break on exactly this unless they are tied to the coroutine's context."
+ },
+ {
+  "id": "co-flow-builders",
+  "topic": "coroutines",
+  "subtopic": "Flow",
+  "question": "What ways are there to create a `Flow`?",
+  "answer": "`flowOf(...)`, `asFlow()` on collections and sequences, the `flow { emit(...) }` builder, plus `channelFlow`/`callbackFlow` for callback-based sources.",
+  "example": "```kotlin\nflowOf(1, 2, 3)\nlistOf(1, 2, 3).asFlow()\n\nflow { emit(api.load()) }            // emission is allowed only from here\n\nchannelFlow { launch { send(1) } }   // and here — from several coroutines\n```",
+  "explanation": "Inside an ordinary `flow { }` you cannot emit from another coroutine — the context-preservation check guards against it."
+ },
+ {
+  "id": "co-channel-flow",
+  "topic": "coroutines",
+  "subtopic": "Flow",
+  "question": "How does `channelFlow` differ from `flow` and `callbackFlow`?",
+  "answer": "`channelFlow` allows emitting from several coroutines through `send`. `callbackFlow` is its special case for callback APIs, and it requires an `awaitClose`.",
+  "example": "```kotlin\nfun merged(): Flow<Item> = channelFlow {\n    launch { api.a().forEach { send(it) } }\n    launch { api.b().forEach { send(it) } }\n}\n\nfun clicks(): Flow<Unit> = callbackFlow {\n    val listener = View.OnClickListener { trySend(Unit) }\n    view.setOnClickListener(listener)\n    awaitClose { view.setOnClickListener(null) }\n}\n```",
+  "explanation": "The price of concurrent emission is an internal channel and slightly more overhead than a plain `flow`."
+ },
+ {
+  "id": "co-flow-catch",
+  "topic": "coroutines",
+  "subtopic": "Flow",
+  "question": "What does the `catch` operator do, and why does it not catch the collector's errors?",
+  "answer": "It intercepts exceptions from **upstream**. An error inside `collect { }` belongs to the consumer and is not caught by it — that is the principle of exception transparency.",
+  "example": "```kotlin\napi.users()\n    .map(::toUi)\n    .catch { emit(UiState.Error) }   // catches only what is ABOVE\n    .collect { state ->\n        render(state)                // an error from here will not reach the catch\n    }\n```",
+  "explanation": "The consumer has to be wrapped in an ordinary `try/catch`, or the logic moved into an `onEach` placed before the `catch`."
+ },
+ {
+  "id": "co-flow-retry",
+  "topic": "coroutines",
+  "subtopic": "Flow",
+  "question": "How do you retry a failed request in a Flow?",
+  "answer": "`retry(times) { cause -> cause is IOException }`, or `retryWhen` with a delay and an attempt counter.",
+  "example": "```kotlin\napi.users()\n    .retryWhen { cause, attempt ->\n        if (cause is IOException && attempt < 3) {\n            delay(1000 * (attempt + 1))\n            true\n        } else false\n    }\n    .collect(::render)\n```",
+  "explanation": "A retry restarts the entire upstream, so any side effects further up the chain happen again."
+ },
+ {
+  "id": "co-flow-lifecycle-ops",
+  "topic": "coroutines",
+  "subtopic": "Flow",
+  "question": "What do `onStart`, `onEach` and `onCompletion` do?",
+  "answer": "`onStart` runs before the first value (handy for showing a loading state), `onEach` runs for every value, and `onCompletion` runs on completion or failure, with the cause as its parameter.",
+  "example": "```kotlin\napi.users()\n    .onStart { emit(UiState.Loading) }\n    .onEach { log(it) }\n    .onCompletion { cause -> if (cause == null) log(\"done\") }\n    .collect(::render)\n```",
+  "explanation": "`onCompletion` is also called on cancellation, which is why the type of the cause is checked inside it."
+ },
+ {
+  "id": "co-flow-take",
+  "topic": "coroutines",
+  "subtopic": "Flow",
+  "question": "What happens to an infinite flow after a `take(1)`?",
+  "answer": "The operator cancels the upstream by throwing an internal cancellation exception: production stops and the resources are released.",
+  "example": "```kotlin\ninfinite()\n    .take(1)        // cancels the upstream after the first value\n    .collect(::use)\n\nval first = infinite().first()   // the same thing\n```",
+  "explanation": "`first()` does the same. That is exactly why a `callbackFlow` must remove its subscription in `awaitClose`."
+ },
+ {
+  "id": "co-shared-flow-config",
+  "topic": "coroutines",
+  "subtopic": "Flow",
+  "question": "What do `replay`, `extraBufferCapacity` and `onBufferOverflow` set on a `MutableSharedFlow`?",
+  "answer": "`replay` is how many recent values a new subscriber receives; `extraBufferCapacity` is the buffer size on top of the replay; `onBufferOverflow` decides what to do when it fills up (suspend, drop the oldest, or drop the newest).",
+  "example": "```kotlin\nprivate val _events = MutableSharedFlow<Event>(\n    replay = 0,\n    extraBufferCapacity = 1,\n    onBufferOverflow = BufferOverflow.DROP_OLDEST,\n)\n\n_events.tryEmit(Event.Refresh)   // with no buffer it would return false\n```",
+  "explanation": "A `MutableSharedFlow()` with no parameters has no buffer: `tryEmit` returns `false` when nobody is collecting."
+ },
+ {
+  "id": "co-state-in",
+  "topic": "coroutines",
+  "subtopic": "Flow",
+  "question": "How does `stateIn` differ from `shareIn`?",
+  "answer": "`stateIn` produces a `StateFlow` with a current value (and therefore requires an initial one), `shareIn` produces a `SharedFlow` with no mandatory value. Both turn a cold flow hot.",
+  "example": "```kotlin\nval state: StateFlow<UiState> = repository.users\n    .map(::toUiState)\n    .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), UiState.Loading)\n\nval events: SharedFlow<Event> = source.shareIn(viewModelScope, SharingStarted.Eagerly)\n```",
+  "explanation": "Both need a scope and a start strategy — usually `viewModelScope` and `WhileSubscribed(5000)`."
+ },
+ {
+  "id": "co-flow-backpressure",
+  "topic": "coroutines",
+  "subtopic": "Flow",
+  "question": "How does Flow solve the problem of a slow consumer?",
+  "answer": "By suspending the producer: `emit` does not return until the value has been processed. `buffer`, `conflate` and `collectLatest` change that behaviour.",
+  "example": "```kotlin\nflow {\n    repeat(100) {\n        emit(it)         // does not return until the value has been processed\n    }\n}.collect { slow(it) }\n\n// To change the behaviour: buffer(), conflate(), collectLatest {}\n```",
+  "explanation": "No separate backpressure mechanism as in Reactive Streams is needed — suspension itself plays that role."
+ },
+ {
+  "id": "co-select",
+  "topic": "coroutines",
+  "subtopic": "advanced",
+  "question": "What does a `select` expression do?",
+  "answer": "It waits for the first of several suspendable events: the result of one of the `Deferred`s, a receive from a channel, a timeout.",
+  "example": "```kotlin\nval result = select<String> {\n    deferredA.onAwait { \"A came first\" }\n    deferredB.onAwait { \"B came first\" }\n    onTimeout(1_000) { \"nobody made it\" }\n}\n```",
+  "explanation": "It is a way to implement a race without manual synchronisation; the API is marked experimental and is rarely used."
+ },
+ {
+  "id": "co-actor-produce",
+  "topic": "coroutines",
+  "subtopic": "channels",
+  "question": "What are `produce` and the actor model?",
+  "answer": "`produce` launches a coroutine that hands values into a channel. An actor is a coroutine that owns state and accepts commands through a channel: the state changes in one place and needs no locks.",
+  "example": "```kotlin\nval numbers = produce {          // the coroutine hands values into a channel\n    repeat(3) { send(it) }\n}\n\n// An actor: the state lives in one coroutine, the outside sends only commands\nval counter = actor<Command> {\n    var count = 0\n    for (command in channel) count += command.delta\n}\n```",
+  "explanation": "Both builders are experimental; for UI state people nowadays take a `MutableStateFlow`."
+ },
+ {
+  "id": "co-live-data-flow",
+  "topic": "coroutines",
+  "subtopic": "Android",
+  "question": "Why is `StateFlow` better than `LiveData`, and what does it lack?",
+  "answer": "`StateFlow` is not tied to Android, works in shared code, has operators and requires an explicit initial value. `LiveData` has lifecycle awareness built in, while `StateFlow` needs it added through `repeatOnLifecycle`.",
+  "example": "```kotlin\nval state: StateFlow<UiState> = ...          // works in shared KMP code too\nval legacy: LiveData<UiState> = state.asLiveData()\n\n// StateFlow knows nothing about the lifecycle — repeatOnLifecycle is needed\n```",
+  "explanation": "There are bridges both ways: `asLiveData()` and `asFlow()`."
+ },
+ {
+  "id": "co-launch-when-started",
+  "topic": "coroutines",
+  "subtopic": "Android",
+  "question": "Why is `lifecycleScope.launchWhenStarted` considered deprecated?",
+  "answer": "It only suspends the coroutine in the background, while the upstream keeps running and burning resources. `repeatOnLifecycle` cancels the collection outright and starts it again.",
+  "example": "```kotlin\n// Deprecated: the coroutine is suspended, but the upstream keeps working\nlifecycleScope.launchWhenStarted { flow.collect(::render) }\n\n// Correct: the collection is cancelled entirely in the background\nlifecycleScope.launch {\n    repeatOnLifecycle(Lifecycle.State.STARTED) { flow.collect(::render) }\n}\n```",
+  "explanation": "The difference is most visible with hot flows: a suspended collector still holds on to its subscription."
+ },
+ {
+  "id": "co-test-dispatchers",
+  "topic": "coroutines",
+  "subtopic": "testing",
+  "question": "How does `StandardTestDispatcher` differ from `UnconfinedTestDispatcher`?",
+  "answer": "`Standard` queues coroutines — they have to be advanced by hand (`advanceUntilIdle`), which makes the ordering explicit. `Unconfined` runs them immediately, which is convenient but hides races.",
+  "example": "```kotlin\n@Test fun standard() = runTest {\n    launch { println(\"second\") }\n    println(\"first\")\n    advanceUntilIdle()          // the ordering is explicit\n}\n\n@Test fun unconfined() = runTest(UnconfinedTestDispatcher()) {\n    launch { println(\"first\") }   // runs immediately\n}\n```",
+  "explanation": "`runTest` uses `StandardTestDispatcher` and virtual time by default."
+ },
+ {
+  "id": "co-injecting-dispatchers",
+  "topic": "coroutines",
+  "subtopic": "testing",
+  "question": "Why should a dispatcher be injected rather than called directly?",
+  "answer": "A hard-coded `Dispatchers.IO` inside a class cannot be replaced in a test: time becomes real and the ordering non-deterministic.",
+  "example": "```kotlin\nclass UserRepository(\n    private val io: CoroutineDispatcher = Dispatchers.IO,   // replaced in tests\n) {\n    suspend fun load() = withContext(io) { dao.all() }\n}\n\nUserRepository(StandardTestDispatcher(testScheduler))\n```",
+  "explanation": "The dispatcher is passed through the constructor with a default value — that is cheap and makes the class testable."
+ },
+ {
+  "id": "co-cancellation-leak",
+  "topic": "coroutines",
+  "subtopic": "cancellation",
+  "question": "Why is a `try/catch(Exception)` around a suspend call dangerous?",
+  "answer": "It catches the `CancellationException`, and a coroutine that was asked to stop keeps running — structured concurrency breaks down.",
+  "example": "```kotlin\n// Bad: swallows cancellation\ntry { api.load() } catch (e: Exception) { report(e) }\n\n// Good\ntry {\n    api.load()\n} catch (e: CancellationException) {\n    throw e\n} catch (e: IOException) {\n    report(e)\n}\n```",
+  "explanation": "The correct pattern is catching specific types, or rethrowing `CancellationException` explicitly."
+ },
+ {
+  "id": "co-global-scope-danger",
+  "topic": "coroutines",
+  "subtopic": "scopes",
+  "question": "What exactly is wrong with `GlobalScope`?",
+  "answer": "Its coroutines are attached to nothing: nobody cancels them when a screen closes, errors never reach a parent, and in tests they outlive the test itself.",
+  "example": "```kotlin\n// Nobody will cancel it or wait for it:\n// GlobalScope.launch { sync() }\n\n// Work that outlives the screen belongs to an explicit owner\n@Singleton\nclass AppScope @Inject constructor() : CoroutineScope by CoroutineScope(SupervisorJob())\n```",
+  "explanation": "If work has to outlive the screen, its place is in an application scope (`CoroutineScope(SupervisorJob())` in DI) or in WorkManager — with an explicit owner."
+ }
+]

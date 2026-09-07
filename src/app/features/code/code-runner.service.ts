@@ -1,4 +1,5 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
+import { LanguageService } from '../../shared/language.service';
 import { transpile } from '../../shared/monaco/monaco-loader';
 import type { RunRequest, RunResult } from './runner.worker';
 
@@ -8,6 +9,8 @@ import type { RunRequest, RunResult } from './runner.worker';
  */
 @Injectable({ providedIn: 'root' })
 export class CodeRunner {
+  private readonly languages = inject(LanguageService);
+
   /**
    * Потолок на одну задачу. Секунды хватает с запасом — задачи короткие,
    * а всё, что дольше, почти наверняка бесконечный цикл.
@@ -32,7 +35,7 @@ export class CodeRunner {
         worker.terminate();
         resolve({
           output: [],
-          error: `Выполнение прервано через ${this.timeoutMs / 1000} с — похоже на бесконечный цикл.`,
+          error: this.languages.t().runner.timeout(this.timeoutMs / 1000),
         });
       }, this.timeoutMs);
 
@@ -45,7 +48,7 @@ export class CodeRunner {
       worker.onerror = (event) => {
         clearTimeout(timer);
         worker.terminate();
-        resolve({ output: [], error: event.message || 'Ошибка выполнения' });
+        resolve({ output: [], error: event.message || this.languages.t().runner.error });
       };
 
       const request: RunRequest = { code };

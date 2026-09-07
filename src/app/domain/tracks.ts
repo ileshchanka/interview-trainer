@@ -15,26 +15,10 @@ export const TRACKS: readonly Track[] = ['web', 'android'] as const;
 
 export const DEFAULT_TRACK: Track = 'web';
 
+/** Названия направлений одинаковы на всех языках, поэтому живут здесь, а не в словаре. */
 export const TRACK_TITLES: Record<Track, string> = {
   web: 'Web',
   android: 'Android',
-};
-
-/** Подпись для переключателя: одного слова «Web» мало, чтобы понять состав. */
-export const TRACK_SUBTITLES: Record<Track, string> = {
-  web: 'JavaScript · TypeScript · Angular',
-  android: 'Kotlin · Android SDK · Compose · корутины',
-};
-
-/**
- * Чем заняты кодовые задачи трека. Текст разный не для красоты: в вебе код
- * действительно исполняется, а в андроид-треке — нет, и обещать обратное
- * нельзя.
- */
-export const TRACK_TASKS_BLURB: Record<Track, string> = {
-  web: '«Что выведет этот код» — event loop, this, замыкания, приведение типов и дженерики. Код запускается прямо в браузере, вывод сверяется с фактическим.',
-  android:
-    '«Что выведет этот код» — корутины и Flow, отмена, scope-функции, data-классы и статическая диспетчеризация. Kotlin в браузере не выполняется: ответ сверяется с записанным, а тот проверен настоящим компилятором при сборке.',
 };
 
 export const TOPICS_BY_TRACK: Record<Track, readonly Topic[]> = {

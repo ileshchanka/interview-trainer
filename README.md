@@ -61,10 +61,12 @@ src/app/
   domain/     чистый TypeScript без Angular: SM-2, отбор сессии, сравнение вывода, треки
   core/       хранилище прогресса (IndexedDB за интерфейсом) и загрузка контента
   features/   экраны: колоды, повторение, задачи, статистика
-  shared/     обёртка Monaco, Markdown, тема, выбранный трек
+  shared/     обёртка Monaco, Markdown, тема, язык, выбранный трек
 public/content/
-  web/        js.json  ts.json  angular.json  tasks.json
-  android/    kotlin.json  android.json  compose.json  coroutines.json  tasks.json
+  ru/web/     js.json  ts.json  angular.json  tasks.json
+  ru/android/ kotlin.json  android.json  compose.json  coroutines.json  tasks.json
+  en/web/     то же самое по-английски
+  en/android/ то же самое по-английски
 ```
 
 Состав треков задан один раз в `src/app/domain/tracks.ts`; загружается всегда ровно один
@@ -89,9 +91,15 @@ TypeScript транспилируется **самим Monaco** — компил
 
 ## Пополнение корпуса
 
-Вопросы и задачи — статические JSON в `public/content/<трек>/`. Добавили карточку — запустите
-`npm run verify:content`. Идентификаторы стабильны и не должны меняться:
+Вопросы и задачи — статические JSON в `public/content/<язык>/<трек>/`. Добавили карточку —
+запустите `npm run verify:content`. Идентификаторы стабильны и не должны меняться:
 по ним привязан накопленный прогресс.
 
 Новая тема добавляется в `src/app/domain/tracks.ts` и в таблицу `TRACKS` внутри
 `scripts/verify-content.mjs`, после чего рядом кладётся файл `<тема>.json`.
+
+Корпус существует на двух языках целиком. Перевод темы — это файл с тем же именем
+в `public/content/en/<трек>/` и запись в `TRANSLATED_TOPICS` (`src/app/domain/languages.ts`).
+**Идентификаторы в переводе те же, что в оригинале**: прогресс общий для обоих языков,
+и `verify:content` следит за этим отдельной проверкой. Новая тема, которую ещё не
+перевели, показывается на английском языке в русском оригинале с пометкой.

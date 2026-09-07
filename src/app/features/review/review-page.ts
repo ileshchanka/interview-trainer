@@ -15,17 +15,12 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { RouterLink } from '@angular/router';
 import { ContentService } from '../../core/content/content.service';
 import { ProgressStore } from '../../core/storage/progress.store';
-import { Card, GRADES, Grade, TOPIC_TITLES, Topic } from '../../domain/models';
+import { Card, GRADES, Grade, Topic } from '../../domain/models';
 import { SessionQueue, advance, buildSession } from '../../domain/session';
 import { initialState, review } from '../../domain/srs';
+import { LanguageService } from '../../shared/language.service';
 import { MarkdownPipe } from '../../shared/markdown.pipe';
-
-const GRADE_LABELS: Record<Grade, string> = {
-  again: 'Не помню',
-  hard: 'Трудно',
-  good: 'Помню',
-  easy: 'Легко',
-};
+import { Messages } from '../../shared/i18n/messages';
 
 interface GradeButton {
   readonly grade: Grade;
@@ -54,6 +49,9 @@ interface GradeButton {
 export class ReviewPage {
   private readonly content = inject(ContentService);
   private readonly progress = inject(ProgressStore);
+  private readonly languages = inject(LanguageService);
+
+  protected readonly t = this.languages.t;
 
   /** Тема из маршрута; пусто — сессия по всем темам сразу. */
   readonly topic = input<Topic | undefined>(undefined);
@@ -66,7 +64,7 @@ export class ReviewPage {
 
   protected readonly topicTitle = computed(() => {
     const topic = this.topic();
-    return topic ? TOPIC_TITLES[topic] : 'Все темы';
+    return topic ? this.t().topics[topic] : this.t().review.allTopics;
   });
 
   protected readonly current = computed<Card | undefined>(() => {
@@ -88,12 +86,13 @@ export class ReviewPage {
       return [];
     }
     const now = Date.now();
+    const t = this.t();
     const state = this.progress.states().get(card.id) ?? initialState(card.id, now);
 
     return GRADES.map((grade, index) => ({
       grade,
-      label: GRADE_LABELS[grade],
-      hint: formatInterval(review(state, grade, now).intervalDays),
+      label: t.review.grades[grade],
+      hint: formatInterval(t.review.interval, review(state, grade, now).intervalDays),
       hotkey: `${index + 1}`,
     }));
   });
@@ -161,16 +160,16 @@ export class ReviewPage {
 }
 
 /** «через 6 дней» читается лучше, чем «6». */
-function formatInterval(days: number): string {
+function formatInterval(words: Messages['review']['interval'], days: number): string {
   if (days === 0) {
-    return 'сегодня';
+    return words.today;
   }
   if (days === 1) {
-    return 'завтра';
+    return words.tomorrow;
   }
   if (days < 30) {
-    return `${days} дн.`;
+    return words.days(days);
   }
   const months = Math.round(days / 30);
-  return months < 12 ? `${months} мес.` : `${Math.round(days / 365)} г.`;
+  return months < 12 ? words.months(months) : words.years(Math.round(days / 365));
 }

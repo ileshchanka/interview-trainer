@@ -1,16 +1,13 @@
 <header class="head">
   <div>
-    <h1>Что повторяем сегодня</h1>
+    <h1>{{ t().decks.heading }}</h1>
     <p class="track-line">
-      Направление: <b>{{ trackTitle() }}</b>
+      {{ t().decks.track }}: <b>{{ trackTitle() }}</b>
     </p>
-    <p class="muted">
-      Карточки показываются по интервальному алгоритму: чем увереннее ответ, тем дольше карточка не
-      вернётся.
-    </p>
+    <p class="muted">{{ t().decks.hint }}</p>
   </div>
   @if (streak() > 0) {
-    <div class="streak" [title]="'Дней подряд с занятиями'">
+    <div class="streak" [title]="t().decks.streakTitle">
       <mat-icon>local_fire_department</mat-icon>
       <span class="streak-value">{{ streak() }}</span>
     </div>
@@ -19,7 +16,7 @@
 
 @if (totalToDo() > 0) {
   <a mat-flat-button class="start-all" routerLink="/review">
-    Повторять всё — {{ totalToDo() }} карточек
+    {{ t().decks.reviewAll(totalToDo()) }}
   </a>
 }
 
@@ -28,34 +25,40 @@
     <mat-card appearance="outlined" class="deck">
       <mat-card-header>
         <mat-card-title>{{ deck.title }}</mat-card-title>
-        <mat-card-subtitle>{{ deck.total }} карточек</mat-card-subtitle>
+        <mat-card-subtitle>{{ t().decks.total(deck.total) }}</mat-card-subtitle>
       </mat-card-header>
 
       <mat-card-content>
+        <!-- Колода на языке оригинала: честнее предупредить, чем показать
+             английский интерфейс поверх русских вопросов молча. -->
+        @if (deck.fallback) {
+          <p class="fallback">{{ t().content.fallback }}</p>
+        }
+
         <div class="counters">
           <span class="counter due" [class.zero]="deck.due === 0">
-            <b>{{ deck.due }}</b> к повторению
+            <b>{{ deck.due }}</b> {{ t().decks.due }}
           </span>
           <span class="counter fresh" [class.zero]="deck.fresh === 0">
-            <b>{{ deck.fresh }}</b> новых
+            <b>{{ deck.fresh }}</b> {{ t().decks.fresh }}
           </span>
         </div>
 
         <mat-progress-bar mode="determinate" [value]="deck.percent" />
         <p class="muted small">
-          Выучено {{ deck.mastered }} из {{ deck.total }} — {{ deck.percent }}%
+          {{ t().decks.mastered(deck.mastered, deck.total, deck.percent) }}
         </p>
       </mat-card-content>
 
       <mat-card-actions align="end">
         <!-- Просмотр доступен всегда: он не зависит от расписания повторений. -->
-        <a mat-button [routerLink]="['/browse', deck.topic]">Все вопросы</a>
+        <a mat-button [routerLink]="['/browse', deck.topic]">{{ t().decks.browse }}</a>
         <a
           mat-button
           [routerLink]="['/review', deck.topic]"
           [disabled]="deck.due === 0 && deck.fresh === 0"
         >
-          Заниматься
+          {{ t().decks.study }}
         </a>
       </mat-card-actions>
     </mat-card>
@@ -64,11 +67,11 @@
 
 <mat-card appearance="outlined" class="tasks-card">
   <mat-card-content>
-    <h2>Кодовые задачи</h2>
+    <h2>{{ t().decks.tasksHeading }}</h2>
     <p class="muted">{{ tasksBlurb() }}</p>
-    <p class="muted small">Нерешённых задач: {{ tasksLeft() }}</p>
+    <p class="muted small">{{ t().decks.tasksLeft(tasksLeft()) }}</p>
   </mat-card-content>
   <mat-card-actions align="end">
-    <a mat-button routerLink="/code">К задачам</a>
+    <a mat-button routerLink="/code">{{ t().decks.toTasks }}</a>
   </mat-card-actions>
 </mat-card>

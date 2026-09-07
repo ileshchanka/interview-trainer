@@ -1,7 +1,7 @@
 <header class="head">
   <a mat-button routerLink="/decks">
     <mat-icon>arrow_back</mat-icon>
-    Колоды
+    {{ t().nav.decks }}
   </a>
   <span class="title">{{ topicTitle() }}</span>
   <span class="progress-text">{{ answered() }} / {{ planned() }}</span>
@@ -23,7 +23,7 @@
         }
         @if (card.explanation) {
           <details class="details">
-            <summary>Подробный разбор</summary>
+            <summary>{{ t().review.details }}</summary>
             <div class="md" [innerHTML]="card.explanation | md"></div>
           </details>
         }
@@ -34,8 +34,8 @@
   <div class="controls">
     @if (!revealed()) {
       <button mat-flat-button class="reveal" type="button" (click)="reveal()">
-        Показать ответ
-        <span class="hotkey">пробел</span>
+        {{ t().review.reveal }}
+        <span class="hotkey">{{ t().review.space }}</span>
       </button>
     } @else {
       <div class="grades">
@@ -62,18 +62,16 @@
 } @else {
   <mat-card appearance="outlined" class="card done">
     <mat-card-content>
-      <h2>На сегодня всё</h2>
+      <h2>{{ t().review.doneHeading }}</h2>
       @if (planned() > 0) {
-        <p class="muted">Пройдено карточек: {{ answered() }}. Следующие вернутся по расписанию.</p>
+        <p class="muted">{{ t().review.donePassed(answered()) }}</p>
       } @else {
-        <p class="muted">
-          В этой колоде сейчас нечего повторять — все карточки отложены на будущее.
-        </p>
+        <p class="muted">{{ t().review.doneEmpty }}</p>
       }
     </mat-card-content>
     <mat-card-actions align="end">
-      <a mat-button routerLink="/code">К кодовым задачам</a>
-      <a mat-flat-button routerLink="/decks">К колодам</a>
+      <a mat-button routerLink="/code">{{ t().review.toTasks }}</a>
+      <a mat-flat-button routerLink="/decks">{{ t().review.toDecks }}</a>
     </mat-card-actions>
   </mat-card>
 }

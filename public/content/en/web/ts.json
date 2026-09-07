@@ -1,0 +1,587 @@
+[
+ {
+  "id": "ts-structural-typing",
+  "topic": "ts",
+  "subtopic": "the type system",
+  "question": "Is typing in TypeScript structural or nominal?",
+  "answer": "Structural: compatibility is decided by the shape of a type, not by its name. An object fits an interface if it has all the required fields of suitable types.",
+  "example": "```ts\ninterface Point {\n  x: number;\n  y: number;\n}\n\nclass Vector {\n  constructor(public x: number, public y: number) {}\n}\n\nconst p: Point = new Vector(1, 2); // fits: the shape matches, the name is irrelevant\nconst q: Point = { x: 1, y: 2 };   // fits too\n\n// “branding” — how to get nominality by hand\ntype UserId = string & { readonly __brand: 'UserId' };\nconst id = 'u1' as UserId;\nconst plain: UserId = 'u1'; // error: a plain string will not do\n```",
+  "explanation": "The consequence: two interfaces with the same members are interchangeable even when they are named differently. Nominality has to be emulated by branding:\n\n```ts\ntype UserId = string & { readonly __brand: 'UserId' };\n```"
+ },
+ {
+  "id": "ts-any-unknown-never",
+  "topic": "ts",
+  "subtopic": "the type system",
+  "question": "How do `any`, `unknown` and `never` differ?",
+  "answer": "`any` turns checking off. `unknown` is “anything” too, but it must be narrowed before use. `never` is a type with no values: the result of a function that never returns normally.",
+  "example": "```ts\nlet a: any = JSON.parse(input);\na.whatever.deep(); // the compiler stays silent, the runtime crashes\n\nlet u: unknown = JSON.parse(input);\nu.length;                              // error: narrow it first\nif (typeof u === 'string') u.length;   // now it is allowed\n\nfunction fail(msg: string): never {    // never returns normally\n  throw new Error(msg);\n}\n\ntype Empty = string & number;  // never — no such values exist\n```",
+  "explanation": "`unknown` is the right type for data from outside (an API response, `JSON.parse`). `never` shows up in exhaustiveness checks of a `switch` and in impossible intersections."
+ },
+ {
+  "id": "ts-exhaustiveness",
+  "topic": "ts",
+  "subtopic": "the type system",
+  "question": "How do you make the compiler check that a union is handled exhaustively?",
+  "answer": "Assign the value to a variable of type `never` in the `default` branch: if an unhandled variant appears, the compiler points at the error.",
+  "example": "```ts\ntype Shape = { kind: 'circle'; r: number } | { kind: 'square'; a: number };\n\nfunction area(shape: Shape): number {\n  switch (shape.kind) {\n    case 'circle':\n      return Math.PI * shape.r ** 2;\n    case 'square':\n      return shape.a ** 2;\n    default: {\n      const impossible: never = shape; // add a variant to Shape and the error lands here\n      throw new Error(`unknown shape: ${impossible}`);\n    }\n  }\n}\n```",
+  "explanation": "```ts\nfunction assertNever(x: never): never {\n  throw new Error('Unexpected: ' + x);\n}\n```\nThis is the main trick union types are introduced for: add a new variant and the compiler shows every place that forgot about it."
+ },
+ {
+  "id": "ts-union-intersection",
+  "topic": "ts",
+  "subtopic": "the type system",
+  "question": "How does `A | B` differ from `A & B`?",
+  "answer": "A union is “either one or the other”: only the common members are available. An intersection is “both at once”: all members of both types are available.",
+  "example": "```ts\ninterface Bird { fly(): void; layEggs(): void }\ninterface Fish { swim(): void; layEggs(): void }\n\ndeclare const either: Bird | Fish;\neither.layEggs(); // allowed: both have it\neither.fly();     // error: Fish has no such method\n\ndeclare const both: Bird & Fish;\nboth.fly();\nboth.swim();      // everything is allowed\n\n// for primitives an intersection collapses to never\ntype Never = string & number;\n```",
+  "explanation": "Counter-intuitively, a union widens the set of values but narrows the set of available operations; an intersection does the opposite."
+ },
+ {
+  "id": "ts-discriminated-union",
+  "topic": "ts",
+  "subtopic": "the type system",
+  "question": "What is a discriminated union?",
+  "answer": "A union of objects sharing a literal field (`kind`, `type`, `status`) that lets the compiler tell the variants apart unambiguously.",
+  "example": "```ts\ntype State =\n  | { status: 'loading' }\n  | { status: 'ready'; data: string[] }\n  | { status: 'error'; error: Error };\n\nfunction render(state: State) {\n  if (state.status === 'ready') {\n    state.data;   // available only here\n  }\n  state.data;     // error: the other variants have no such field\n}\n\n// without a discriminant the compiler cannot tell the variants apart —\n// which is why the field must be a literal type, not just a string\n```",
+  "explanation": "```ts\ntype State =\n  | { status: 'loading' }\n  | { status: 'ready'; data: string }\n  | { status: 'error'; error: Error };\n```\nThis is the main way to model state: being in `ready` without `data` is impossible."
+ },
+ {
+  "id": "ts-literal-types",
+  "topic": "ts",
+  "subtopic": "the type system",
+  "question": "What is a literal type, and when is it inferred?",
+  "answer": "A type made of one concrete value: `'ready'`, `42`, `true`. For a `const` the literal is inferred straight away; for a `let` the type is widened to `string`/`number`.",
+  "example": "```ts\nconst ready = 'ready';   // type 'ready'\nlet status = 'ready';    // type string — widened\n\ntype Status = 'idle' | 'ready';\nconst s1: Status = ready;   // fine\nconst s2: Status = status;  // error: string is too wide\n\n// inside an object widening always happens, even under a const\nconst config = { mode: 'dark' };  // mode: string\ndeclare function setMode(m: 'dark' | 'light'): void;\nsetMode(config.mode);             // error\n\nconst config2 = { mode: 'dark' as const }; // mode: 'dark'\n```",
+  "explanation": "`as const` pins the literal types throughout an object or an array and makes the fields `readonly`."
+ },
+ {
+  "id": "ts-as-const",
+  "topic": "ts",
+  "subtopic": "the type system",
+  "question": "What does `as const` do?",
+  "answer": "It freezes inference: strings become literal types, objects and arrays become `readonly`, and an array turns into a tuple.",
+  "example": "```ts\nconst routes = ['/home', '/about'] as const;\n// readonly ['/home', '/about'] — a tuple, not string[]\ntype Route = (typeof routes)[number]; // '/home' | '/about'\n\nconst config = { retries: 3, mode: 'dark' } as const;\nconfig.retries = 5; // error: readonly\n\n// without as const it would be { retries: number; mode: string }\n\n// a common trick: one source for both the values and the type\nconst ROLES = ['admin', 'user'] as const;\ntype Role = (typeof ROLES)[number];\nROLES.includes(role); // error: a readonly tuple does not accept an arbitrary string\n```",
+  "explanation": "In practice: an array of variants plus `typeof arr[number]` gives a union of strings without duplicating the list."
+ },
+ {
+  "id": "ts-template-literal-types",
+  "topic": "ts",
+  "subtopic": "the type system",
+  "question": "What are template literal types?",
+  "answer": "Types assembled from strings the way template literals are: `` type Route = `/users/${string}` ``. Combined with unions they generate the combinations automatically.",
+  "example": "```ts\ntype Route = `/users/${string}`;\nconst ok: Route = '/users/42';\nconst bad: Route = '/posts/42'; // error\n\n// combinations are produced automatically\ntype Size = 'sm' | 'lg';\ntype Side = 'top' | 'bottom';\ntype Class = `${Size}-${Side}`; // 'sm-top' | 'sm-bottom' | 'lg-top' | 'lg-bottom'\n\n// built-in case conversions\ntype Event = `on${Capitalize<'click' | 'focus'>}`; // 'onClick' | 'onFocus'\n\n// careful: the number of combinations multiplies,\n// and on a large union the compiler runs into its limit\n```",
+  "explanation": "Plus the built-in `Uppercase`, `Lowercase`, `Capitalize` and `Uncapitalize`."
+ },
+ {
+  "id": "ts-variance",
+  "topic": "ts",
+  "subtopic": "the type system",
+  "question": "What are covariance and contravariance, using functions as the example?",
+  "answer": "The return value is covariant (you may return a narrower type), the parameters are contravariant (a function accepting a wider type fits where a narrower one is expected).",
+  "example": "```ts\nclass Animal {}\nclass Dog extends Animal { bark() {} }\nclass Bulldog extends Dog { drool() {} }\n\n// the return value is covariant: returning something narrower is allowed\ntype MakeAnimal = () => Animal;\nconst makeDog: MakeAnimal = (): Dog => new Dog(); // fine\n\n// parameters are contravariant: accepting something wider is allowed\ntype HandleDog = (d: Dog) => void;\nconst handleAnimal: HandleDog = (a: Animal) => {}; // fine\nconst handleBulldog: HandleDog = (b: Bulldog) => {}; // logically wrong\n\n// but methods in TS are checked bivariantly — for compatibility with older code\ninterface Handler { handle(d: Dog): void }        // bivariant\ntype HandlerFn = { handle: (d: Dog) => void };    // contravariant under strictFunctionTypes\n```",
+  "explanation": "Under `strictFunctionTypes` function parameters are checked contravariantly — but only for signatures written as `(a: T) => void`, not for methods: methods were left bivariant for compatibility with arrays and the DOM."
+ },
+ {
+  "id": "ts-type-inference-widening",
+  "topic": "ts",
+  "subtopic": "the type system",
+  "question": "Why does `let x = 'a'` have the type `string` while `const x = 'a'` has the type `'a'`?",
+  "answer": "For a mutable binding the compiler widens the literal type to the base one: otherwise nothing could ever be written into it. A `const` cannot be reassigned, so the literal is kept.",
+  "example": "```ts\nconst a = 'ready';  // 'ready'\nlet b = 'ready';    // string\nb = 'anything';     // and this has to be allowed — hence the widening\n\nconst c: 'ready' = 'ready'; // an explicit annotation stops the widening\nlet d: 'ready' = 'ready';   // a let can be pinned too\n\n// object properties are widened even under a const\nconst obj = { status: 'ready' }; // status: string\nconst obj2 = { status: 'ready' } as const; // status: 'ready'\n\n// null and undefined widen to any without strictNullChecks\nconst n = null; // with the flag it is null, without it any\n```",
+  "explanation": "Inside an object literal the fields are widened as well — that is fixed with `as const`."
+ },
+ {
+  "id": "ts-keyof-typeof",
+  "topic": "ts",
+  "subtopic": "the type system",
+  "question": "What does the `keyof typeof` combination do?",
+  "answer": "`typeof` in type position takes the type of an existing value, and `keyof` takes the union of its keys. Together they derive a type from an object instead of duplicating the list of keys by hand.",
+  "example": "```ts\nconst themes = {\n  dark: '#000',\n  light: '#fff',\n};\n\ntype Theme = keyof typeof themes; // 'dark' | 'light' — the list is not duplicated\n\nfunction setTheme(theme: Theme) {}\nsetTheme('dark');\nsetTheme('blue'); // error\n\n// typeof works only on values, keyof only on types\ntype T1 = typeof themes;  // { dark: string; light: string }\ntype T2 = keyof T1;       // 'dark' | 'light'\n\n// on an array keyof gives the array's own keys, not the elements\ntype Wrong = keyof typeof list;          // number | 'length' | 'push' | ...\ntype Right = (typeof list)[number];      // the element type\n```",
+  "explanation": "This is the main “single source of truth” trick: the values are declared once as a value, and the types are derived from it.\n\nTogether with `as const` it yields literal types for the values: without `as const` the type of `themes.dark` is `string`, and `typeof themes[Theme]` ends up being plain `string`."
+ },
+ {
+  "id": "ts-indexed-access",
+  "topic": "ts",
+  "subtopic": "the type system",
+  "question": "What does the notation `T[K]` mean in type position?",
+  "answer": "Indexed access — the type of a property by key. The key may be a union (the result is then a union of types), and `T[number]` on an array or a tuple gives the element type.",
+  "example": "```ts\ninterface User {\n  id: string;\n  age: number;\n  address: { city: string };\n}\n\ntype Id = User['id'];                 // string\ntype IdOrAge = User['id' | 'age'];    // string | number\ntype City = User['address']['city'];  // string — you can go deeper\ntype Values = User[keyof User];       // string | number | { city: string }\n\nconst roles = ['admin', 'user'] as const;\ntype Role = (typeof roles)[number];   // 'admin' | 'user'\n\n// the type of a function's argument, without exporting it separately\ntype Options = Parameters<typeof configure>[0];\n```",
+  "explanation": "A dot does not work here: `User.id` is a syntax error, you need indexed access with square brackets.\n\nThe trick removes duplication: when a field in the source type changes its type, everything derived from it updates by itself."
+ },
+ {
+  "id": "ts-excess-property-check",
+  "topic": "ts",
+  "subtopic": "the type system",
+  "question": "Why does a literal with an extra property fail while the same value in a variable passes?",
+  "answer": "Object literals assigned directly get a separate excess property check. Through an intermediate variable ordinary structural compatibility applies, and extra fields are allowed there.",
+  "example": "```ts\ninterface Options {\n  width: number;\n}\n\nconst a: Options = { width: 1, height: 2 }; // error: height is excess\n\nconst raw = { width: 1, height: 2 };\nconst b: Options = raw;                     // no error: structurally compatible\n\nconfigure({ width: 1, hieght: 2 }); // the typo is caught\nconfigure(raw);                      // this way it would slip through\n\n// deliberately allowing extra fields\ninterface Loose extends Options {\n  [key: string]: unknown;\n}\n```",
+  "explanation": "The literal check exists precisely to catch typos in the names of optional fields — structural typing on its own does not do that.\n\nIt also explains why the error “disappears” once the object is moved into a variable: that is not a workaround but a different checking path, and the typo goes unnoticed."
+ },
+ {
+  "id": "ts-object-empty-types",
+  "topic": "ts",
+  "subtopic": "the type system",
+  "question": "How do `object`, `{}`, `Object` and `unknown` differ?",
+  "answer": "`object` is any non-primitive value. `{}` is anything except `null` and `undefined`, primitives included. `Object` is almost the same as `{}` and is not needed in code. `unknown` really is anything, but it must be narrowed before use.",
+  "example": "```ts\nlet a: object = { x: 1 };\na = 'a string';  // error: a primitive\n\nlet b: {} = 'a string';  // fine — “not null and not undefined”\nb = 42;                   // fine too\nb.toFixed();              // error: the type has no properties\n\nlet c: unknown = 'a string';\nc.length;               // error: narrow it first\nif (typeof c === 'string') c.length; // fine\n\n// for “an object with arbitrary keys” people take Record\nlet d: Record<string, unknown> = { x: 1 };\n```",
+  "explanation": "The trap with `{}` is that it looks like “an empty object” while it means “everything except null and undefined”. That is exactly why `NonNullable<T>` used to be implemented as `T & {}`.\n\nThe practical rule: `unknown` for unknown data, `Record<string, unknown>` for a dictionary; `object` and `{}` are almost never needed in application code."
+ },
+ {
+  "id": "ts-branded-types",
+  "topic": "ts",
+  "subtopic": "the type system",
+  "question": "How do you get nominal typing in TypeScript?",
+  "answer": "By branding: a fake marker field is added to a primitive through an intersection. Structurally such a type no longer matches a plain string, while at runtime it stays the same string.",
+  "example": "```ts\ndeclare const brand: unique symbol;\ntype Brand<T, B> = T & { readonly [brand]: B };\n\ntype UserId = Brand<string, 'UserId'>;\ntype OrderId = Brand<string, 'OrderId'>;\n\nconst toUserId = (raw: string): UserId => raw as UserId; // the only place with an as\n\nfunction loadUser(id: UserId) {}\n\nloadUser('u1');                    // error: a plain string will not do\nloadUser(toUserId('u1'));          // fine\nloadUser(orderId);                 // error: the identifiers got mixed up\n\n// at runtime it is just a string — there is no overhead\n```",
+  "explanation": "The trick solves a real problem: without it `userId` and `orderId` are both `string`, and the compiler will not stop you from swapping them. The same is applied to validated values: `Email`, `PositiveInt`, `SafeHtml`.\n\nThe price is the single spot with an `as` inside the constructor of the type: that is exactly where the runtime check belongs."
+ },
+ {
+  "id": "ts-runtime-validation",
+  "topic": "ts",
+  "subtopic": "the type system",
+  "question": "Why do types not protect you from bad data coming from a server?",
+  "answer": "Types are erased at compile time — there are no checks at runtime. `res.json() as User` merely declares a shape: if the server sent something else, the error surfaces later and somewhere other than where it originated.",
+  "example": "```ts\nconst user = (await res.json()) as User; // no check happens at all\nuser.name.trim();                         // TypeError if name is missing\n\n// a runtime check by hand\nfunction isUser(v: unknown): v is User {\n  return typeof v === 'object' && v !== null && typeof (v as User).name === 'string';\n}\n\n// or a schema the type is derived from\nconst UserSchema = z.object({ id: z.string(), name: z.string() });\ntype User = z.infer<typeof UserSchema>;   // the type and the check from one description\n\nconst user2 = UserSchema.parse(await res.json()); // throws a clear error right away\n```",
+  "explanation": "The boundary of a system is where data arrives from outside: HTTP, `localStorage`, `postMessage`, route parameters. Inside the boundary the types can be trusted; on the boundary they must be checked.\n\nDeriving the type from the schema (`z.infer`) matters more than the check itself: otherwise the shape is described in two places and sooner or later they drift apart."
+ },
+ {
+  "id": "ts-tuples",
+  "topic": "ts",
+  "subtopic": "the type system",
+  "question": "How does a tuple differ from an array, and what is a variadic tuple?",
+  "answer": "A tuple fixes the length and the type of every position. A variadic tuple (`[...T]`) makes it possible to describe types that depend on a list of arguments — `Parameters` and the typing of `bind` are built on it.",
+  "example": "```ts\ntype Pair = [string, number];\nconst p: Pair = ['a', 1];\np[2];                       // error: the length is fixed\n\ntype Named = [id: string, count: number]; // labels for readability\n\n// optional and rest elements\ntype Args = [required: string, optional?: number, ...rest: boolean[]];\n\n// a variadic tuple: prepend an argument\ntype WithLogger<F> = F extends (...args: infer A) => infer R\n  ? (logger: Logger, ...args: A) => R\n  : never;\n\nconst point = [1, 2];             // number[] — an array was inferred\nconst tuple = [1, 2] as const;    // readonly [1, 2]\n```",
+  "explanation": "By default an array literal is inferred as an array rather than a tuple: to get a tuple you need `as const` or an explicit annotation.\n\nTuples are what type `useState`-like APIs and `Promise.all`: there both the number of elements and the differing type at each position matter."
+ },
+ {
+  "id": "ts-never-usage",
+  "topic": "ts",
+  "subtopic": "the type system",
+  "question": "Where does the `never` type show up in practice?",
+  "answer": "In functions that never return normally; in exhaustiveness checks of a union; as the result of an impossible intersection; and as a way to drop a union member or a key in conditional and mapped types.",
+  "example": "```ts\nfunction fail(msg: string): never {   // always throws\n  throw new Error(msg);\n}\n\ntype Impossible = string & number;    // never\n\n// filtering a union\ntype NonNullish<T> = T extends null | undefined ? never : T;\ntype A = NonNullish<string | null>;   // string\n\n// dropping a key in a mapped type\ntype NoFunctions<T> = {\n  [K in keyof T as T[K] extends Function ? never : K]: T[K];\n};\n\n// never is absorbed in a union and absorbs in an intersection\ntype B = string | never;   // string\ntype C = string & never;   // never\n```",
+  "explanation": "`never` is the bottom type: it is assignable to anything, and nothing is assignable to it. Hence the exhaustiveness trick: if a value is left in the `default` branch, it will not be assignable to `never`.\n\nAn unexpected `never` in the inferred type almost always means an empty intersection — for example, an `A & B` whose same-named field has incompatible types."
+ },
+ {
+  "id": "ts-typed-object-keys",
+  "topic": "ts",
+  "subtopic": "the type system",
+  "question": "Why does `Object.keys(user)` return `string[]` rather than a union of keys?",
+  "answer": "Because at runtime the object may hold more properties than the type declares: structural typing allows passing an object with extra fields. Returning `keyof T` would be wrong.",
+  "example": "```ts\ninterface User { id: string; name: string }\n\nconst user: User = { id: '1', name: 'Anna' };\nObject.keys(user);      // string[], not ('id' | 'name')[]\n\n// why that is the honest answer\nconst extended = { id: '1', name: 'Anna', secret: 'x' };\nconst asUser: User = extended;\nObject.keys(asUser);    // at runtime 'secret' is in there too\n\n// a deliberate narrowing when the object is definitely yours\nconst keys = Object.keys(user) as (keyof User)[];\n\n// for...in tells the same story — plus keys from the prototype\nfor (const key in user) {\n  user[key as keyof User];\n}\n\n// Object.entries returns [string, T][] as well\n```",
+  "explanation": "This is one of the few places where the standard library deliberately hands back a wider type for the sake of correctness rather than by oversight.\n\nThe `as (keyof T)[]` cast is acceptable when the object was created right there and provably has no extra keys. If it came from outside, the cast can lie: the loop will run into a key the type does not have."
+ },
+ {
+  "id": "ts-narrowing",
+  "topic": "ts",
+  "subtopic": "narrowing",
+  "question": "Which constructs narrow a type?",
+  "answer": "`typeof`, `instanceof`, `in`, a check against `null`/`undefined`, a literal comparison, a discriminating field, and user-defined type guards.",
+  "example": "```ts\nfunction handle(value: string | number | Date | null) {\n  if (value === null) return;              // a null check\n  if (typeof value === 'string') return value.trim();\n  if (value instanceof Date) return value.toISOString();\n  return value.toFixed(2);                 // a number is what is left\n}\n\n// in — by the presence of a property\nfunction move(a: { walk(): void } | { swim(): void }) {\n  if ('walk' in a) a.walk();\n  else a.swim();\n}\n\n// narrowing is lost after an await and after a function call,\n// when the variable is a mutable property of an object\nif (this.user) {\n  await save();\n  this.user.name; // error: the field could have changed while we waited\n}\n```",
+  "explanation": "Narrowing lasts until the nearest “contamination” — a function call, say, after which the compiler is no longer sure the field has not changed (for object fields declared as mutable)."
+ },
+ {
+  "id": "ts-type-guard",
+  "topic": "ts",
+  "subtopic": "narrowing",
+  "question": "How do you write a user-defined type guard?",
+  "answer": "A function returning `arg is Type`: the compiler takes its word for it and narrows the type inside the `if` branch.",
+  "example": "```ts\ninterface Cat { meow(): void }\n\nfunction isCat(a: unknown): a is Cat {\n  return typeof a === 'object' && a !== null && 'meow' in a;\n}\n\nif (isCat(pet)) pet.meow(); // narrowed to Cat\n\n// handy with filters: without the guard the type would stay (string | null)[]\nconst clean: string[] = list.filter((v): v is string => v !== null);\n\n// the compiler TAKES YOUR WORD for it — lying is easy\nfunction isString(a: unknown): a is string {\n  return typeof a === 'number'; // the check is wrong, and there is no error\n}\n```",
+  "explanation": "```ts\nfunction isString(v: unknown): v is string {\n  return typeof v === 'string';\n}\n```\nImportant: the compiler does not verify the body of such a function — if the predicate lies, TypeScript will lie along with it."
+ },
+ {
+  "id": "ts-assertion-function",
+  "topic": "ts",
+  "subtopic": "narrowing",
+  "question": "What is an assertion function, and how does it differ from a type guard?",
+  "answer": "A function with the signature `asserts arg is Type`: instead of returning a boolean it throws when the check fails. After the call the type stays narrowed to the end of the scope.",
+  "example": "```ts\nfunction assertDefined<T>(value: T, name: string): asserts value is NonNullable<T> {\n  if (value == null) throw new Error(`${name} is not set`);\n}\n\nfunction use(user?: User) {\n  assertDefined(user, 'user');\n  user.name; // narrowed to the end of the function, no if branch needed\n}\n\n// an important subtlety: such a function must have an explicit type annotation —\n// an arrow assigned to a const without a type will not work\nconst assertOk: (v: unknown) => asserts v = (v) => {};\n```",
+  "explanation": "An assertion function cannot be declared as an arrow in a `const` without an explicit annotation on the variable — the compiler needs a declared type."
+ },
+ {
+  "id": "ts-inferred-predicates",
+  "topic": "ts",
+  "subtopic": "narrowing",
+  "question": "Do you always have to write `arg is Type` for a function to narrow a type?",
+  "answer": "Since TypeScript 5.5, not always: if the function simply returns the result of a check and has no side effects, the compiler infers the predicate itself. In the remaining cases the annotation is still required.",
+  "example": "```ts\n// this used to return boolean and narrow nothing\nfunction isDefined<T>(value: T | undefined) {\n  return value !== undefined;\n}\n\nconst list = [1, undefined, 3];\nconst clean = list.filter(isDefined); // now number[], not (number | undefined)[]\n\n// the inference does not kick in when the return type is written explicitly\nfunction isDefined2<T>(value: T | undefined): boolean {\n  return value !== undefined;\n}\n\n// or when the body does more than return a check\nfunction isDefined3<T>(value: T | undefined) {\n  log(value);\n  return value !== undefined; // the predicate is still inferred\n}\n```",
+  "explanation": "The most common workaround used to be `list.filter((v): v is number => v !== undefined)` right at the call site — that spelling is needed less often now.\n\nAn inferred predicate is trusted on the same terms as a hand-written one: the compiler checks the body of the function but does not guarantee the check is meaningful."
+ },
+ {
+  "id": "ts-narrowing-limits",
+  "topic": "ts",
+  "subtopic": "narrowing",
+  "question": "Why is narrowing sometimes “lost”?",
+  "answer": "The compiler drops the narrowing wherever the value could have changed: after a function call, after an `await`, inside a callback, and for mutable object properties. For a local `const` the narrowing is preserved.",
+  "example": "```ts\nclass Form {\n  user?: User;\n\n  save() {\n    if (this.user) {\n      this.user.name;          // fine\n\n      helper();\n      this.user.name;          // error: helper could have cleared the field\n\n      const user = this.user;  // a copy in a local const\n      helper();\n      user.name;               // the narrowing holds\n    }\n  }\n\n  async load() {\n    if (this.user) {\n      await request();\n      this.user.name;          // error: the field could have changed while we waited\n    }\n  }\n}\n\nlet value: string | null = get();\nif (value) {\n  [1].forEach(() => value.length); // error: the callback runs at an unknown time\n}\n```",
+  "explanation": "This is not the compiler being pedantic: between the check and the use, somebody else's code really can run and change the field. That is exactly how “cannot read property of null” errors appear in asynchronous handlers.\n\nThe fix is always the same — copy the value into a local constant right after the check."
+ },
+ {
+  "id": "ts-generics-why",
+  "topic": "ts",
+  "subtopic": "generics",
+  "question": "Why do we need generics when there is `any`?",
+  "answer": "A generic keeps the link between the input and the output: `identity<T>(x: T): T` guarantees that the same type comes back. `any` breaks that link and turns the checks off.",
+  "example": "```ts\nfunction firstAny(list: any[]): any {\n  return list[0];\n}\nconst n = firstAny(['a', 'b']); // any — no checking whatsoever from here on\nn.toFixed(2);                    // the compiler stays silent, the runtime crashes\n\nfunction first<T>(list: T[]): T {\n  return list[0];\n}\nconst s = first(['a', 'b']); // string, inferred on its own\ns.toFixed(2);                 // an error at compile time\n\n// the link is kept between several parameters as well\nfunction pick<T, K extends keyof T>(obj: T, key: K): T[K] {\n  return obj[key];\n}\n```",
+  "explanation": "A generic is a parameter whose value is inferred from the call; writing it out explicitly is rarely necessary."
+ },
+ {
+  "id": "ts-generic-constraints",
+  "topic": "ts",
+  "subtopic": "generics",
+  "question": "What does `T extends { id: string }` mean?",
+  "answer": "A constraint: only a type compatible with the given one may be substituted. Inside the function the properties of the constraint become available.",
+  "example": "```ts\nfunction byId<T extends { id: string }>(items: T[], id: string): T | undefined {\n  return items.find((i) => i.id === id); // i.id is available thanks to the constraint\n}\n\nbyId([{ id: '1', name: 'Anna' }], '1'); // the full type comes back, not { id: string }\nbyId([{ name: 'Anna' }], '1');          // error: there is no id field\n\n// keyof is the most common constraint\nfunction get<T, K extends keyof T>(obj: T, key: K): T[K] {\n  return obj[key];\n}\nget({ a: 1 }, 'b'); // error: 'b' is not a key\n```",
+  "explanation": "A frequent pair is `K extends keyof T` for type-safe field access:\n\n```ts\nfunction get<T, K extends keyof T>(obj: T, key: K): T[K] {\n  return obj[key];\n}\n```"
+ },
+ {
+  "id": "ts-generic-default",
+  "topic": "ts",
+  "subtopic": "generics",
+  "question": "Can a generic have a default value?",
+  "answer": "Yes: `interface Box<T = string>`. Then `Box` is equivalent to `Box<string>`.",
+  "example": "```ts\ninterface Box<T = string> {\n  value: T;\n}\n\nconst a: Box = { value: 'text' };    // Box<string>\nconst b: Box<number> = { value: 42 };\n\n// a default may refer to the earlier parameters\ninterface Response<T, E = Error> {\n  data?: T;\n  error?: E;\n}\n\n// a default is not a constraint: the two are often written together\ninterface Store<T extends object = Record<string, unknown>> {}\n```",
+  "explanation": "A default does not cancel inference: if the parameter is inferred from the arguments, the inferred type wins."
+ },
+ {
+  "id": "ts-generic-inference",
+  "topic": "ts",
+  "subtopic": "generics",
+  "question": "How does the compiler infer a type parameter, and when do you have to state it explicitly?",
+  "answer": "It matches the types of the actual arguments against their declarations. You have to state it explicitly when there is nothing to infer from: the parameter appears only in the return type, or you need a narrower type than the one that would be inferred.",
+  "example": "```ts\nfunction first<T>(list: T[]): T | undefined {\n  return list[0];\n}\nfirst([1, 2]);            // T inferred as number\n\nfunction parse<T>(json: string): T {\n  return JSON.parse(json);\n}\nparse('{}');              // T inferred as unknown — there is nothing to infer from\nparse<User>('{}');        // stated explicitly (and we lied to the compiler — there is no check)\n\n// the inference gives too wide a type\nfunction tag<T>(value: T) { return value; }\ntag('ready');             // string\n\nfunction tagConst<const T>(value: T) { return value; }\ntagConst('ready');        // 'ready'\n```",
+  "explanation": "A generic whose parameter appears only in the return type is a warning sign: it does not infer a type, it merely lets the caller name one, and turns into a disguised `as`.\n\nPartial specification is impossible: either every parameter is inferred or every one is listed explicitly. People work around it by splitting into two curried functions."
+ },
+ {
+  "id": "ts-const-type-parameter",
+  "topic": "ts",
+  "subtopic": "generics",
+  "question": "What does the `const` modifier on a type parameter do?",
+  "answer": "It makes the argument's literal type be inferred as if the caller had written `as const`. Useful for functions taking lists of keys or configuration.",
+  "example": "```ts\nfunction pickKeys<T extends readonly string[]>(keys: T): T {\n  return keys;\n}\npickKeys(['id', 'name']); // string[] — the literals were lost\n\nfunction pickKeys2<const T extends readonly string[]>(keys: T): T {\n  return keys;\n}\npickKeys2(['id', 'name']); // readonly ['id', 'name']\n\n// previously the caller had to be asked for an as const on every call\npickKeys(['id', 'name'] as const);\n\n// where it is used: routes, table columns, the set of fields in a query\ndeclare function select<const K extends readonly (keyof User)[]>(keys: K): Pick<User, K[number]>;\nselect(['id', 'name']).name; // the type knows exactly which fields were selected\n```",
+  "explanation": "Before TypeScript 5.0 this behaviour could only be obtained by asking the caller to write `as const` — which people regularly forgot, and the types silently became wider.\n\nThe modifier affects inference only: it does not make the value immutable at runtime and does not prevent passing an already mutable array."
+ },
+ {
+  "id": "ts-generic-class",
+  "topic": "ts",
+  "subtopic": "generics",
+  "question": "How do generic classes work, and how do they differ from generic functions?",
+  "answer": "The type parameter is declared on the class and is available in all its members except the static ones. It is fixed when an instance is created, not on every method call.",
+  "example": "```ts\nclass Store<T extends { id: string }> {\n  private items = new Map<string, T>();\n\n  add(item: T): void {\n    this.items.set(item.id, item);\n  }\n\n  find(id: string): T | undefined {\n    return this.items.get(id);\n  }\n\n  static create<U extends { id: string }>(): Store<U> {\n    return new Store<U>(); // a static member needs a parameter of its own\n  }\n}\n\nconst users = new Store<User>();\nusers.add(order); // error: the type was fixed at construction\n```",
+  "explanation": "Static members cannot see the class parameter because they exist in a single copy for the whole class rather than per type substitution.\n\nIf a parameter is used in exactly one method, declare it on that method: one instance will then serve different types."
+ },
+ {
+  "id": "ts-conditional-types",
+  "topic": "ts",
+  "subtopic": "conditional types",
+  "question": "How is `T extends U ? X : Y` read?",
+  "answer": "If the type `T` is assignable to `U`, the result is `X`, otherwise `Y`. The check happens at the type level, at compile time.",
+  "example": "```ts\ntype IsString<T> = T extends string ? 'yes' : 'no';\ntype A = IsString<'hello'>; // 'yes'\ntype B = IsString<42>;      // 'no'\n\n// over a union it distributes across every member\ntype C = IsString<string | number>; // 'yes' | 'no'\n\n// to stop it distributing — wrap it in a tuple\ntype NoDistribute<T> = [T] extends [string] ? 'yes' : 'no';\ntype D = NoDistribute<string | number>; // 'no'\n\n// this is how Exclude from the standard library is built\ntype MyExclude<T, U> = T extends U ? never : T;\n```",
+  "explanation": "Over a union such a type is **distributive**: `(A | B) extends U ? X : Y` is evaluated for each member separately. It is turned off by wrapping in a tuple: `[T] extends [U] ? ...`."
+ },
+ {
+  "id": "ts-infer",
+  "topic": "ts",
+  "subtopic": "conditional types",
+  "question": "What does `infer` do?",
+  "answer": "It declares a type variable right inside a conditional type and lets you “pull out” part of a type during matching.",
+  "example": "```ts\ntype Unwrap<T> = T extends Promise<infer U> ? U : T;\ntype A = Unwrap<Promise<string>>; // string\ntype B = Unwrap<number>;          // number\n\ntype ElementOf<T> = T extends (infer U)[] ? U : never;\ntype C = ElementOf<string[]>;     // string\n\n// this is how ReturnType and Parameters are written\ntype MyReturnType<F> = F extends (...args: any[]) => infer R ? R : never;\n\n// infer with a constraint (TS 4.7+)\ntype FirstNumber<T> = T extends [infer H extends number, ...unknown[]] ? H : never;\n```",
+  "explanation": "```ts\ntype ElementOf<T> = T extends (infer U)[] ? U : never;\n```\n`ReturnType`, `Parameters` and `Awaited` are all built on `infer`."
+ },
+ {
+  "id": "ts-recursive-types",
+  "topic": "ts",
+  "subtopic": "conditional types",
+  "question": "How do you write a recursive type, and where is the limit of the recursion?",
+  "answer": "A type may refer to itself — that is how JSON, trees and deep transformations such as `DeepPartial` are described. The depth is bounded: at roughly fifty levels the compiler says “Type instantiation is excessively deep”.",
+  "example": "```ts\ntype Json = string | number | boolean | null | Json[] | { [key: string]: Json };\n\ntype DeepPartial<T> = T extends object ? { [K in keyof T]?: DeepPartial<T[K]> } : T;\n\ntype DeepReadonly<T> = T extends (infer U)[]\n  ? readonly DeepReadonly<U>[]\n  : T extends object\n    ? { readonly [K in keyof T]: DeepReadonly<T[K]> }\n    : T;\n\n// parsing a path into an object\ntype Get<T, P extends string> = P extends `${infer K}.${infer Rest}`\n  ? K extends keyof T ? Get<T[K], Rest> : never\n  : P extends keyof T ? T[P] : never;\n\ntype City = Get<{ user: { address: { city: string } } }, 'user.address.city'>; // string\n```",
+  "explanation": "`DeepPartial` is often written naively and gives a wrong result for arrays, `Date` and `Map`: they also pass the `T extends object` branch, and their fields become optional.\n\nRecursive types are expensive to check: on large models they noticeably slow down compilation and editor hints. That is one of the main reasons for a “sluggish IDE” in projects with home-grown type magic."
+ },
+ {
+  "id": "ts-distributive-conditional",
+  "topic": "ts",
+  "subtopic": "conditional types",
+  "question": "What does “a conditional type distributes over a union” mean, and how do you switch it off?",
+  "answer": "When the checked type is a bare parameter, the condition is applied to each member of the union separately and the results are unioned. It is switched off by wrapping both sides in a tuple: `[T] extends [U]`.",
+  "example": "```ts\ntype ToArray<T> = T extends unknown ? T[] : never;\ntype A = ToArray<string | number>; // string[] | number[], not (string | number)[]\n\ntype NoDistribute<T> = [T] extends [unknown] ? T[] : never;\ntype B = NoDistribute<string | number>; // (string | number)[]\n\n// Exclude is based on this\ntype MyExclude<T, U> = T extends U ? never : T;\ntype C = MyExclude<'a' | 'b', 'a'>; // 'b'\n\n// without distribution the result would be completely different\ntype D = ['a' | 'b'] extends ['a'] ? never : 'a' | 'b'; // 'a' | 'b'\n\n// checking “is this type never” — only without distribution\ntype IsNever<T> = [T] extends [never] ? true : false;\n```",
+  "explanation": "Distribution is the reason for the surprise with `never`: `T extends unknown ? ... : ...` yields `never` for `T = never`, because there is nothing to distribute over. Hence the tuple wrapper in `IsNever`.\n\nAn easier way to remember it: distribution kicks in only for a “bare” parameter to the left of `extends`; any wrapper turns it off."
+ },
+ {
+  "id": "ts-mapped-types",
+  "topic": "ts",
+  "subtopic": "mapped types",
+  "question": "How is a mapped type built?",
+  "answer": "`{ [K in keyof T]: ... }` — a walk over the keys of the source type that builds a new one. The `readonly` and `?` modifiers can be added (`+`) and removed (`-`).",
+  "example": "```ts\ntype Optional<T> = { [K in keyof T]?: T[K] };       // this is how Partial is built\ntype Mutable<T> = { -readonly [K in keyof T]: T[K] }; // a minus removes the modifier\ntype Concrete<T> = { [K in keyof T]-?: T[K] };        // this is how Required is built\n\ninterface User {\n  readonly id: string;\n  name?: string;\n}\n\ntype A = Mutable<User>;  // id is no longer readonly\ntype B = Concrete<User>; // name has become required\n\n// the value can be transformed, not just copied\ntype Nullable<T> = { [K in keyof T]: T[K] | null };\n```",
+  "explanation": "```ts\ntype Mutable<T> = { -readonly [K in T as K]: T[K] };\ntype Required<T> = { [K in keyof T]-?: T[K] };\n```"
+ },
+ {
+  "id": "ts-key-remapping",
+  "topic": "ts",
+  "subtopic": "mapped types",
+  "question": "What does `as` inside a mapped type give you?",
+  "answer": "Renaming keys on the fly and filtering them: returning `never` drops a key.",
+  "example": "```ts\ntype Getters<T> = {\n  [K in keyof T as `get${Capitalize<string & K>}`]: () => T[K];\n};\n\ntype G = Getters<{ name: string; age: number }>;\n// { getName: () => string; getAge: () => number }\n\n// filtering: never drops the key\ntype OnlyStrings<T> = {\n  [K in keyof T as T[K] extends string ? K : never]: T[K];\n};\ntype S = OnlyStrings<{ a: string; b: number }>; // { a: string }\n\n// this is how Omit is written\ntype MyOmit<T, K extends keyof T> = { [P in keyof T as P extends K ? never : P]: T[P] };\n```",
+  "explanation": "```ts\ntype Getters<T> = {\n  [K in keyof T as `get${Capitalize<string & K>}`]: () => T[K];\n};\n```"
+ },
+ {
+  "id": "ts-utility-types",
+  "topic": "ts",
+  "subtopic": "utility types",
+  "question": "What do `Partial`, `Required`, `Readonly`, `Pick`, `Omit` and `Record` do?",
+  "answer": "`Partial<T>` makes every field optional, `Required` makes them required, `Readonly` makes them read-only. `Pick<T, K>` keeps the listed keys, `Omit<T, K>` removes them. `Record<K, V>` builds an object with keys `K` and values `V`.",
+  "example": "```ts\ninterface User {\n  id: string;\n  name: string;\n  email: string;\n}\n\ntype Draft = Partial<User>;              // every field optional\ntype Strict = Required<Draft>;           // and back again\ntype Frozen = Readonly<User>;            // read-only\ntype Short = Pick<User, 'id' | 'name'>;  // { id, name }\ntype NoId = Omit<User, 'id'>;            // { name, email }\ntype ById = Record<string, User>;        // { [k: string]: User }\n\n// Omit does not check that the key exists — a typo passes silently\ntype Oops = Omit<User, 'emial'>; // the same User, no error\n```",
+  "explanation": "They are all ordinary mapped and conditional types from `lib.es5.d.ts`; you could write any of them yourself in a couple of lines."
+ },
+ {
+  "id": "ts-returntype-parameters",
+  "topic": "ts",
+  "subtopic": "utility types",
+  "question": "What do `ReturnType`, `Parameters` and `Awaited` do?",
+  "answer": "`ReturnType<F>` is the type a function returns, `Parameters<F>` is the tuple of its arguments, `Awaited<T>` is the type a promise unwraps to (recursively).",
+  "example": "```ts\nasync function loadUser(id: string, full: boolean) {\n  return { id, name: 'Anna' };\n}\n\ntype R = ReturnType<typeof loadUser>;   // Promise<{ id: string; name: string }>\ntype P = Parameters<typeof loadUser>;   // [id: string, full: boolean]\ntype U = Awaited<R>;                    // { id: string; name: string }\n\n// Awaited unwraps nesting recursively\ntype Deep = Awaited<Promise<Promise<number>>>; // number\n\n// a common trick: the type of an argument without exporting it separately\nfunction configure(options: { retries: number }) {}\ntype Options = Parameters<typeof configure>[0];\n```",
+  "explanation": "All three are implemented with `infer`. `typeof` in front of a function's name gives its type: `ReturnType<typeof makeUser>`."
+ },
+ {
+  "id": "ts-omit-vs-exclude",
+  "topic": "ts",
+  "subtopic": "utility types",
+  "question": "How does `Omit` differ from `Exclude`?",
+  "answer": "`Exclude<T, U>` works on a union and removes members from it. `Omit<T, K>` works on an object type and removes properties from it.",
+  "example": "```ts\ntype Status = 'idle' | 'loading' | 'error';\ntype Done = Exclude<Status, 'loading'>; // 'idle' | 'error' — working on a union\n\ninterface User { id: string; name: string }\ntype NoId = Omit<User, 'id'>;           // { name: string } — working on properties\n\n// Omit itself is built on Exclude over the keys\ntype MyOmit<T, K> = Pick<T, Exclude<keyof T, K>>;\n\nExclude<User, 'id'>; // the whole User: it is not a union, there is nothing to exclude\n```",
+  "explanation": "The trap with `Omit`: it does not check that the key actually exists — a typo passes silently."
+ },
+ {
+  "id": "ts-partial-danger",
+  "topic": "ts",
+  "subtopic": "utility types",
+  "question": "Why is `Partial` dangerous in a function's arguments?",
+  "answer": "It lets an empty object through and removes the requiredness check: the “you forgot a field” mistake stops being caught by the compiler.",
+  "example": "```ts\ninterface User { id: string; name: string; email: string }\n\nfunction updateBad(user: Partial<User>) {} // can be called with no data at all\nupdateBad({});                              // passes\nupdateBad({ nmae: 'Anna' });                // there is an error, but only for the excess key\n\n// better: id is required, everything else is optional\nfunction update(patch: { id: string } & Partial<Omit<User, 'id'>>) {}\nupdate({});             // error: no id\nupdate({ id: '1' });    // fine\n\n// and “at least one field”, if that matters\ntype AtLeastOne<T> = { [K in keyof T]: Pick<T, K> }[keyof T];\n```",
+  "explanation": "For updates `Partial<T> & Pick<T, 'id'>` is more precise — at least the identifier stays required."
+ },
+ {
+  "id": "ts-interface-vs-type",
+  "topic": "ts",
+  "subtopic": "interfaces",
+  "question": "How does `interface` differ from `type`?",
+  "answer": "An `interface` can be declared again and the declarations merge (declaration merging), and it is meant for object shapes. A `type` is an alias for any type at all: a union, a tuple, a conditional type, a primitive.",
+  "example": "```ts\ninterface Window { custom: string }\ninterface Window { another: number } // merged — this is how somebody else's types are extended\n\ntype A = { a: string };\ntype A = { b: string }; // error: duplicate declaration\n\n// type can do what an interface cannot\ntype Id = string | number;              // a union\ntype Pair = [string, number];           // a tuple\ntype Fn = (a: string) => void;          // a function\ntype Keys<T> = keyof T;                 // a computed type\n\n// interface for public object contracts,\n// type for everything else. Otherwise they are interchangeable.\n```",
+  "explanation": "In practice: `interface` for a library's public API (extensibility), `type` for unions and computed types. There is hardly any difference in checking performance."
+ },
+ {
+  "id": "ts-optional-vs-undefined",
+  "topic": "ts",
+  "subtopic": "interfaces",
+  "question": "How does `a?: string` differ from `a: string | undefined`?",
+  "answer": "An optional field may be omitted entirely. A field with `| undefined` must be given, even if the value is `undefined`.",
+  "example": "```ts\ninterface A { value?: string }\ninterface B { value: string | undefined }\n\nconst a: A = {};                  // fine\nconst b: B = {};                  // error: the field is required\nconst b2: B = { value: undefined }; // this is allowed\n\n// the difference also shows under exactOptionalPropertyTypes\n// with that flag a.value = undefined is forbidden:\n// either the field is there with a string, or it is absent\n\n'value' in a;                     // false for {}\nObject.keys(b2);                  // ['value'] — the key is there\n\n// in practice: the question mark means “the field may be missing”,\n// a union with undefined means “the field is there but its value is unknown”\n```",
+  "explanation": "The `exactOptionalPropertyTypes` flag tightens the first case: with it an explicit `undefined` cannot be assigned to `a?: string`."
+ },
+ {
+  "id": "ts-index-signature",
+  "topic": "ts",
+  "subtopic": "interfaces",
+  "question": "What is an index signature, and what makes it risky?",
+  "answer": "`[key: string]: T` allows any string key. The risk is that the compiler considers every access valid — typos are not caught, and the value's type may in fact be `undefined`.",
+  "example": "```ts\ninterface Dict { [key: string]: number }\n\nconst d: Dict = { a: 1 };\nd.zzz.toFixed(2); // the compiler is certain it is a number; the runtime crashes on undefined\n\n// cured by the noUncheckedIndexedAccess flag:\n// the type then becomes number | undefined and a check is demanded\n\n// when the keys are known, a Record over a union is more precise\ntype Role = 'admin' | 'user';\nconst perms: Record<Role, string[]> = { admin: [], user: [] };\nperms.guest; // error — with an index signature it would have passed\n\n// a Map is more honest: get always returns V | undefined\n```",
+  "explanation": "The `noUncheckedIndexedAccess` flag adds `| undefined` to the result and gives the checks their meaning back."
+ },
+ {
+  "id": "ts-readonly",
+  "topic": "ts",
+  "subtopic": "interfaces",
+  "question": "What does `readonly` actually guarantee?",
+  "answer": "Only that assignment is forbidden at compile time, and only through this reference. At runtime the object stays mutable, and through another, non-readonly reference it can still be changed.",
+  "example": "```ts\ninterface Config { readonly retries: number }\n\nconst c: Config = { retries: 3 };\nc.retries = 5; // a compile-time error\n\n// but that is only about this reference\nconst mutable = { retries: 3 };\nconst view: Config = mutable;\nmutable.retries = 5; // allowed — and view.retries is now 5 as well\n\n// nothing changed at runtime\nObject.freeze(mutable); // now that is real protection\n\n// a readonly array does not accept mutating methods\nconst list: readonly number[] = [1, 2];\nlist.push(3); // error\n```",
+  "explanation": "`ReadonlyArray<T>` removes the mutating methods, but it does not prevent mutation through a plain `T[]` pointing at the same array."
+ },
+ {
+  "id": "ts-function-overloads",
+  "topic": "ts",
+  "subtopic": "functions",
+  "question": "How do function overloads work in TypeScript?",
+  "answer": "You declare several signatures and one implementation. The implementation signature takes no part in resolving a call — from the outside it is invisible.",
+  "example": "```ts\nfunction parse(input: string): object;\nfunction parse(input: string, raw: true): string;\nfunction parse(input: string, raw?: boolean): object | string {\n  return raw ? input : JSON.parse(input);\n}\n\nconst a = parse('{}');        // object\nconst b = parse('{}', true);  // string\n\nparse('{}', false); // error: no such signature exists on the outside,\n                    // even though the implementation accepts it\n\n// the compiler does not check that the implementation honestly covers every signature —\n// keeping them in agreement is the author's job\n```",
+  "explanation": "The compiler picks the first matching signature, top to bottom. An overload can often be replaced by a generic or a union — which reads more simply."
+ },
+ {
+  "id": "ts-this-parameter",
+  "topic": "ts",
+  "subtopic": "functions",
+  "question": "How do you type `this` in a function?",
+  "answer": "As a first “fake” parameter: `function handler(this: HTMLElement, e: Event) {}`. It does not reach the compiled code.",
+  "example": "```ts\nfunction handler(this: HTMLButtonElement, e: MouseEvent) {\n  this.disabled = true; // the type is known\n}\n\nbutton.addEventListener('click', handler);\nhandler(event); // error: this does not fit\n\n// the same inside objects\ninterface Counter {\n  count: number;\n  inc(this: Counter): void;\n}\n\n// the compiled JS has no such parameter: it exists only for checking\n// and must come first\n```",
+  "explanation": "The `noImplicitThis` flag forces you to do this wherever `this` would otherwise be `any`."
+ },
+ {
+  "id": "ts-generic-vs-overload",
+  "topic": "ts",
+  "subtopic": "functions",
+  "question": "When is a generic better than an overload?",
+  "answer": "When the input and output types are related by a rule rather than by a finite list of cases. An overload fits when there are few cases and they are fundamentally different.",
+  "example": "```ts\n// a rule relating the input and the output — a generic\nfunction first<T>(list: T[]): T | undefined {\n  return list[0];\n}\n\n// a finite list of fundamentally different cases — an overload\nfunction createElement(tag: 'a'): HTMLAnchorElement;\nfunction createElement(tag: 'input'): HTMLInputElement;\nfunction createElement(tag: string): HTMLElement {\n  return document.createElement(tag);\n}\n\n// a sign that a generic is contrived: the parameter occurs exactly once\nfunction bad<T>(x: T): void {} // T relates nothing — unknown would have done\n```",
+  "explanation": "Generics read better in IDE hints and spare you from maintaining a list of signatures."
+ },
+ {
+  "id": "ts-async-types",
+  "topic": "ts",
+  "subtopic": "functions",
+  "question": "How are asynchronous functions typed, and what is a “floating” promise?",
+  "answer": "An `async` function must return a `Promise<T>`; errors are not reflected in the type at all. A floating promise is a call to an async function without an `await` and without error handling: the rejection ends up in `unhandledrejection`.",
+  "example": "```ts\nasync function load(): Promise<User> {\n  throw new Error('x'); // the type knows nothing about errors\n}\n\nasync function save(): Promise<void> {}\n\nsave();          // a floating promise: the error will be lost\nvoid save();     // explicitly saying “the result is not needed” — the lint rule is satisfied\nawait save();\nsave().catch(report);\n\n// void in a callback's type allows returning anything — and people take advantage\ndeclare function each(cb: () => void): void;\neach(async () => {});   // the compiler stays silent, and nobody awaits the promise\n\n// returning a Promise<T> from a non-async function is fine and often right\nfunction loadRaw(): Promise<User> {\n  return fetch('/api').then((r) => r.json());\n}\n```",
+  "explanation": "The absence of errors in the type is a fundamental limitation: TypeScript's type system does not describe how a function can fail. That is why in critical places people return a union result `{ ok: true; value } | { ok: false; error }` instead of throwing.\n\nThe `no-floating-promises` rule from typescript-eslint catches the most common source of silently lost errors in asynchronous code."
+ },
+ {
+  "id": "ts-void-vs-undefined",
+  "topic": "ts",
+  "subtopic": "functions",
+  "question": "How does `void` differ from `undefined` in return position?",
+  "answer": "`undefined` demands that the function actually return `undefined`. `void` means “the value is not used”: a function returning anything at all fits where `void` is expected.",
+  "example": "```ts\ntype Handler = () => void;\n\nconst a: Handler = () => 42;        // fine: the value is simply ignored\nconst b: () => undefined = () => 42; // error\n\n// event handlers are built on this\nbutton.addEventListener('click', () => form.submit());\n\n// and so is the well-known trap with push inside forEach\nconst ids: number[] = [];\n[1, 2].forEach((n) => ids.push(n)); // push returns a number — and that is allowed\n\n// but the value itself is unavailable\nconst result = a();  // type void\nresult;              // cannot be used\n\n// void as a type argument means “there is no result”\nconst p: Promise<void> = save();\n```",
+  "explanation": "The leniency around `void` is not a whim: without it no existing function could be passed as a handler, and the code would fill up with `() => { fn(); }` wrappers.\n\nThe flip side is the same trap as with floating promises: an `async` function fits `() => void`, and nobody notices that its result is never awaited."
+ },
+ {
+  "id": "ts-enum-problems",
+  "topic": "ts",
+  "subtopic": "enums",
+  "question": "Why is `enum` in TypeScript contentious, and what should be used instead?",
+  "answer": "A numeric `enum` produces a reverse mapping and accepts any number; a `const enum` does not work with `isolatedModules` and bundlers that compile file by file. Both forms emit runtime code, which is not what people expect from “types only”.",
+  "example": "```ts\nenum Direction { Up, Down }\n\nDirection.Up;        // 0\nDirection[0];        // 'Up' — a reverse mapping, an extra object in the bundle\nconst d: Direction = 42 as Direction; // a numeric enum tolerates this\n\n// an object plus as const: types only, the runtime code is predictable\nconst Direction2 = { Up: 'up', Down: 'down' } as const;\ntype Direction2 = (typeof Direction2)[keyof typeof Direction2]; // 'up' | 'down'\n\n// or just a union, when the values are not needed\ntype Dir = 'up' | 'down';\n\n// a string enum is free of most of these problems, but it still\n// produces an object at runtime and is not structural\n```",
+  "explanation": "The replacement is a union of literals plus an `as const` object when the values are needed:\n\n```ts\nconst Status = { Ready: 'ready', Error: 'error' } as const;\ntype Status = (typeof Status)[keyof typeof Status];\n```"
+ },
+ {
+  "id": "ts-isolated-modules",
+  "topic": "ts",
+  "subtopic": "compilation",
+  "question": "What does the `isolatedModules` flag mean?",
+  "answer": "Every file must compile independently of the rest. This is a requirement of bundlers such as esbuild and SWC, which never build the whole program.",
+  "example": "```ts\n// not allowed: within a single file re-exporting a type is indistinguishable from re-exporting a value\nexport { User } from './types';\nexport type { User } from './types'; // this is the correct form\n\n// const enum is forbidden: inlining requires the entire program\nconst enum E { A }\n\n// a file with no imports or exports counts as a script rather than a module\nexport {};\n\n// the flag is on by default in projects using esbuild, SWC and Vite —\n// they compile each file separately and cannot see the neighbours' types\n```",
+  "explanation": "Hence the mandatory `export type` / `import type` for re-exporting types, and the ban on `const enum`."
+ },
+ {
+  "id": "ts-import-type",
+  "topic": "ts",
+  "subtopic": "compilation",
+  "question": "What is `import type` for?",
+  "answer": "It states explicitly that the import is needed for types only, and the compiler is guaranteed to strip it from the output — with no risk of dragging the module into the runtime and no circular dependencies.",
+  "example": "```ts\nimport type { User } from './models';       // guaranteed to vanish from the output\nimport { type User, createUser } from './models'; // the mixed form\n\n// without type the import may survive in the bundle for the module's side effects\nimport { User } from './models';\n\n// and the same saves you from cycles: a type does not pull the module into the runtime\n// a.ts\nimport type { B } from './b';\n// b.ts\nimport type { A } from './a';\n\n// verbatimModuleSyntax makes the rule strict:\n// an import without type is always preserved as written\n```",
+  "explanation": "`verbatimModuleSyntax` makes this rule strict: a plain `import` always stays in the output."
+ },
+ {
+  "id": "ts-declaration-files",
+  "topic": "ts",
+  "subtopic": "compilation",
+  "question": "What is a `.d.ts`, and where do types for third-party libraries come from?",
+  "answer": "Declaration files hold types only, with no implementation. They either ship with the library itself (the `types` field in package.json) or are installed separately from `@types/*` (DefinitelyTyped).",
+  "example": "```ts\n// types/legacy.d.ts — describing a library that has no types\ndeclare module 'legacy-lib' {\n  export function parse(input: string): object;\n}\n\n// global declarations\ndeclare global {\n  interface Window {\n    analytics?: { track(event: string): void };\n  }\n}\nexport {};\n\n// where types come from on their own\n// 1. the \"types\" field in the library's package.json\n// 2. npm i -D @types/name — the DefinitelyTyped packages\n// 3. your own .d.ts files, wired in through include in tsconfig\n```",
+  "explanation": "Your own declaration for an untyped module is written with `declare module 'name'`."
+ },
+ {
+  "id": "ts-tsconfig-paths",
+  "topic": "ts",
+  "subtopic": "compilation",
+  "question": "What do `paths` and `baseUrl` do in tsconfig?",
+  "answer": "They set up path aliases for imports (`@app/*` instead of `../../../`). This concerns type resolution only — the bundler has to be configured separately.",
+  "example": "```json\n{\n  \"compilerOptions\": {\n    \"baseUrl\": \".\",\n    \"paths\": {\n      \"@app/*\": [\"src/app/*\"],\n      \"@env\": [\"src/environments/environment.ts\"]\n    }\n  }\n}\n```\n\n```ts\nimport { SrsService } from '@app/domain/srs'; // instead of ../../../domain/srs\n```\n\nThe compiler will resolve such an import, the bundler will not: the same mapping has to be\nrepeated in its configuration (Angular CLI and Vite do it automatically,\nJest needs `moduleNameMapper`).",
+  "explanation": "In the Angular CLI the bundler reads tsconfig, so configuring it once is enough."
+ },
+ {
+  "id": "ts-module-resolution",
+  "topic": "ts",
+  "subtopic": "compilation",
+  "question": "What does `moduleResolution` do, and why do imports sometimes need a `.js` extension?",
+  "answer": "The flag decides how the compiler looks up a file by an import string. In the `node16`/`nodenext` modes Node's ESM rules apply: the extension is mandatory, and it must be written as `.js` even when the source is `.ts`.",
+  "example": "```ts\n// node16 / nodenext — the path as the runtime will see it\nimport { srs } from './srs.js';   // the file on disk is srs.ts\n\n// bundler — for Vite, esbuild, webpack: no extension needed\nimport { srs } from './srs';\n```\n\n```json\n{\n  \"compilerOptions\": {\n    \"module\": \"preserve\",\n    \"moduleResolution\": \"bundler\",\n    \"paths\": { \"@app/*\": [\"src/app/*\"] }\n  }\n}\n```\n\n```json\n{\n  \"exports\": {\n    \".\": { \"types\": \"./dist/index.d.ts\", \"import\": \"./dist/index.js\" }\n  }\n}\n```",
+  "explanation": "Having to write `.js` is confusing but logical: TypeScript does not rewrite import paths, so exactly what you wrote survives into the output, and the path must be valid for the runtime.\n\nThe `bundler` mode is for applications built by a bundler: it understands `exports` from package.json but requires no extensions. Libraries published to npm usually check themselves under `node16`."
+ },
+ {
+  "id": "ts-target-lib",
+  "topic": "ts",
+  "subtopic": "compilation",
+  "question": "How does `target` differ from `lib`, and what is `skipLibCheck` for?",
+  "answer": "`target` sets the syntax level of the output, `lib` sets which API declarations are available. `skipLibCheck` turns off type checking inside `.d.ts` files — it is almost always enabled, for speed and for peace between dependency versions.",
+  "example": "```json\n{\n  \"compilerOptions\": {\n    \"target\": \"ES2022\",\n    \"lib\": [\"ES2022\", \"DOM\", \"DOM.Iterable\"],\n    \"skipLibCheck\": true\n  }\n}\n```\n\n```ts\n// lib decides what the compiler knows about, not what the browser has\n[1, 2].at(-1);        // needs lib ES2022\ndocument.querySelector('div'); // needs lib DOM — a Node project will not have it\n\n// target affects syntax downlevelling\nclass A { #x = 1 }    // with target ES2015 this turns into a WeakMap\n```",
+  "explanation": "The main trap: `lib` describes an API but does not add it to the runtime. Setting `lib: ES2022` gets you hints for `Array.prototype.at`, and an error in an old browser — actual support is the business of polyfills and browserslist.\n\n`skipLibCheck: false` regularly breaks the build over conflicting `@types/*` versions in transitive dependencies, and you would not be fixing errors in somebody else's declarations anyway."
+ },
+ {
+  "id": "ts-strict-flags",
+  "topic": "ts",
+  "subtopic": "strictness",
+  "question": "What does the `strict` flag turn on?",
+  "answer": "`strictNullChecks`, `noImplicitAny`, `strictFunctionTypes`, `strictBindCallApply`, `strictPropertyInitialization`, `noImplicitThis`, `useUnknownInCatchVariables`, `alwaysStrict`.",
+  "example": "```json\n{\n  \"compilerOptions\": {\n    \"strict\": true\n  }\n}\n```\n\n```ts\n// what exactly gets switched on, and what breaks\nlet s: string = null;          // strictNullChecks\nfunction f(a) {}               // noImplicitAny\nclass C { name: string }       // strictPropertyInitialization\ntry {} catch (e) { e.message } // useUnknownInCatchVariables\n\n// strict does not include three useful flags — they are added separately\n// noUncheckedIndexedAccess, exactOptionalPropertyTypes, noImplicitOverride\n```",
+  "explanation": "The most valuable one is `strictNullChecks`: without it `null` and `undefined` belong to every type, and the compiler never demands an emptiness check."
+ },
+ {
+  "id": "ts-strict-null-checks",
+  "topic": "ts",
+  "subtopic": "strictness",
+  "question": "What does `strictNullChecks` change?",
+  "answer": "`null` and `undefined` stop being members of every type: they have to be declared explicitly (`string | null`) and narrowed before use.",
+  "example": "```ts\n// without the flag: null fits anywhere\nlet name: string = null; // no error — and this is the worst mode\n\n// with the flag\nlet name: string = null;          // error\nlet name2: string | null = null;  // like this\n\nfunction len(s: string | null) {\n  s.length;                       // error\n  return s?.length ?? 0;          // narrowed\n}\n\n// document.getElementById returns Element | null for exactly this reason\nconst el = document.getElementById('root');\nel.textContent = 'x';   // error\nel?.remove();\n```",
+  "explanation": "This is the one flag that really catches a whole class of production bugs of the “cannot read property of undefined” kind."
+ },
+ {
+  "id": "ts-non-null-assertion",
+  "topic": "ts",
+  "subtopic": "strictness",
+  "question": "What does the `!` operator after an expression do, and why is it dangerous?",
+  "answer": "It asserts to the compiler that the value is neither `null` nor `undefined`. No runtime check is added — if the assertion is false, you get an ordinary runtime error.",
+  "example": "```ts\nconst el = document.getElementById('root')!; // “I know it is there”\nel.textContent = 'ok';                       // the runtime crashes if it is not\n\n// the honest alternatives\nconst el2 = document.getElementById('root');\nif (!el2) throw new Error('no #root'); // a clear error in the right place\n\n// or an assertion function\nassertDefined(el2, '#root');\n\n// a justified case — after a check the compiler cannot see\nif (map.has(key)) map.get(key)!.push(x);\n```",
+  "explanation": "Every `!` is a promise the author is responsible for, not the compiler. In most places a check or a `?.` is more honest."
+ },
+ {
+  "id": "ts-as-vs-satisfies",
+  "topic": "ts",
+  "subtopic": "strictness",
+  "question": "How does `satisfies` differ from `as`?",
+  "answer": "`as` substitutes the type and silences the check. `satisfies` verifies that the expression conforms to the type but **keeps** the more precise inferred type.",
+  "example": "```ts\ntype Config = Record<string, string | number>;\n\nconst withAs = { port: 3000, host: 'localhost' } as Config;\nwithAs.port.toFixed(); // error: the type collapsed to string | number\n\nconst withSatisfies = { port: 3000, host: 'localhost' } satisfies Config;\nwithSatisfies.port.toFixed(); // fine: port stayed a number\nwithSatisfies.missing;        // error: there are no other keys\n\n// as can also lie outright\nconst lie = {} as Config & { port: number };\nlie.port.toFixed(); // the compiler is happy, the runtime crashes\n```",
+  "explanation": "```ts\nconst config = { port: 3000 } satisfies Config;\n// config.port has the type 3000 rather than number, and a typo in a key is still caught\n```"
+ },
+ {
+  "id": "ts-unknown-in-catch",
+  "topic": "ts",
+  "subtopic": "strictness",
+  "question": "What type does the variable in a `catch` have?",
+  "answer": "`unknown` under `useUnknownInCatchVariables` (which is part of `strict`), otherwise `any`. Anything at all can be thrown in JS, not only an `Error`.",
+  "example": "```ts\ntry {\n  risky();\n} catch (e) {\n  e.message; // error: e has the type unknown\n\n  if (e instanceof Error) report(e.message);\n  else report(String(e));\n}\n\n// anything can be thrown — the unknown type reflects that honestly\nthrow 'a string';\nthrow { code: 500 };\n\n// the only annotations allowed are unknown and any\ntry {} catch (e: unknown) {}\ntry {} catch (e: Error) {} // a compile error\n```",
+  "explanation": "Hence the mandatory check: `if (e instanceof Error) { e.message }`."
+ },
+ {
+  "id": "ts-class-modifiers",
+  "topic": "ts",
+  "subtopic": "classes",
+  "question": "How does TypeScript's `private` differ from `#field`?",
+  "answer": "`private` is a compiler check only: in the compiled JS the field is ordinary and reachable from outside. `#field` is privacy of the language itself, enforced at runtime.",
+  "example": "```ts\nclass User {\n  #password = '';        // unreachable at runtime\n  private token = '';    // erased at compile time\n  protected role = '';   // visible to subclasses\n  readonly id: string;   // assignment in the constructor only\n\n  constructor(id: string, public name: string) { // a parameter property\n    this.id = id;\n  }\n}\n\nconst u = new User('1', 'Anna');\n(u as any).token;      // '' — the field is right there\nu['token'];            // another way around the check\nu.#password;           // SyntaxError — there is no way around this one\n\n// private fields break structural compatibility\nclass A { private x = 1 }\nclass B { private x = 1 }\nconst a: A = new B();  // error, even though the shapes match\n```",
+  "explanation": "Private fields are the one exception to structural typing: two classes with identical shapes are incompatible when each has private fields of its own.\n\nParameter properties (`constructor(public name: string)`) are TypeScript syntax rather than JS: they save lines but make the constructor less obvious, which is why teams often ban them."
+ },
+ {
+  "id": "ts-abstract-class",
+  "topic": "ts",
+  "subtopic": "classes",
+  "question": "When do you need an `abstract` class, and when is an interface enough?",
+  "answer": "An abstract class is needed when there is shared implementation for subclasses to reuse. If all you need is a contract, take an interface: it adds nothing to the bundle and allows several classes to implement it.",
+  "example": "```ts\nabstract class Storage {\n  abstract read(key: string): Promise<string | null>; // no body\n  abstract write(key: string, value: string): Promise<void>;\n\n  async readJson<T>(key: string): Promise<T | null> {  // shared implementation\n    const raw = await this.read(key);\n    return raw ? (JSON.parse(raw) as T) : null;\n  }\n}\n\nnew Storage();          // error: an abstract class cannot be instantiated\n\nclass IndexedDbStorage extends Storage {\n  async read(key: string) { return null; }\n  async write(key: string, value: string) {}\n}\n\n// the type “constructor of a subclass” is written like this\ntype StorageCtor = abstract new (...args: any[]) => Storage;\n```",
+  "explanation": "Angular offers a third option that often beats both: an interface plus an `InjectionToken`. That is what this project does — `PROGRESS_STORAGE` describes the contract, the implementation is swapped by a provider, and tests substitute a fake.\n\nInheritance for the sake of code reuse couples classes tightly; composition and dependency injection usually deliver the same benefit more cheaply."
+ },
+ {
+  "id": "ts-decorators",
+  "topic": "ts",
+  "subtopic": "classes",
+  "question": "How do standard decorators differ from the experimental ones?",
+  "answer": "The standard ones (TypeScript 5.0, stage 3 in ECMAScript) are part of the language and work without flags, but they support no parameter decorators and emit no type metadata. The experimental ones are enabled with `experimentalDecorators` — Angular is built on those.",
+  "example": "```ts\n// a standard method decorator\nfunction logged<T extends (...args: any[]) => any>(\n  target: T,\n  context: ClassMethodDecoratorContext,\n) {\n  return function (this: unknown, ...args: any[]) {\n    console.log(`calling ${String(context.name)}`);\n    return target.apply(this, args);\n  } as T;\n}\n\nclass Service {\n  @logged\n  load() {}\n}\n```\n\n```ts\n// experimental: a parameter decorator — Angular's DI uses exactly this\nconstructor(@Inject(API_URL) private url: string) {}\n```",
+  "explanation": "The two systems are incompatible and are enabled by different flags. Angular with its `@Component` and `@Injectable` still relies on the experimental ones, but the signal-based APIs (`input()`, `output()`, `viewChild()`) appeared partly because decorators are being moved away from in the long run.\n\n`emitDecoratorMetadata` is a separate flag: it is what used to give DI the types of constructor parameters. Standard decorators have no such mechanism."
+ },
+ {
+  "id": "ts-module-augmentation",
+  "topic": "ts",
+  "subtopic": "modules",
+  "question": "How do you add a property to a type from a third-party library?",
+  "answer": "Through declaration merging: `declare module` for a module, `declare global` for a global type. Interfaces with the same name in the same scope merge, so a field can be added without touching the original package.",
+  "example": "```ts\n// extending a global type\ndeclare global {\n  interface Window {\n    analytics?: { track(event: string): void };\n  }\n}\nexport {}; // the file has to be a module\n\nwindow.analytics?.track('open');\n\n// extending somebody else's module\ndeclare module 'express' {\n  interface Request {\n    user?: { id: string };\n  }\n}\n\n// adding a method to a built-in class's prototype\ndeclare global {\n  interface Array<T> {\n    last(): T | undefined;\n  }\n}\nArray.prototype.last = function () { return this[this.length - 1]; };\n```",
+  "explanation": "Declaring a type does not create an implementation: having described `Array.prototype.last`, you still have to write the method — otherwise the compiler is happy and the runtime crashes.\n\nExtending the prototypes of built-in classes is best avoided: two extensions with the same name from different libraries collide, and the types merge silently."
+ }
+]

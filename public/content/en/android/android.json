@@ -1,0 +1,812 @@
+[
+ {
+  "id": "and-activity-lifecycle",
+  "topic": "android",
+  "subtopic": "the lifecycle",
+  "question": "List the Activity lifecycle callbacks in order.",
+  "answer": "`onCreate` → `onStart` → `onResume` → (running) → `onPause` → `onStop` → `onDestroy`. Coming back from the background: `onRestart` → `onStart` → `onResume`.",
+  "example": "```kotlin\nclass MainActivity : AppCompatActivity() {\n    override fun onCreate(savedInstanceState: Bundle?) {\n        super.onCreate(savedInstanceState)\n        setContentView(R.layout.main)     // one-off setup\n    }\n    override fun onStart() { super.onStart(); locationClient.start() }  // became visible\n    override fun onResume() { super.onResume(); player.play() }         // gained focus\n    override fun onPause() { super.onPause(); player.pause() }          // be quick!\n    override fun onStop() { super.onStop(); locationClient.stop() }\n}\n```",
+  "explanation": "`onStart`/`onStop` are about visibility, `onResume`/`onPause` about input focus. `onPause` must be fast: while it runs, the next Activity cannot be drawn."
+ },
+ {
+  "id": "and-rotation",
+  "topic": "android",
+  "subtopic": "the lifecycle",
+  "question": "What happens to an Activity on rotation, and how do you survive it?",
+  "answer": "By default it is destroyed and recreated with the new configuration. State is kept by a `ViewModel` (which survives recreation) and by `onSaveInstanceState`/`SavedStateHandle` (which survive process death too).",
+  "example": "```kotlin\nclass ProfileViewModel(\n    private val handle: SavedStateHandle,   // survives process death as well\n) : ViewModel() {\n    val query = handle.getStateFlow(\"query\", \"\")   // survives everything\n    var cached: List<User> = emptyList()           // survives a rotation only\n}\n```",
+  "explanation": "The difference is fundamental: a ViewModel lives in the process's memory and dies with it, while a `SavedStateHandle` is serialised into a Bundle. A password must not go into a Bundle — it ends up on disk."
+ },
+ {
+  "id": "and-saved-instance-state",
+  "topic": "android",
+  "subtopic": "the lifecycle",
+  "question": "When is `onSaveInstanceState` called, and what is the Bundle limit?",
+  "answer": "Before the Activity may be destroyed — on a rotation, going to the background, or memory pressure. The Bundle travels through Binder, and a transaction is capped at around 1 MB (`TransactionTooLargeException`).",
+  "example": "```kotlin\noverride fun onSaveInstanceState(outState: Bundle) {\n    super.onSaveInstanceState(outState)\n    outState.putLong(\"selectedId\", selectedId)   // an id, not the object itself\n}\n\noverride fun onCreate(savedInstanceState: Bundle?) {\n    super.onCreate(savedInstanceState)\n    selectedId = savedInstanceState?.getLong(\"selectedId\") ?: NO_ID\n}\n```",
+  "explanation": "That is why a Bundle holds identifiers and a list position rather than the data itself."
+ },
+ {
+  "id": "and-fragment-lifecycle",
+  "topic": "android",
+  "subtopic": "the lifecycle",
+  "question": "How does a Fragment's lifecycle differ from an Activity's?",
+  "answer": "A fragment has two lifecycles: its own and its View's (`onCreateView` → `onViewCreated` → `onDestroyView`). The View can be recreated while the fragment is still alive.",
+  "example": "```kotlin\noverride fun onViewCreated(view: View, state: Bundle?) {\n    viewLifecycleOwner.lifecycleScope.launch {          // not this!\n        viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {\n            viewModel.state.collect(::render)\n        }\n    }\n}\n\noverride fun onDestroyView() {\n    _binding = null       // otherwise the View leaks\n    super.onDestroyView()\n}\n```",
+  "explanation": "Hence the rule for subscriptions: use `viewLifecycleOwner`, not `this` — otherwise coming back through the back stack gives you a second subscription to the same View. For the same reason the binding reference is nulled in `onDestroyView`."
+ },
+ {
+  "id": "and-configuration-changes",
+  "topic": "android",
+  "subtopic": "the lifecycle",
+  "question": "What does `android:configChanges` do, and why is it not a solution?",
+  "answer": "It suppresses the recreation of the Activity and calls `onConfigurationChanged` instead. It is not a solution because the resources (layouts, strings, dimensions) for the new configuration are not reloaded — you have to apply them by hand.",
+  "example": "```xml\n<!-- Recreation is suppressed, but resources for the new configuration are not reloaded -->\n<activity\n    android:name=\".MainActivity\"\n    android:configChanges=\"orientation|screenSize|keyboardHidden\" />\n```",
+  "explanation": "A configuration change is not only a rotation: the language, the theme, the font size, multi-window mode."
+ },
+ {
+  "id": "and-process-death",
+  "topic": "android",
+  "subtopic": "the lifecycle",
+  "question": "What is process death, and how do you reproduce it?",
+  "answer": "The system kills the app's process in the background to reclaim memory but keeps the task stack: on return the Activity is recreated with its saved Bundle, while all memory (ViewModels and singletons included) is empty.",
+  "example": "```bash\n# To reproduce: background the app and kill the process\nadb shell am kill com.example.app\n\n# Or Developer options -> Don't keep activities\n```",
+  "explanation": "It is checked through Developer options → “Don't keep activities” or with `adb shell am kill <package>`. The most common cause of “it works on my machine but crashes for the user”."
+ },
+ {
+  "id": "and-four-components",
+  "topic": "android",
+  "subtopic": "components",
+  "question": "What are the main application components?",
+  "answer": "Activity, Service, BroadcastReceiver and ContentProvider. All are declared in the manifest, and any of them can be an entry point.",
+  "example": "```xml\n<application>\n    <activity android:name=\".MainActivity\" android:exported=\"true\" />\n    <service android:name=\".SyncService\" android:exported=\"false\" />\n    <receiver android:name=\".BootReceiver\" android:exported=\"false\" />\n    <provider android:name=\".DataProvider\" android:authorities=\"com.example.data\" />\n</application>\n```",
+  "explanation": "Each of them is created by the system rather than by the application — which is why they have no constructors with parameters and cannot be handed dependencies directly."
+ },
+ {
+  "id": "and-intent",
+  "topic": "android",
+  "subtopic": "components",
+  "question": "How does an explicit Intent differ from an implicit one?",
+  "answer": "An explicit one names the receiving class, an implicit one describes an action (`action`, `data`, `category`) and lets the system pick a receiver by its intent filters.",
+  "example": "```kotlin\n// Explicit: the receiver is named directly\nstartActivity(Intent(this, DetailsActivity::class.java).putExtra(\"id\", id))\n\n// Implicit: the system picks the receiver\nstartActivity(Intent(Intent.ACTION_VIEW, \"https://example.com\".toUri()))\n```",
+  "explanation": "Since Android 11 the visibility of other packages is restricted: to check whether a handler exists you need a `<queries>` section in the manifest."
+ },
+ {
+  "id": "and-pending-intent",
+  "topic": "android",
+  "subtopic": "components",
+  "question": "What is a PendingIntent, and why does it require a mutability flag?",
+  "answer": "A token that lets another application perform an action on behalf of yours. Since Android 12 an explicit `FLAG_IMMUTABLE` or `FLAG_MUTABLE` is mandatory.",
+  "example": "```kotlin\nval intent = PendingIntent.getActivity(\n    context,\n    0,\n    Intent(context, MainActivity::class.java),\n    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,  // mandatory since Android 12\n)\n```",
+  "explanation": "A mutable PendingIntent lets the receiver substitute its contents — hence the requirement to state your intention explicitly."
+ },
+ {
+  "id": "and-launch-modes",
+  "topic": "android",
+  "subtopic": "components",
+  "question": "What launch modes does an Activity have?",
+  "answer": "`standard` — always a new instance; `singleTop` — reuse if the Activity is already on top; `singleTask` — a single instance in the task, with the stack above it cleared; `singleInstance` — in a task of its own.",
+  "example": "```xml\n<activity android:name=\".MainActivity\" android:launchMode=\"singleTop\" />\n```",
+  "explanation": "On reuse `onNewIntent` is called instead of `onCreate` — a forgotten override here is what gives you “the screen does not update from a push”."
+ },
+ {
+  "id": "and-service-types",
+  "topic": "android",
+  "subtopic": "components",
+  "question": "How does a Foreground Service differ from an ordinary one, and when is it needed?",
+  "answer": "It shows a persistent notification and is all but immune to being killed by the system. It is for long-running work the user can see: navigation, a player, recording a track.",
+  "example": "```xml\n<service\n    android:name=\".PlayerService\"\n    android:foregroundServiceType=\"mediaPlayback\"\n    android:exported=\"false\" />\n```",
+  "explanation": "Since Android 8 background services cannot be started from the background, and since Android 14 the foreground service type must be declared. For deferrable work there is WorkManager."
+ },
+ {
+  "id": "and-workmanager",
+  "topic": "android",
+  "subtopic": "components",
+  "question": "When do you use WorkManager?",
+  "answer": "For work that must be guaranteed to run and survive a restart of the app and of the device: syncing, uploading logs, downloading files.",
+  "example": "```kotlin\nval request = OneTimeWorkRequestBuilder<SyncWorker>()\n    .setConstraints(\n        Constraints.Builder()\n            .setRequiredNetworkType(NetworkType.CONNECTED)\n            .build(),\n    )\n    .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 10, TimeUnit.SECONDS)\n    .build()\n\nWorkManager.getInstance(context).enqueue(request)\n```",
+  "explanation": "It supports constraints (network, charging), retries with backoff and chains of tasks. For immediate work tied to a screen, use coroutines in `viewModelScope`."
+ },
+ {
+  "id": "and-broadcast-receiver",
+  "topic": "android",
+  "subtopic": "components",
+  "question": "What restrictions does a BroadcastReceiver have?",
+  "answer": "Since Android 8 most implicit broadcasts cannot be declared in the manifest — they must be registered at runtime. `onReceive` runs on the main thread and is limited to roughly 10 seconds.",
+  "example": "```kotlin\nContextCompat.registerReceiver(\n    context,\n    receiver,\n    IntentFilter(Intent.ACTION_BATTERY_LOW),\n    ContextCompat.RECEIVER_NOT_EXPORTED,   // mandatory since Android 13\n)\n```",
+  "explanation": "Since Android 13 registration requires stating `RECEIVER_EXPORTED`/`RECEIVER_NOT_EXPORTED` explicitly."
+ },
+ {
+  "id": "and-content-provider",
+  "topic": "android",
+  "subtopic": "components",
+  "question": "What is a ContentProvider for when Room exists?",
+  "answer": "It is for handing data to **other applications** and for system integrations (contacts, files, SAF). Inside a single app it is redundant.",
+  "example": "```xml\n<provider\n    android:name=\".FilesProvider\"\n    android:authorities=\"com.example.files\"\n    android:exported=\"true\"\n    android:grantUriPermissions=\"true\" />\n```",
+  "explanation": "A side effect: a provider is initialised before `Application.onCreate` — App Startup and library auto-initialisation are built on that."
+ },
+ {
+  "id": "and-context-types",
+  "topic": "android",
+  "subtopic": "context",
+  "question": "How does the Application Context differ from an Activity Context?",
+  "answer": "The Application one lives for the whole process, an Activity's until it is destroyed. An Activity context knows about the theme and styling, the Application one does not.",
+  "example": "```kotlin\nclass Repository(\n    @ApplicationContext private val context: Context,   // lives for the whole process\n)\n\n// A dialog needs an Activity context: the Application one has no theme\nAlertDialog.Builder(activity).setTitle(\"Delete?\").show()\n```",
+  "explanation": "The rule: for UI (dialogs, inflating layouts, themes) use an Activity context; for long-lived objects (singletons, the database) use the Application one. A dialog with an Application context crashes."
+ },
+ {
+  "id": "and-memory-leaks",
+  "topic": "android",
+  "subtopic": "context",
+  "question": "What are the typical sources of memory leaks on Android?",
+  "answer": "A reference to an Activity or a View from an object that lives longer: a static field, a singleton, a non-static inner class, an unremoved listener, a Handler with a delayed message, an RxJava subscription that is never disposed.",
+  "example": "```kotlin\n// A leak: a static field outlives the Activity\ncompanion object { var current: Activity? = null }\n\n// A leak: the delayed message holds the Handler, which holds the Activity\nhandler.postDelayed({ render() }, 60_000)\n\n// No leak: the coroutine is cancelled along with the screen\nlifecycleScope.launch { delay(60_000); render() }\n```",
+  "explanation": "They are caught by LeakCanary and the Memory Profiler. Coroutines in `viewModelScope`/`lifecycleScope` cancel themselves — that is their main practical advantage."
+ },
+ {
+  "id": "and-anr",
+  "topic": "android",
+  "subtopic": "performance",
+  "question": "What is an ANR, and under what conditions does it happen?",
+  "answer": "Application Not Responding: the main thread is blocked for more than roughly 5 seconds while handling input (or 10 for a BroadcastReceiver, 20 for a service).",
+  "example": "```kotlin\noverride fun onCreate(savedInstanceState: Bundle?) {\n    super.onCreate(savedInstanceState)\n    val data = database.loadAll()      // disk on the main thread — the road to an ANR\n}\n\n// The right way:\nlifecycleScope.launch { val data = withContext(Dispatchers.IO) { database.loadAll() } }\n```",
+  "explanation": "The causes are network or disk on the main thread, heavy computation, a synchronous `Binder` call, a deadlock. A frame must fit into 16 ms at 60 Hz."
+ },
+ {
+  "id": "and-main-thread",
+  "topic": "android",
+  "subtopic": "performance",
+  "question": "Why may the UI be touched only from the main thread?",
+  "answer": "The View hierarchy is not thread-safe: it checks the thread on access and throws a `CalledFromWrongThreadException`. Synchronising every access would cost more than it gives.",
+  "example": "```kotlin\nthread {\n    val data = load()\n    // textView.text = data          // CalledFromWrongThreadException\n    runOnUiThread { textView.text = data }\n}\n```",
+  "explanation": "To switch back there are `Dispatchers.Main`, `Handler(Looper.getMainLooper())` or `View.post`."
+ },
+ {
+  "id": "and-looper-handler",
+  "topic": "android",
+  "subtopic": "concurrency",
+  "question": "How do Looper, Handler and MessageQueue work?",
+  "answer": "A `Looper` runs a loop pulling messages out of a `MessageQueue`; a `Handler` puts messages and Runnables into the queue of a particular Looper.",
+  "example": "```kotlin\nval main = Handler(Looper.getMainLooper())\nmain.post { textView.text = \"done\" }\n\n// A delayed message holds a reference — remove them on destruction\nmain.removeCallbacksAndMessages(null)\n```",
+  "explanation": "It is the same event loop as in a browser: Android's main thread is a message-processing loop. Delayed messages hold a reference to the Handler and through it to the Activity."
+ },
+ {
+  "id": "and-recyclerview",
+  "topic": "android",
+  "subtopic": "UI",
+  "question": "How does RecyclerView reuse items, and what is DiffUtil for?",
+  "answer": "A ViewHolder stores the results of `findViewById`, and the View itself is reused while scrolling through a pool. `DiffUtil` computes the minimal set of changes between two lists so that `notifyDataSetChanged` is not needed.",
+  "example": "```kotlin\nclass UserAdapter : ListAdapter<User, UserHolder>(Diff) {\n    object Diff : DiffUtil.ItemCallback<User>() {\n        override fun areItemsTheSame(a: User, b: User) = a.id == b.id\n        override fun areContentsTheSame(a: User, b: User) = a == b\n    }\n}\n\nadapter.submitList(users)   // the diff is computed in the background, animations are kept\n```",
+  "explanation": "`notifyDataSetChanged` redraws everything and kills the animations. `ListAdapter` computes the diff on a background thread. A `getItemId` with stable ids helps the animations."
+ },
+ {
+  "id": "and-viewbinding",
+  "topic": "android",
+  "subtopic": "UI",
+  "question": "How does ViewBinding differ from findViewById and from DataBinding?",
+  "answer": "ViewBinding generates type-safe references to Views with no markup in the XML. DataBinding additionally supports expressions and two-way binding right in the layout, but slows the build down.",
+  "example": "```kotlin\nprivate var _binding: FragmentProfileBinding? = null\nprivate val binding get() = _binding!!\n\noverride fun onCreateView(i: LayoutInflater, c: ViewGroup?, s: Bundle?): View {\n    _binding = FragmentProfileBinding.inflate(i, c, false)\n    return binding.root\n}\n\noverride fun onDestroyView() { _binding = null; super.onDestroyView() }\n```",
+  "explanation": "In a fragment the binding reference must be nulled in `onDestroyView` — otherwise the View leaks."
+ },
+ {
+  "id": "and-constraint-layout",
+  "topic": "android",
+  "subtopic": "UI",
+  "question": "What is ConstraintLayout for?",
+  "answer": "It lets a complex screen be described with a single flat level of nesting: a deep View hierarchy slows measurement and drawing down.",
+  "example": "```xml\n<androidx.constraintlayout.widget.ConstraintLayout\n    android:layout_width=\"match_parent\"\n    android:layout_height=\"wrap_content\">\n\n    <TextView\n        android:id=\"@+id/title\"\n        app:layout_constraintTop_toTopOf=\"parent\"\n        app:layout_constraintStart_toStartOf=\"parent\" />\n\n    <TextView\n        app:layout_constraintTop_toBottomOf=\"@id/title\"\n        app:layout_constraintStart_toStartOf=\"parent\" />\n</androidx.constraintlayout.widget.ConstraintLayout>\n```",
+  "explanation": "Nested weighted `LinearLayout`s are measured twice at every level — hence the exponential cost."
+ },
+ {
+  "id": "and-measure-layout-draw",
+  "topic": "android",
+  "subtopic": "UI",
+  "question": "What phases does drawing a View consist of?",
+  "answer": "`measure` (how much space is needed), `layout` (placement), `draw` (painting). A custom View overrides `onMeasure`, `onLayout` and `onDraw`.",
+  "example": "```kotlin\nclass Badge(context: Context) : View(context) {\n    private val paint = Paint()          // created up front, not in onDraw\n\n    override fun onMeasure(widthSpec: Int, heightSpec: Int) {\n        setMeasuredDimension(resolveSize(100, widthSpec), resolveSize(100, heightSpec))\n    }\n\n    override fun onDraw(canvas: Canvas) {\n        canvas.drawCircle(width / 2f, height / 2f, 40f, paint)\n    }\n}\n```",
+  "explanation": "Objects must not be allocated in `onDraw`: it is called every frame, and the allocations cause GC pauses."
+ },
+ {
+  "id": "and-density-dp",
+  "topic": "android",
+  "subtopic": "UI",
+  "question": "How does dp differ from px, and sp from dp?",
+  "answer": "`dp` is a density-independent unit, `px` a physical pixel. `sp` is the same as dp but is scaled by the user's font size setting.",
+  "example": "```xml\n<TextView\n    android:layout_width=\"wrap_content\"\n    android:layout_height=\"48dp\"\n    android:padding=\"16dp\"\n    android:textSize=\"14sp\" />   <!-- font sizes always in sp -->\n```",
+  "explanation": "Fonts always use `sp`: otherwise the app ignores the accessibility settings."
+ },
+ {
+  "id": "and-resource-qualifiers",
+  "topic": "android",
+  "subtopic": "UI",
+  "question": "How do resource qualifiers work?",
+  "answer": "Directories such as `values-ru`, `layout-sw600dp`, `drawable-hdpi`, `values-night` — the system picks the ones matching the current configuration by itself.",
+  "example": "```text\nres/\n  values/strings.xml          # the default\n  values-ru/strings.xml       # Russian\n  values-night/colors.xml     # dark theme\n  layout-sw600dp/main.xml     # width from 600dp\n  drawable-xxhdpi/icon.png    # screen density\n```",
+  "explanation": "That is exactly why suppressing Activity recreation through `configChanges` breaks locale and dark theme support."
+ },
+ {
+  "id": "and-room",
+  "topic": "android",
+  "subtopic": "data",
+  "question": "What does Room give you on top of SQLite?",
+  "answer": "Compile-time checking of the SQL, mapping into objects, migrations, and observable queries returning a `Flow` or `LiveData`.",
+  "example": "```kotlin\n@Dao\ninterface UserDao {\n    @Query(\"SELECT * FROM users WHERE city = :city\")\n    fun byCity(city: String): Flow<List<UserEntity>>   // an observable query\n\n    @Insert(onConflict = OnConflictStrategy.REPLACE)\n    suspend fun insert(users: List<UserEntity>)\n}\n```",
+  "explanation": "Room's queries have to be asynchronous: it forbids a synchronous call on the main thread itself. A forgotten migration crashes the app on update."
+ },
+ {
+  "id": "and-datastore",
+  "topic": "android",
+  "subtopic": "data",
+  "question": "Why is DataStore better than SharedPreferences?",
+  "answer": "It is asynchronous (a `Flow`), transactional and never blocks the main thread. With SharedPreferences `apply` writes in the background, but `commit` blocks, and the first read is synchronous.",
+  "example": "```kotlin\nval THEME = stringPreferencesKey(\"theme\")\n\nval theme: Flow<String> = context.dataStore.data.map { it[THEME] ?: \"system\" }\n\nsuspend fun setTheme(value: String) {\n    context.dataStore.edit { it[THEME] = value }   // transactional, no blocking\n}\n```",
+  "explanation": "Preferences DataStore stores key-value pairs, Proto DataStore a typed schema."
+ },
+ {
+  "id": "and-scoped-storage",
+  "topic": "android",
+  "subtopic": "data",
+  "question": "What did Scoped Storage change?",
+  "answer": "Since Android 10–11 an app has free access only to its own directory and to media through MediaStore; arbitrary file system access requires SAF or a special permission.",
+  "example": "```kotlin\n// Your own directory: no permissions needed, cleared along with the app\nval file = File(context.getExternalFilesDir(null), \"report.pdf\")\n\n// Somebody else's media — only through MediaStore\nval uri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI\ncontext.contentResolver.query(uri, null, null, null, null)\n```",
+  "explanation": "Your own directory (`getExternalFilesDir`) needs no permissions at all and is deleted along with the app."
+ },
+ {
+  "id": "and-keystore",
+  "topic": "android",
+  "subtopic": "security",
+  "question": "Where should tokens and keys be kept?",
+  "answer": "In the Android Keystore: the keys never leave the protected store, and on devices with a TEE/StrongBox they cannot be extracted even with root.",
+  "example": "```kotlin\nval masterKey = MasterKey.Builder(context)\n    .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)\n    .build()\n\nval prefs = EncryptedSharedPreferences.create(\n    context, \"secrets\", masterKey,\n    EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,\n    EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM,\n)\n```",
+  "explanation": "SharedPreferences and Bundles are unfit for secrets. Keys hard-coded in the source are recovered by decompilation in minutes."
+ },
+ {
+  "id": "and-viewmodel",
+  "topic": "android",
+  "subtopic": "architecture",
+  "question": "What is a ViewModel, and why does it survive a rotation?",
+  "answer": "A holder of screen state attached to a `ViewModelStoreOwner`. When the Activity is recreated the store is preserved, and the same ViewModel is handed to the new Activity.",
+  "example": "```kotlin\nclass ProfileViewModel(private val repository: UserRepository) : ViewModel() {\n    val state: StateFlow<UiState> = repository.user\n        .map(::toUiState)\n        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), UiState.Loading)\n\n    // References to Views or to an Activity Context must not be kept here\n}\n```",
+  "explanation": "A ViewModel must not hold a reference to a View or an Activity Context — it outlives them. For a context there is `AndroidViewModel` with the Application."
+ },
+ {
+  "id": "and-unidirectional-flow",
+  "topic": "android",
+  "subtopic": "architecture",
+  "question": "What is unidirectional data flow (UDF)?",
+  "answer": "State flows downwards (ViewModel → UI) and events upwards (UI → ViewModel). The state has a single source of truth.",
+  "example": "```kotlin\n// State goes down\nval state: StateFlow<UiState> = _state.asStateFlow()\n\n// Events go up\nfun onQueryChanged(query: String) {\n    _state.update { it.copy(query = query) }\n}\n\n// In the UI\nScreen(state = viewModel.state.collectAsStateWithLifecycle().value,\n       onQueryChanged = viewModel::onQueryChanged)\n```",
+  "explanation": "MVI and Google's own recommendations are built this way. The key benefit is reproducibility: the state always tells you exactly what is on the screen."
+ },
+ {
+  "id": "and-repository",
+  "topic": "android",
+  "subtopic": "architecture",
+  "question": "What is the Repository layer for?",
+  "answer": "It hides where the data comes from (network, cache, database) behind a single interface and decides the source of truth — usually the local database.",
+  "example": "```kotlin\nclass UserRepository(private val api: Api, private val dao: UserDao) {\n    // The database is the source of truth, the network merely refreshes it\n    val users: Flow<List<User>> = dao.observeAll().map { it.map(::toDomain) }\n\n    suspend fun refresh() = dao.insert(api.load().map(::toEntity))\n}\n```",
+  "explanation": "This makes the ViewModel independent of the network and lets the repository be replaced in tests."
+ },
+ {
+  "id": "and-hilt",
+  "topic": "android",
+  "subtopic": "DI",
+  "question": "What does Hilt give you on top of Dagger?",
+  "answer": "Ready-made components bound to Android's lifecycles (`SingletonComponent`, `ActivityComponent`, `ViewModelComponent`) and generated wiring between them — instead of describing the graph by hand.",
+  "example": "```kotlin\n@HiltAndroidApp\nclass App : Application()\n\n@Module\n@InstallIn(SingletonComponent::class)\nobject DataModule {\n    @Provides @Singleton fun api(): Api = Retrofit.Builder()...create()\n}\n\n@HiltViewModel\nclass ProfileViewModel @Inject constructor(private val api: Api) : ViewModel()\n```",
+  "explanation": "The graph is verified at compile time: an injection mistake is a build error rather than a runtime crash."
+ },
+ {
+  "id": "and-modularization",
+  "topic": "android",
+  "subtopic": "the build",
+  "question": "Why split an application into modules?",
+  "answer": "For the speed of incremental builds (only the affected module is recompiled), explicit boundaries between layers, and the ability for teams to work in parallel.",
+  "example": "```text\n:app\n:feature:profile      # a whole screen: ui plus viewmodel\n:feature:search\n:core:data            # the repositories\n:core:network\n:core:designsystem\n```",
+  "explanation": "The price is a more complex navigation and dependency graph. Splitting by layer (`data`/`domain`/`ui`) is usually inferior to splitting by feature."
+ },
+ {
+  "id": "and-r8",
+  "topic": "android",
+  "subtopic": "the build",
+  "question": "What does R8 do, and how do you avoid breaking the app?",
+  "answer": "It minifies, obfuscates and strips unused code from the release build. What breaks is everything found by reflection: models for Gson/Moshi, class names written in code, serialisation.",
+  "example": "```text\n# proguard-rules.pro — the models that reflection reads\n-keep class com.example.model.** { *; }\n-keepclassmembers class * {\n    @com.google.gson.annotations.SerializedName <fields>;\n}\n```",
+  "explanation": "The cure is `-keep` rules in `proguard-rules.pro`. It is essential to test the release build specifically — in debug R8 is off."
+ },
+ {
+  "id": "and-gradle-variants",
+  "topic": "android",
+  "subtopic": "the build",
+  "question": "How does a buildType differ from a productFlavor?",
+  "answer": "A `buildType` is *how* it is built (debug/release: minification, signing, debuggability). A `productFlavor` is *what* is built (free/paid, dev/prod). Their product gives the build variants.",
+  "example": "```kotlin\nandroid {\n    buildTypes {\n        release { isMinifyEnabled = true }\n        debug { applicationIdSuffix = \".debug\" }   // both builds side by side on a device\n    }\n    flavorDimensions += \"tier\"\n    productFlavors {\n        create(\"free\") { dimension = \"tier\" }\n        create(\"paid\") { dimension = \"tier\" }\n    }\n}\n// The variants: freeDebug, freeRelease, paidDebug, paidRelease\n```",
+  "explanation": "An `applicationIdSuffix` on debug lets both builds live on one device."
+ },
+ {
+  "id": "and-permissions",
+  "topic": "android",
+  "subtopic": "security",
+  "question": "How do runtime permissions work?",
+  "answer": "Dangerous permissions are requested while the app runs, and the user's answer may be “deny forever”. The request goes through `ActivityResultContracts.RequestPermission`.",
+  "example": "```kotlin\nprivate val requestPermission = registerForActivityResult(\n    ActivityResultContracts.RequestPermission(),\n) { granted ->\n    if (granted) startCamera() else showRationale()\n}\n\nrequestPermission.launch(Manifest.permission.CAMERA)\n```",
+  "explanation": "After two refusals the system stops showing the dialog — the app has to work without the permission and explain why it is needed."
+ },
+ {
+  "id": "and-activity-result",
+  "topic": "android",
+  "subtopic": "components",
+  "question": "What replaced `startActivityForResult`?",
+  "answer": "The Activity Result API: `registerForActivityResult` with a contract. Registration must happen before `onStart` — usually in a field of the fragment.",
+  "example": "```kotlin\nprivate val pickImage = registerForActivityResult(\n    ActivityResultContracts.GetContent(),\n) { uri: Uri? -> uri?.let(::show) }\n\n// Registration goes in a fragment field, before onStart\npickImage.launch(\"image/*\")\n```",
+  "explanation": "The old API broke on process death: the result arrived in a recreated Activity with no saved requestCode."
+ },
+ {
+  "id": "and-app-startup-time",
+  "topic": "android",
+  "subtopic": "performance",
+  "question": "What makes up cold start time?",
+  "answer": "Creating the process, initialising the `Application`, and the first frame of the first Activity. Everything done in `Application.onCreate` delays the screen appearing.",
+  "example": "```kotlin\nclass App : Application() {\n    override fun onCreate() {\n        super.onCreate()\n        // Anything heavy goes lazy or into the background\n        // Analytics.init(this)   <- delays the first frame\n    }\n}\n```",
+  "explanation": "Libraries that initialise through a ContentProvider start even earlier. Lazy initialisation, App Startup and Baseline Profiles all help."
+ },
+ {
+  "id": "and-baseline-profiles",
+  "topic": "android",
+  "subtopic": "performance",
+  "question": "What are Baseline Profiles?",
+  "answer": "A list of hot methods shipped with the app: ART compiles them ahead of time (AOT) instead of interpreting them on the first run.",
+  "example": "```kotlin\n@Test\nfun generate() = baselineProfileRule.collect(\"com.example.app\") {\n    startActivityAndWait()\n    device.findObject(By.res(\"list\")).fling(Direction.DOWN)\n}\n```",
+  "explanation": "It gives a noticeable speed-up of cold start and scrolling without a single change in the code."
+ },
+ {
+  "id": "and-strict-mode",
+  "topic": "android",
+  "subtopic": "performance",
+  "question": "What is StrictMode for?",
+  "answer": "In a debug build it catches disk and network operations on the main thread, and leaked resources, reporting them in the log or with a crash.",
+  "example": "```kotlin\nif (BuildConfig.DEBUG) {\n    StrictMode.setThreadPolicy(\n        StrictMode.ThreadPolicy.Builder().detectDiskReads().detectNetwork().penaltyLog().build(),\n    )\n    StrictMode.setVmPolicy(\n        StrictMode.VmPolicy.Builder().detectLeakedClosableObjects().penaltyLog().build(),\n    )\n}\n```",
+  "explanation": "It is switched on in `Application.onCreate` for debug only: in release those checks are pure overhead."
+ },
+ {
+  "id": "and-testing-layers",
+  "topic": "android",
+  "subtopic": "testing",
+  "question": "How do unit tests differ from instrumented ones?",
+  "answer": "Unit tests run on the developer's JVM and cannot see the Android SDK (every method returns null without Robolectric). Instrumented tests run on a device or emulator and see the real framework.",
+  "example": "```kotlin\n// src/test — the JVM, fast, no Android SDK\nclass SrsTest {\n    @Test fun `again resets the interval`() { }\n}\n\n// src/androidTest — on a device, sees the real framework\n@RunWith(AndroidJUnit4::class)\nclass ProfileScreenTest {\n    @get:Rule val composeRule = createAndroidComposeRule<MainActivity>()\n}\n```",
+  "explanation": "Hence the rule: logic free of Android types belongs in plain classes, where it is tested quickly and without an emulator."
+ },
+ {
+  "id": "and-idling-espresso",
+  "topic": "android",
+  "subtopic": "testing",
+  "question": "How does Espresso synchronise with the application?",
+  "answer": "It waits for the main thread's message queue to drain and for background tasks to finish through an IdlingResource. Thread pools of your own are invisible to it.",
+  "example": "```kotlin\nonView(withId(R.id.list)).check(matches(isDisplayed()))\n\n// Espresso cannot see your own thread pools — an IdlingResource is needed\nIdlingRegistry.getInstance().register(okHttpIdlingResource)\n```",
+  "explanation": "Hence the flakiness: asynchronous work bypassing the main Looper requires an explicit IdlingResource or a dispatcher substituted in tests."
+ },
+ {
+  "id": "and-application-class",
+  "topic": "android",
+  "subtopic": "components",
+  "question": "What is the `Application` class, and what must not be done in it?",
+  "answer": "A single object per process, created first and living to the end. Long work must not go into `onCreate`: it directly delays the first screen appearing.",
+  "example": "```kotlin\nclass App : Application() {\n    override fun onCreate() {\n        super.onCreate()\n        // The process may start with no Activity — for WorkManager or a receiver\n        if (isMainProcess()) Analytics.init(this)\n    }\n}\n```",
+  "explanation": "Bear in mind that the process may be created without an Activity — for a BroadcastReceiver or WorkManager, say. Initialisation is best made lazy or moved to App Startup."
+ },
+ {
+  "id": "and-manifest-exported",
+  "topic": "android",
+  "subtopic": "security",
+  "question": "What does `android:exported` mean, and why is it mandatory since Android 12?",
+  "answer": "Whether the component may accept requests from other applications. Since Android 12 any component with an intent filter must declare it explicitly, or the app will not install.",
+  "example": "```xml\n<!-- Since Android 12 the attribute is mandatory when there is an intent-filter -->\n<activity android:name=\".DeepLinkActivity\" android:exported=\"true\">\n    <intent-filter>\n        <action android:name=\"android.intent.action.VIEW\" />\n        <data android:scheme=\"https\" android:host=\"example.com\" />\n    </intent-filter>\n</activity>\n\n<service android:name=\".SyncService\" android:exported=\"false\" />\n```",
+  "explanation": "An exported component with no checks is a classic vulnerability: another app can launch a screen or a service with arbitrary data."
+ },
+ {
+  "id": "and-apk-vs-bundle",
+  "topic": "android",
+  "subtopic": "the build",
+  "question": "How does an App Bundle differ from an APK?",
+  "answer": "A bundle (`.aab`) is a publishing format: Google Play builds an APK for the specific device out of it (architecture, density, language). The user downloads less.",
+  "example": "```bash\n./gradlew bundleRelease     # an .aab for publishing: Play builds the device's APK\n./gradlew assembleRelease   # an .apk for direct distribution\n```",
+  "explanation": "The flip side is signing with Play's key (Play App Signing) and the impossibility of simply handing out the `.aab` as a file."
+ },
+ {
+  "id": "and-sdk-versions",
+  "topic": "android",
+  "subtopic": "the build",
+  "question": "How do `minSdk`, `targetSdk` and `compileSdk` differ?",
+  "answer": "`compileSdk` is which API you compile against. `minSdk` is the lowest supported version. `targetSdk` is the version whose behaviour the app is adapted to: the system enables the new restrictions for it.",
+  "example": "```kotlin\nandroid {\n    compileSdk = 35        // which API we compile against\n    defaultConfig {\n        minSdk = 24        // it will not install below this\n        targetSdk = 35     // which system behaviour we are adapted to\n    }\n}\n```",
+  "explanation": "Raising `targetSdk` is the riskiest step: it is what enables the new restrictions (background work, permissions, exporting). Play requires raising it regularly."
+ },
+ {
+  "id": "and-art-dalvik",
+  "topic": "android",
+  "subtopic": "the platform",
+  "question": "How does ART differ from Dalvik?",
+  "answer": "Dalvik interpreted the bytecode with JIT compilation; ART compiles ahead of time (AOT) at install and in the background, and also uses JIT and profiles. Applications start faster.",
+  "example": "```bash\n# What has been compiled ahead of time and against which profile\nadb shell dumpsys package dexopt | grep -A2 com.example.app\n\n# Forcing AOT compilation for a measurement\nadb shell cmd package compile -m speed -f com.example.app\n```",
+  "explanation": "Modern ART compiles according to a usage profile; Baseline Profiles let you ship such a profile with the app."
+ },
+ {
+  "id": "and-dex-multidex",
+  "topic": "android",
+  "subtopic": "the build",
+  "question": "What is dex, and when is multidex needed?",
+  "answer": "Android executes `.dex` rather than `.class`. A single dex holds at most 65,536 methods; going over that with a `minSdk` below 21 requires the multidex library.",
+  "example": "```kotlin\nandroid {\n    defaultConfig {\n        multiDexEnabled = true   // needed only with minSdk < 21\n    }\n}\n// Better still — cut dependencies and turn on R8\n```",
+  "explanation": "From API 21 onwards multidex is built into the platform. The right answer is not to lean on multidex but to cut dependencies and enable R8."
+ },
+ {
+  "id": "and-binder",
+  "topic": "android",
+  "subtopic": "the platform",
+  "question": "What is Binder, and why does it have a transaction limit?",
+  "answer": "Android's inter-process communication mechanism: every call to a system service, every Activity launch and every Bundle goes through it. The transaction buffer is shared per process and capped at around 1 MB.",
+  "example": "```kotlin\n// All of this goes through Binder with a shared ~1 MB transaction limit\nstartActivity(intent.putExtra(\"payload\", hugeList))   // TransactionTooLargeException\n\n// Pass an identifier instead\nstartActivity(intent.putExtra(\"id\", item.id))\n```",
+  "explanation": "Hence the `TransactionTooLargeException` when passing large Bundles and when saving state containing lists."
+ },
+ {
+  "id": "and-parcelable-serializable",
+  "topic": "android",
+  "subtopic": "data",
+  "question": "Why is `Parcelable` better than `Serializable`?",
+  "answer": "`Parcelable` is written by hand (or generated by `@Parcelize`) and travels through Binder without reflection — noticeably faster. `Serializable` is Java's reflection-based mechanism that generates garbage.",
+  "example": "```kotlin\n@Parcelize\ndata class Filter(val query: String, val tags: List<String>) : Parcelable\n\nbundle.putParcelable(\"filter\", filter)\n\n// Serializable works through reflection and is noticeably slower\n```",
+  "explanation": "Both are meant for passing data between components rather than for long-term storage: the format is not stable across versions."
+ },
+ {
+  "id": "and-processes",
+  "topic": "android",
+  "subtopic": "the platform",
+  "question": "Can an application run in several processes?",
+  "answer": "Yes, through `android:process` in the manifest. Every process gets its own `Application` instance, its own memory and its own singletons — there is no shared state between them.",
+  "example": "```xml\n<service\n    android:name=\".SyncService\"\n    android:process=\":sync\" />   <!-- a separate process: its own Application and memory -->\n```",
+  "explanation": "A common mistake: the initialisation in `Application.onCreate` runs in every process, service ones included."
+ },
+ {
+  "id": "and-fragment-transactions",
+  "topic": "android",
+  "subtopic": "fragments",
+  "question": "How does `commit` differ from `commitNow` and `commitAllowingStateLoss`?",
+  "answer": "`commit` schedules the transaction asynchronously, `commitNow` executes it immediately (and forbids adding to the back stack). The `…AllowingStateLoss` variants do not throw after `onSaveInstanceState`, but may lose state.",
+  "example": "```kotlin\nsupportFragmentManager.commit {          // asynchronously\n    replace(R.id.container, ProfileFragment())\n    addToBackStack(null)\n}\n\nsupportFragmentManager.commitNow { }     // immediately, no back stack\n\n// After onSaveInstanceState an ordinary commit throws IllegalStateException\n```",
+  "explanation": "`IllegalStateException: Can not perform this action after onSaveInstanceState` is the consequence of a transaction after the state was saved; silencing it with `AllowingStateLoss` without understanding the cause is dangerous."
+ },
+ {
+  "id": "and-child-fragment-manager",
+  "topic": "android",
+  "subtopic": "fragments",
+  "question": "How does `childFragmentManager` differ from `parentFragmentManager`?",
+  "answer": "`childFragmentManager` manages the fragments inside this fragment, `parentFragmentManager` manages the container the fragment itself sits in.",
+  "example": "```kotlin\nclass TabsFragment : Fragment() {\n    fun showChild() {\n        childFragmentManager.commit {    // fragments inside this fragment\n            replace(R.id.tab_container, ListFragment())\n        }\n    }\n}\n\n// parentFragmentManager is the container TabsFragment itself sits in\n```",
+  "explanation": "Using the wrong manager is a frequent cause of “the fragment is not restored” after recreation."
+ },
+ {
+  "id": "and-fragment-result",
+  "topic": "android",
+  "subtopic": "fragments",
+  "question": "How do you pass a result between fragments?",
+  "answer": "`setFragmentResult` / `setFragmentResultListener` from the Fragment Result API. A ViewModel shared at the Activity or navigation graph scope is the other way.",
+  "example": "```kotlin\n// The sender\nsetFragmentResult(\"filter\", bundleOf(\"query\" to query))\n\n// The receiver\nsetFragmentResultListener(\"filter\") { _, bundle ->\n    apply(bundle.getString(\"query\").orEmpty())\n}\n```",
+  "explanation": "Direct references between fragments and callback interfaces break on recreation and hold on to references."
+ },
+ {
+  "id": "and-navigation-component",
+  "topic": "android",
+  "subtopic": "navigation",
+  "question": "What does the Navigation Component give you?",
+  "answer": "A single graph of transitions, type-safe arguments (Safe Args), and handling of the back stack and deep links all in one place.",
+  "example": "```kotlin\n@Serializable data class Profile(val userId: Long)   // a type-safe route\n\nNavHost(navController, startDestination = Home) {\n    composable<Home> { HomeScreen(onOpen = { navController.navigate(Profile(it)) }) }\n    composable<Profile> { entry -> ProfileScreen(entry.toRoute<Profile>().userId) }\n}\n```",
+  "explanation": "Arguments go into a Bundle, so what you pass should be identifiers rather than objects. The graph also lets a ViewModel be scoped to a subgraph."
+ },
+ {
+  "id": "and-deep-links",
+  "topic": "android",
+  "subtopic": "navigation",
+  "question": "How do App Links differ from ordinary deep links?",
+  "answer": "An ordinary deep link opens through an app chooser dialog. App Links are verified against an `assetlinks.json` file on your domain and open straight away, with no chooser.",
+  "example": "```xml\n<intent-filter android:autoVerify=\"true\">     <!-- App Links -->\n    <action android:name=\"android.intent.action.VIEW\" />\n    <category android:name=\"android.intent.category.BROWSABLE\" />\n    <data android:scheme=\"https\" android:host=\"example.com\" />\n</intent-filter>\n<!-- Plus the file https://example.com/.well-known/assetlinks.json -->\n```",
+  "explanation": "Without domain verification the link still goes to the browser — the most common cause of “the deep link does not work”."
+ },
+ {
+  "id": "and-single-activity",
+  "topic": "android",
+  "subtopic": "architecture",
+  "question": "What is good about the Single Activity approach?",
+  "answer": "One lifecycle instead of many, a shared scope for ViewModels, cheap transitions and a comprehensible back stack, plus natural integration with Compose navigation.",
+  "example": "```kotlin\nclass MainActivity : ComponentActivity() {\n    override fun onCreate(savedInstanceState: Bundle?) {\n        super.onCreate(savedInstanceState)\n        setContent { AppNavHost() }   // the only Activity, everything else is routes\n    }\n}\n```",
+  "explanation": "The downside is all the navigation in one place and the risk of the graph sprawling; that is handled by splitting it into nested subgraphs per feature."
+ },
+ {
+  "id": "and-overdraw",
+  "topic": "android",
+  "subtopic": "performance",
+  "question": "What is overdraw, and how do you reduce it?",
+  "answer": "Painting the same pixel several times per frame — backgrounds stacked on top of one another. It is removed by dropping redundant backgrounds, `android:background=\"@null\"` and a flat hierarchy.",
+  "example": "```xml\n<!-- The theme's background is already painted — a second identical one doubles the drawing -->\n<FrameLayout android:background=\"@android:color/transparent\">\n    <TextView android:background=\"@null\" />\n</FrameLayout>\n```",
+  "explanation": "It is inspected through Developer options → Debug GPU overdraw: blue means one layer, red four or more."
+ },
+ {
+  "id": "and-jank-frames",
+  "topic": "android",
+  "subtopic": "performance",
+  "question": "What is jank, and how much time is there per frame?",
+  "answer": "A dropped frame. At 60 Hz a frame gets about 16 ms, at 120 Hz about 8; anything longer produces a stutter.",
+  "example": "```kotlin\nclass JankReporter(activity: Activity) {\n    private val stats = JankStats.createAndTrack(activity.window) { frame ->\n        if (frame.isJank) Log.w(\"jank\", \"${frame.frameDurationUiNanos / 1_000_000} ms\")\n    }\n}\n```",
+  "explanation": "It is measured with JankStats, Macrobenchmark and Perfetto. The main causes are work on the main thread, allocations and complex layouts."
+ },
+ {
+  "id": "and-bitmap-memory",
+  "topic": "android",
+  "subtopic": "performance",
+  "question": "How much memory does a Bitmap take, and how do you save it?",
+  "answer": "Width × height × bytes per pixel (`ARGB_8888` is 4 bytes). A 4000×3000 photo takes about 48 MB regardless of the file's size.",
+  "example": "```kotlin\nval options = BitmapFactory.Options().apply {\n    inJustDecodeBounds = true\n}\nBitmapFactory.decodeFile(path, options)\noptions.inSampleSize = calculateSampleSize(options, targetWidth, targetHeight)\noptions.inJustDecodeBounds = false\nval bitmap = BitmapFactory.decodeFile(path, options)   // without this 4000x3000 is ≈ 48 MB\n```",
+  "explanation": "You save memory by scaling while decoding (`inSampleSize`), using the `RGB_565` format, and using Coil/Glide with their caches and awareness of the View's size."
+ },
+ {
+  "id": "and-oom",
+  "topic": "android",
+  "subtopic": "performance",
+  "question": "Why does OutOfMemory happen when the device has plenty of memory?",
+  "answer": "A process has its own heap limit (tens to hundreds of megabytes depending on the device) rather than all the system's memory.",
+  "example": "```xml\n<application android:largeHeap=\"true\" />   <!-- a crutch, not a solution -->\n```",
+  "explanation": "`android:largeHeap` raises the limit, but it is a crutch: the cause is usually leaks or uncompressed images."
+ },
+ {
+  "id": "and-gc-android",
+  "topic": "android",
+  "subtopic": "performance",
+  "question": "How does garbage collection affect smoothness?",
+  "answer": "Allocations in hot code (`onDraw`, a scroll handler) cause frequent collections, and those pause threads and eat into the frame budget.",
+  "example": "```kotlin\noverride fun onDraw(canvas: Canvas) {\n    // val paint = Paint()     // an allocation per frame — garbage and GC pauses\n    canvas.drawRect(rect, paint)   // paint and rect were created up front\n}\n```",
+  "explanation": "Hence the rules: allocate nothing in `onDraw`, reuse buffers, avoid autoboxing in loops."
+ },
+ {
+  "id": "and-view-vs-compose-perf",
+  "topic": "android",
+  "subtopic": "UI",
+  "question": "What is expensive in a View hierarchy, and why is Compose free of it?",
+  "answer": "Nested weighted `LinearLayout`s and `RelativeLayout` are measured in several passes, so the depth of the hierarchy hits performance non-linearly. In Compose measurement is single-pass.",
+  "example": "```xml\n<!-- Nested weights are measured twice at every level -->\n<LinearLayout android:orientation=\"vertical\">\n    <LinearLayout android:layout_weight=\"1\">\n        <LinearLayout android:layout_weight=\"1\" />\n    </LinearLayout>\n</LinearLayout>\n<!-- The flat alternative is ConstraintLayout -->\n```",
+  "explanation": "In the View world the cure is `ConstraintLayout` and `merge` tags."
+ },
+ {
+  "id": "and-surfaceview",
+  "topic": "android",
+  "subtopic": "UI",
+  "question": "How does a `SurfaceView` differ from an ordinary View?",
+  "answer": "It has a surface of its own that can be drawn from a separate thread without loading the main one. It is needed for video, the camera and games.",
+  "example": "```kotlin\nclass CameraPreview(context: Context) : SurfaceView(context), SurfaceHolder.Callback {\n    override fun surfaceCreated(holder: SurfaceHolder) {\n        thread {                       // drawing from our own thread\n            val canvas = holder.lockCanvas()\n            holder.unlockCanvasAndPost(canvas)\n        }\n    }\n}\n```",
+  "explanation": "The price is difficulty with animation and overlays: the surface lives outside the ordinary View hierarchy."
+ },
+ {
+  "id": "and-animations",
+  "topic": "android",
+  "subtopic": "UI",
+  "question": "What animation mechanisms does the View system have?",
+  "answer": "Property animations (`ObjectAnimator`, `ValueAnimator`, `ViewPropertyAnimator`), transitions (`Transition`, `MotionLayout`), and the deprecated view animations that changed only the drawing rather than the real properties.",
+  "example": "```kotlin\nObjectAnimator.ofFloat(view, View.ALPHA, 0f, 1f).apply {\n    duration = 200\n    start()\n}\n\nview.animate().translationY(0f).setDuration(200).start()\n```",
+  "explanation": "The old `Animation` classes did not change the position used for touch handling — hence “the button moved but is still clickable in its old place”."
+ },
+ {
+  "id": "and-window-insets",
+  "topic": "android",
+  "subtopic": "UI",
+  "question": "What are WindowInsets, and what is edge-to-edge for?",
+  "answer": "Insets describe the areas taken by the system bars, the cutout and the keyboard. Edge-to-edge is the mode where the app draws underneath them and accounts for the padding itself.",
+  "example": "```kotlin\nenableEdgeToEdge()   // from targetSdk 35 it is enforced\n\nViewCompat.setOnApplyWindowInsetsListener(binding.root) { view, insets ->\n    val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())\n    view.updatePadding(top = bars.top, bottom = bars.bottom)\n    insets\n}\n```",
+  "explanation": "Since Android 15 edge-to-edge is enforced for `targetSdk` 35: apps that ignore insets end up with content under the system bar."
+ },
+ {
+  "id": "and-dark-theme",
+  "topic": "android",
+  "subtopic": "UI",
+  "question": "What is the right way to support a dark theme?",
+  "answer": "Through resources: `values-night` and a `DayNight` theme, with no manual colour switching in code. Changing the mode triggers a configuration change.",
+  "example": "```xml\n<!-- res/values/colors.xml and res/values-night/colors.xml -->\n<color name=\"surface\">#FFFFFF</color>\n\n<!-- The theme extends DayNight, the colours come from resources -->\n<style name=\"AppTheme\" parent=\"Theme.Material3.DayNight\" />\n```",
+  "explanation": "Hard-coded colours and `android:configChanges` are the two main reasons a dark theme ends up looking half-broken."
+ },
+ {
+  "id": "and-rtl",
+  "topic": "android",
+  "subtopic": "UI",
+  "question": "What does supporting RTL languages take?",
+  "answer": "Using `start`/`end` instead of `left`/`right`, enabling `android:supportsRtl`, and checking icon mirroring and number formatting.",
+  "example": "```xml\n<TextView\n    android:layout_marginStart=\"16dp\"    <!-- not marginLeft -->\n    android:paddingEnd=\"8dp\"\n    android:textAlignment=\"viewStart\" />\n\n<application android:supportsRtl=\"true\" />\n```",
+  "explanation": "It is checked through Developer options → “Force RTL layout direction”, without changing the device's language."
+ },
+ {
+  "id": "and-accessibility",
+  "topic": "android",
+  "subtopic": "accessibility",
+  "question": "What makes an application accessible?",
+  "answer": "Meaningful `contentDescription`s, touch targets of at least 48 dp, sufficient contrast, support for enlarged fonts (`sp`) and a sensible focus order.",
+  "example": "```kotlin\nIcon(\n    imageVector = Icons.Default.Delete,\n    contentDescription = \"Delete\",         // null for a decorative icon\n    modifier = Modifier.size(48.dp),       // a touch target of at least 48dp\n)\n```",
+  "explanation": "It is checked with TalkBack and the Accessibility Scanner. Decorative images are given `null` as their description rather than an empty string."
+ },
+ {
+  "id": "and-retrofit-okhttp",
+  "topic": "android",
+  "subtopic": "networking",
+  "question": "How are the roles divided between Retrofit and OkHttp?",
+  "answer": "OkHttp is the HTTP client: connections, pools, cache, interceptors, retries. Retrofit is a layer on top that turns an annotated interface into an implementation over OkHttp.",
+  "example": "```kotlin\nval client = OkHttpClient.Builder()\n    .addInterceptor { chain ->\n        chain.proceed(chain.request().newBuilder().header(\"Authorization\", token).build())\n    }\n    .build()\n\nval api = Retrofit.Builder()\n    .baseUrl(\"https://example.com/\")\n    .client(client)\n    .build()\n    .create(Api::class.java)\n```",
+  "explanation": "OkHttp interceptors are the place for authorisation, logging and retries; an `Authenticator` handles 401 and token refresh separately."
+ },
+ {
+  "id": "and-http-cache",
+  "topic": "android",
+  "subtopic": "networking",
+  "question": "How do you cache network responses?",
+  "answer": "With OkHttp's cache driven by the server's headers (`Cache-Control`, `ETag`) — for conditional requests. For offline-first the better answer is your own cache in a database, with the network treated merely as a source of updates.",
+  "example": "```kotlin\nval client = OkHttpClient.Builder()\n    .cache(Cache(File(context.cacheDir, \"http\"), 10L * 1024 * 1024))\n    .build()\n\n// Offline-first is more dependable: the database is the source of truth, the network only refreshes it\nval users: Flow<List<User>> = dao.observeAll()\n```",
+  "explanation": "Room as the single source of truth: the UI subscribes to the database and the network writes into it. That way the screen works without a connection."
+ },
+ {
+  "id": "and-serialization",
+  "topic": "android",
+  "subtopic": "data",
+  "question": "How does `kotlinx.serialization` differ from Gson and Moshi?",
+  "answer": "`kotlinx.serialization` generates serialisers at compile time and knows about Kotlin's nullability. Gson uses reflection and can put a `null` into a non-null field, breaking the type guarantees.",
+  "example": "```kotlin\n@Serializable\ndata class User(val id: Long, val name: String, val city: String? = null)\n\nval user = Json.decodeFromString<User>(body)\n// The serialisers are generated at compile time: no reflection and no R8 rules needed\n```",
+  "explanation": "Reflection-based libraries need `-keep` rules for R8; code generation is free of that."
+ },
+ {
+  "id": "and-ssl-pinning",
+  "topic": "android",
+  "subtopic": "security",
+  "question": "What is certificate pinning, and what is the risk?",
+  "answer": "Binding to a particular certificate or server key so that a substituted root certificate cannot expose the traffic. The risk is that when the certificate changes the app stops working until it is updated.",
+  "example": "```kotlin\nval pinner = CertificatePinner.Builder()\n    .add(\"example.com\", \"sha256/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=\")\n    .add(\"example.com\", \"sha256/BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB=\")  // a backup\n    .build()\n\nOkHttpClient.Builder().certificatePinner(pinner).build()\n```",
+  "explanation": "It is configured in `network_security_config.xml` or through OkHttp's `CertificatePinner`. A backup pin is mandatory."
+ },
+ {
+  "id": "and-network-security-config",
+  "topic": "android",
+  "subtopic": "security",
+  "question": "Why does plain HTTP stop working from Android 9 onwards?",
+  "answer": "Cleartext traffic is forbidden by default; you need a `network_security_config.xml` explicitly permitting it for specific domains.",
+  "example": "```xml\n<network-security-config>\n    <domain-config cleartextTrafficPermitted=\"true\">\n        <domain includeSubdomains=\"false\">localhost</domain>\n    </domain-config>\n</network-security-config>\n```",
+  "explanation": "A global `cleartextTrafficPermitted=\"true\"` is a poor decision: the permission is granted to the whole application."
+ },
+ {
+  "id": "and-room-migrations",
+  "topic": "android",
+  "subtopic": "data",
+  "question": "What happens if you change a Room schema without a migration?",
+  "answer": "The app crashes when opening the database with a schema mismatch error. `fallbackToDestructiveMigration` removes the crash but wipes the user's data.",
+  "example": "```kotlin\nval MIGRATION_1_2 = object : Migration(1, 2) {\n    override fun migrate(db: SupportSQLiteDatabase) {\n        db.execSQL(\"ALTER TABLE users ADD COLUMN city TEXT\")\n    }\n}\n\nRoom.databaseBuilder(context, AppDatabase::class.java, \"app.db\")\n    .addMigrations(MIGRATION_1_2)\n    .build()\n```",
+  "explanation": "Schemas should be exported (`room.schemaLocation`) and the migrations tested with `MigrationTestHelper`."
+ },
+ {
+  "id": "and-room-threading",
+  "topic": "android",
+  "subtopic": "data",
+  "question": "Why can Room queries not run on the main thread?",
+  "answer": "Room forbids it outright and throws: a disk operation may take hundreds of milliseconds and lead to an ANR.",
+  "example": "```kotlin\n@Dao\ninterface UserDao {\n    @Query(\"SELECT * FROM users\")\n    suspend fun all(): List<UserEntity>            // suspend is mandatory\n\n    @Query(\"SELECT * FROM users\")\n    fun observeAll(): Flow<List<UserEntity>>       // updates itself\n}\n```",
+  "explanation": "A returned `Flow` observes changes to the tables and updates the UI by itself — the subscription only has to be set up once."
+ },
+ {
+  "id": "and-paging",
+  "topic": "android",
+  "subtopic": "data",
+  "question": "What is the Paging library for?",
+  "answer": "It loads data page by page as you scroll, caches it, and can combine the network with a database through a `RemoteMediator`.",
+  "example": "```kotlin\nval users: Flow<PagingData<User>> = Pager(PagingConfig(pageSize = 20)) {\n    UserPagingSource(api)\n}.flow.cachedIn(viewModelScope)\n\n// In Compose\nval items = viewModel.users.collectAsLazyPagingItems()\n```",
+  "explanation": "A hand-rolled implementation usually breaks on screen recreation and duplicates requests during fast scrolling."
+ },
+ {
+  "id": "and-backup",
+  "topic": "android",
+  "subtopic": "data",
+  "question": "What is Auto Backup, and what is dangerous about it?",
+  "answer": "By default the system copies an app's data to the user's cloud. Tokens and caches can end up in the backup and turn out to be invalid after a restore on another device.",
+  "example": "```xml\n<application android:dataExtractionRules=\"@xml/backup_rules\" />\n\n<!-- res/xml/backup_rules.xml -->\n<data-extraction-rules>\n    <cloud-backup>\n        <exclude domain=\"sharedpref\" path=\"secrets.xml\" />\n    </cloud-backup>\n</data-extraction-rules>\n```",
+  "explanation": "It is controlled by `dataExtractionRules` (Android 12+) and `fullBackupContent`; secrets must be excluded from the backup."
+ },
+ {
+  "id": "and-doze",
+  "topic": "android",
+  "subtopic": "background work",
+  "question": "What do Doze and App Standby do?",
+  "answer": "When the device is stationary with the screen off, Doze defers network access, jobs and alarms until maintenance windows. App Standby restricts rarely used applications.",
+  "example": "```kotlin\n// An exact time under Doze requires a separate permission and method\nalarmManager.setExactAndAllowWhileIdle(\n    AlarmManager.RTC_WAKEUP,\n    triggerAtMillis,\n    pendingIntent,\n)\n```",
+  "explanation": "Hence an “exact time” needs `setExactAndAllowWhileIdle` and the exact-alarm permission, while background work belongs to WorkManager, which accounts for these modes itself."
+ },
+ {
+  "id": "and-background-limits",
+  "topic": "android",
+  "subtopic": "background work",
+  "question": "What restrictions on background work appeared from Android 8 onwards?",
+  "answer": "A background service cannot be started from the background, implicit broadcasts in the manifest are restricted, and background location access is limited.",
+  "example": "```kotlin\n// Before Android 8 this was allowed, now it is not from the background\n// context.startService(Intent(context, SyncService::class.java))\n\n// Deferrable work goes to WorkManager, which respects the restrictions itself\nWorkManager.getInstance(context).enqueue(OneTimeWorkRequestBuilder<SyncWorker>().build())\n```",
+  "explanation": "Android 12 added a ban on starting a foreground service from the background (with exceptions), 13 added the notification permission, and 14 made foreground service types mandatory."
+ },
+ {
+  "id": "and-notifications",
+  "topic": "android",
+  "subtopic": "notifications",
+  "question": "How do notification channels and the permission for them work?",
+  "answer": "Since Android 8 every notification belongs to a channel, and the user changes importance and sound settings at channel level. Since Android 13 the `POST_NOTIFICATIONS` permission is required.",
+  "example": "```kotlin\nval channel = NotificationChannel(\"sync\", \"Syncing\", NotificationManager.IMPORTANCE_LOW)\nmanager.createNotificationChannel(channel)   // the channel's settings cannot be changed later\n\n// Since Android 13 a permission is required\nrequestPermission.launch(Manifest.permission.POST_NOTIFICATIONS)\n```",
+  "explanation": "Once created, a channel's settings cannot be changed from code — only by the user. A badly thought-out split into channels cannot be fixed afterwards."
+ },
+ {
+  "id": "and-fcm",
+  "topic": "android",
+  "subtopic": "notifications",
+  "question": "How does an FCM data message differ from a notification message?",
+  "answer": "A `notification` is displayed by the system itself when the app is in the background, and the callback is not invoked. A `data` message always reaches `onMessageReceived`, and the app builds the notification.",
+  "example": "```kotlin\nclass Messaging : FirebaseMessagingService() {\n    override fun onMessageReceived(message: RemoteMessage) {\n        // Always called for a data message; not for a notification one in the background\n        val payload = message.data[\"type\"]\n        showNotification(payload)\n    }\n}\n```",
+  "explanation": "Delivery is not guaranteed and may be delayed under Doze; for important scenarios there is high priority, but it is subject to quotas."
+ },
+ {
+  "id": "and-alarm-manager",
+  "topic": "android",
+  "subtopic": "background work",
+  "question": "When do you need AlarmManager rather than WorkManager?",
+  "answer": "When the work is tied to an exact moment in time (an alarm clock, a reminder). WorkManager guarantees execution but not exact timing.",
+  "example": "```kotlin\n// Since Android 12 the SCHEDULE_EXACT_ALARM permission is required\nif (alarmManager.canScheduleExactAlarms()) {\n    alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, at, intent)\n} else {\n    startActivity(Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM))\n}\n```",
+  "explanation": "Since Android 12 exact alarms require the `SCHEDULE_EXACT_ALARM` permission, and since 13 it is not granted to every application."
+ },
+ {
+  "id": "and-robolectric",
+  "topic": "android",
+  "subtopic": "testing",
+  "question": "What is Robolectric, and when is it appropriate?",
+  "answer": "An implementation of the Android framework on the JVM: it lets code using Android types be tested without an emulator, and quickly.",
+  "example": "```kotlin\n@RunWith(RobolectricTestRunner::class)\nclass FormatterTest {\n    @Test fun `the string comes from the resources`() {\n        val context = ApplicationProvider.getApplicationContext<Context>()\n        assertEquals(\"Done\", context.getString(R.string.done))\n    }\n}\n```",
+  "explanation": "It models the behaviour rather than reproducing it exactly, so critical scenarios are still checked with instrumented tests."
+ },
+ {
+  "id": "and-test-doubles",
+  "topic": "android",
+  "subtopic": "testing",
+  "question": "How does a fake differ from a mock, and why does it matter?",
+  "answer": "A fake is a working simplified implementation (an in-memory repository). A mock is an object with canned answers and call verification. Tests built on mocks break during refactoring because they check interactions rather than results.",
+  "example": "```kotlin\n// A fake — a working simplified implementation\nclass FakeUserRepository : UserRepository {\n    private val users = MutableStateFlow(listOf(User(1, \"Anna\")))\n    override fun observe() = users\n}\n\n// A mock — call verification, breaks during refactoring\nval repo = mockk<UserRepository>()\nevery { repo.observe() } returns flowOf(emptyList())\n```",
+  "explanation": "Google recommends fakes for your own dependencies and mocks for somebody else's."
+ },
+ {
+  "id": "and-turbine-flow-test",
+  "topic": "android",
+  "subtopic": "testing",
+  "question": "How do you test a `Flow`?",
+  "answer": "Collect it into a list (`toList`) for a finite flow, or use Turbine with `awaitItem`/`awaitComplete` for an infinite one, together with `runTest` and a test dispatcher.",
+  "example": "```kotlin\n@Test\nfun `the state reaches the subscriber`() = runTest {\n    viewModel.state.test {                 // Turbine\n        assertEquals(UiState.Loading, awaitItem())\n        assertEquals(UiState.Content(users), awaitItem())\n        cancelAndIgnoreRemainingEvents()\n    }\n}\n```",
+  "explanation": "An infinite `StateFlow` inside a `toList` simply hangs — the classic mistake in a first test."
+ },
+ {
+  "id": "and-macrobenchmark",
+  "topic": "android",
+  "subtopic": "testing",
+  "question": "How does Macrobenchmark differ from Microbenchmark?",
+  "answer": "Macrobenchmark measures user scenarios on a real build — app startup, scrolling, transitions. Microbenchmark measures individual functions in isolation.",
+  "example": "```kotlin\n@Test\nfun startup() = benchmarkRule.measureRepeated(\n    packageName = \"com.example.app\",\n    metrics = listOf(StartupTimingMetric()),\n    iterations = 10,\n    startupMode = StartupMode.COLD,\n) {\n    pressHome()\n    startActivityAndWait()\n}\n```",
+  "explanation": "Macrobenchmark is also what generates Baseline Profiles."
+ },
+ {
+  "id": "and-crash-reporting",
+  "topic": "android",
+  "subtopic": "quality",
+  "question": "What does it take to read stack traces from a release build?",
+  "answer": "Uploading the R8 mapping file (`mapping.txt`) for that same build to your crash reporting service. Without it the stack trace consists of obfuscated names.",
+  "example": "```bash\n# The mapping file is unique to each build — without it the stack trace is obfuscated\napp/build/outputs/mapping/release/mapping.txt\n\n./gradlew assembleRelease appDistributionUploadRelease\n```",
+  "explanation": "The mapping file is unique to each build — it has to be kept alongside the artifact."
+ },
+ {
+  "id": "and-lint",
+  "topic": "android",
+  "subtopic": "quality",
+  "question": "What does Android Lint check?",
+  "answer": "Platform-specific mistakes: unused resources, calls to APIs above `minSdk`, leaks, accessibility issues and manifest security problems.",
+  "example": "```kotlin\nandroid {\n    lint {\n        abortOnError = true\n        warningsAsErrors = true\n        disable += \"GradleDependency\"\n    }\n}\n```",
+  "explanation": "You can write rules of your own and enable `lintOptions { abortOnError true }` in CI so that warnings do not pile up for years."
+ }
+]

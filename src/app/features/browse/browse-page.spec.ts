@@ -34,6 +34,10 @@ describe('BrowsePage', () => {
 
   beforeEach(async () => {
     localStorage.clear();
+    // Язык фиксируется явно: без него он угадывается по настройкам браузера,
+    // а в jsdom это `en-US` — и подписи кнопок в тестах разъезжались бы
+    // в зависимости от среды запуска.
+    localStorage.setItem('interview-trainer.lang', 'ru');
     TestBed.configureTestingModule({
       providers: [
         provideZonelessChangeDetection(),
@@ -44,7 +48,7 @@ describe('BrowsePage', () => {
           ],
           withComponentInputBinding(),
         ),
-        { provide: ContentService, useValue: { cards } },
+        { provide: ContentService, useValue: { cards, isFallback: () => false } },
       ],
     });
     harness = await RouterTestingHarness.create('/browse/kotlin/1');

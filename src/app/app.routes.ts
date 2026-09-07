@@ -1,4 +1,5 @@
 import { Routes } from '@angular/router';
+import { TitleKey } from './shared/i18n/title.strategy';
 import { syncTrackForTaskGuard, syncTrackGuard } from './shared/track.guard';
 
 /**
@@ -9,17 +10,17 @@ export const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'decks' },
   {
     path: 'decks',
-    title: 'Колоды — Interview Trainer',
+    data: { titleKey: 'decks' satisfies TitleKey },
     loadComponent: () => import('./features/decks/decks-page').then((m) => m.DecksPage),
   },
   {
     path: 'review',
-    title: 'Повторение — Interview Trainer',
+    data: { titleKey: 'review' satisfies TitleKey },
     loadComponent: () => import('./features/review/review-page').then((m) => m.ReviewPage),
   },
   {
     path: 'review/:topic',
-    title: 'Повторение — Interview Trainer',
+    data: { titleKey: 'review' satisfies TitleKey },
     canActivate: [syncTrackGuard],
     loadComponent: () => import('./features/review/review-page').then((m) => m.ReviewPage),
   },
@@ -31,7 +32,7 @@ export const routes: Routes = [
     // поэтому после правки корпуса присланная ссылка может открыть соседний
     // вопрос; сохранённая позиция от этого не страдает — она хранит `id`.
     path: 'browse/:topic/:number',
-    title: 'Все вопросы — Interview Trainer',
+    data: { titleKey: 'browse' satisfies TitleKey },
     canActivate: [syncTrackGuard],
     loadComponent: () => import('./features/browse/browse-page').then((m) => m.BrowsePage),
   },
@@ -39,24 +40,24 @@ export const routes: Routes = [
     // Вход без вопроса: экран сам подставит в адрес сохранённую позицию.
     // Маршрут остаётся ради ссылок с экрана колод и коротких ссылок на колоду.
     path: 'browse/:topic',
-    title: 'Все вопросы — Interview Trainer',
+    data: { titleKey: 'browse' satisfies TitleKey },
     canActivate: [syncTrackGuard],
     loadComponent: () => import('./features/browse/browse-page').then((m) => m.BrowsePage),
   },
   {
     path: 'code',
-    title: 'Задачи — Interview Trainer',
+    data: { titleKey: 'tasks' satisfies TitleKey },
     loadComponent: () => import('./features/code/tasks-page').then((m) => m.TasksPage),
   },
   {
     path: 'code/:id',
-    title: 'Задача — Interview Trainer',
+    data: { titleKey: 'task' satisfies TitleKey },
     canActivate: [syncTrackForTaskGuard],
     loadComponent: () => import('./features/code/task-page').then((m) => m.TaskPage),
   },
   {
     path: 'stats',
-    title: 'Прогресс — Interview Trainer',
+    data: { titleKey: 'stats' satisfies TitleKey },
     loadComponent: () => import('./features/stats/stats-page').then((m) => m.StatsPage),
   },
   { path: '**', redirectTo: 'decks' },

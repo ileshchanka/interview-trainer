@@ -18,7 +18,9 @@ import vm from 'node:vm';
 import ts from 'typescript';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const read = (name) => JSON.parse(readFileSync(path.join(root, 'public/content', name), 'utf8'));
+const content = (name) => path.join(root, 'public/content', name);
+const read = (name) => JSON.parse(readFileSync(content(name), 'utf8'));
+const exists = (name) => existsSync(content(name));
 
 /** Темы по трекам — держать синхронно с `src/app/domain/tracks.ts`. */
 const TRACKS = {
@@ -26,6 +28,15 @@ const TRACKS = {
   android: ['kotlin', 'android', 'compose', 'coroutines'],
 };
 const TOPICS = new Set(Object.values(TRACKS).flat());
+
+/** Языки корпуса — держать синхронно с `src/app/domain/languages.ts`. */
+const LANGS = ['ru', 'en'];
+/**
+ * Язык оригинала. Он обязан быть полным: на него падает всё непереведённое,
+ * и дыра в нём оставила бы экран пустым. Перевод, наоборот, приходит частями,
+ * поэтому отсутствующий файл перевода — не ошибка, а строка в отчёте.
+ */
+const ORIGIN = 'ru';
 
 /**
  * Библиотека корутин в `kotlinc` не входит, а половина андроид-задач — про них.
@@ -41,49 +52,113 @@ const problems = [];
 const notes = [];
 
 // ── карточки ────────────────────────────────────────────────────────────────
-const cards = Object.entries(TRACKS).flatMap(([track, topics]) =>
-  topics.flatMap((topic) => {
-    const list = read(`${track}/${topic}.json`);
-    for (const card of list) {
-      if (card.topic !== topic) {
-        problems.push(
-          `карточка ${card.id}: лежит в ${track}/${topic}.json, но тема указана «${card.topic}»`,
-        );
+/** Что нашлось на каждом языке: `lang -> { cards, tasks, ids }`. */
+const corpus = new Map();
+
+for (const lang of LANGS) {
+  const cards = [];
+  const missing = [];
+
+  for (const [track, topics] of Object.entries(TRACKS)) {
+    for (const topic of topics) {
+      const file = `${lang}/${track}/${topic}.json`;
+      if (!exists(file)) {
+        if (lang === ORIGIN) {
+          problems.push(`нет файла ${file} — тема оригинала не может отсутствовать`);
+        } else {
+          missing.push(topic);
+        }
+        continue;
+      }
+      const list = read(file);
+      for (const card of list) {
+        if (card.topic !== topic) {
+          problems.push(`карточка ${card.id}: лежит в ${file}, но тема указана «${card.topic}»`);
+        }
+      }
+      cards.push(...list);
+    }
+  }
+
+  const tasks = [];
+  for (const track of Object.keys(TRACKS)) {
+    const file = `${lang}/${track}/tasks.json`;
+    if (!exists(file)) {
+      if (lang === ORIGIN) {
+        problems.push(`нет файла ${file} — задачи оригинала не могут отсутствовать`);
+      }
+      continue;
+    }
+    tasks.push(...read(file));
+  }
+
+  if (missing.length > 0) {
+    notes.push(`Язык «${lang}»: не переведены темы — ${missing.join(', ')}.`);
+  }
+  corpus.set(lang, { cards, tasks, ids: new Set() });
+}
+
+for (const [lang, set] of corpus) {
+  // Уникальность id проверяется внутри языка, а не по всему корпусу: перевод
+  // намеренно несёт те же id, что оригинал, — на них завязан прогресс.
+  const seen = set.ids;
+  const label = lang === ORIGIN ? '' : ` [${lang}]`;
+
+  for (const card of set.cards) {
+    const where = `карточка ${card.id ?? '(без id)'}${label}`;
+    for (const field of ['id', 'topic', 'subtopic', 'question', 'answer']) {
+      if (typeof card[field] !== 'string' || card[field].trim() === '') {
+        problems.push(`${where}: пустое или отсутствующее поле «${field}»`);
       }
     }
-    return list;
-  }),
-);
-
-const seen = new Set();
-for (const card of cards) {
-  const where = `карточка ${card.id ?? '(без id)'}`;
-  for (const field of ['id', 'topic', 'subtopic', 'question', 'answer']) {
-    if (typeof card[field] !== 'string' || card[field].trim() === '') {
-      problems.push(`${where}: пустое или отсутствующее поле «${field}»`);
+    if (!TOPICS.has(card.topic)) {
+      problems.push(`${where}: неизвестная тема «${card.topic}»`);
     }
-  }
-  if (!TOPICS.has(card.topic)) {
-    problems.push(`${where}: неизвестная тема «${card.topic}»`);
-  }
-  if (seen.has(card.id)) {
-    problems.push(`${where}: повторяющийся id — прогресс двух карточек слился бы в один`);
-  }
-  seen.add(card.id);
+    if (seen.has(card.id)) {
+      problems.push(`${where}: повторяющийся id — прогресс двух карточек слился бы в один`);
+    }
+    seen.add(card.id);
 
-  // Пример обязан быть блоком кода: без ограждения из трёх обратных кавычек
-  // Markdown склеит его в абзац, и отступы с переводами строк потеряются.
-  if (card.example !== undefined) {
-    if (typeof card.example !== 'string' || !card.example.includes('```')) {
-      problems.push(`${where}: пример не оформлен блоком кода`);
-    } else if ((card.example.match(/```/g) ?? []).length % 2 !== 0) {
-      problems.push(`${where}: в примере незакрытый блок кода`);
+    // Пример обязан быть блоком кода: без ограждения из трёх обратных кавычек
+    // Markdown склеит его в абзац, и отступы с переводами строк потеряются.
+    if (card.example !== undefined) {
+      if (typeof card.example !== 'string' || !card.example.includes('```')) {
+        problems.push(`${where}: пример не оформлен блоком кода`);
+      } else if ((card.example.match(/```/g) ?? []).length % 2 !== 0) {
+        problems.push(`${where}: в примере незакрытый блок кода`);
+      }
     }
   }
 }
 
+// ── сверка переводов с оригиналом ───────────────────────────────────────────
+// Прогресс в IndexedDB общий для всех языков и привязан к id. Карточка
+// с новым id в переводе — это молча потерянный прогресс, и поймать её можно
+// только здесь.
+const originIds = corpus.get(ORIGIN).ids;
+for (const [lang, set] of corpus) {
+  if (lang === ORIGIN) {
+    continue;
+  }
+  for (const id of set.ids) {
+    if (!originIds.has(id)) {
+      problems.push(`перевод [${lang}]: id «${id}» не встречается в оригинале`);
+    }
+  }
+}
+
+const cards = [...corpus.values()].flatMap((set) => set.cards);
+
 // ── кодовые задачи ──────────────────────────────────────────────────────────
-const tasks = Object.keys(TRACKS).flatMap((track) => read(`${track}/tasks.json`));
+// Задачи исполняются на каждом языке отдельно: у перевода свой `expectedOutput`,
+// и строковые литералы в коде там тоже переведены.
+const tasks = [...corpus].flatMap(([lang, set]) =>
+  set.tasks.map((task) => ({
+    task,
+    lang,
+    where: `задача ${task.id ?? '(без id)'}${lang === ORIGIN ? '' : ` [${lang}]`}`,
+  })),
+);
 
 /** Та же печать значений, что и в `src/app/features/code/runner.worker.ts`. */
 function inspect(value, depth = 0) {
@@ -124,8 +199,8 @@ const normalize = (line) =>
 
 const kotlinTasks = [];
 
-for (const task of tasks) {
-  const where = `задача ${task.id ?? '(без id)'}`;
+for (const { task, lang, where } of tasks) {
+  const seen = corpus.get(lang).ids;
   if (seen.has(task.id)) {
     problems.push(`${where}: id пересекается с карточкой`);
   }
@@ -141,7 +216,7 @@ for (const task of tasks) {
   if (task.language === 'kotlin') {
     // Kotlin компилируется одним пакетным вызовом ниже: отдельный `kotlinc`
     // на задачу занимал бы секунды и превращал проверку в минуты ожидания.
-    kotlinTasks.push(task);
+    kotlinTasks.push({ task, where });
     continue;
   }
 
@@ -230,11 +305,11 @@ async function verifyKotlin(list) {
   try {
     // Каждой задаче — свой файл с уникальным именем функции `main`: так весь
     // корпус собирается одним запуском компилятора вместо N запусков.
-    const entries = list.map((task, index) => {
+    const entries = list.map(({ task, where }, index) => {
       const name = `Task${index}`;
       const file = path.join(dir, `${name}.kt`);
       writeFileSync(file, wrapKotlin(task.code, name));
-      return { task, name, file };
+      return { task, where, name, file };
     });
 
     execFileSync(
@@ -251,13 +326,14 @@ async function verifyKotlin(list) {
       { stdio: 'pipe', encoding: 'utf8' },
     );
 
-    for (const { task, name } of entries) {
-      const run = spawnSync('java', ['-cp', `${path.join(dir, 'tasks.jar')}:${jar}`, `${name}Kt`], {
+    for (const { task, where, name } of entries) {
+      const mainClass = `${packageOf(name)}.${name}Kt`;
+      const run = spawnSync('java', ['-cp', `${path.join(dir, 'tasks.jar')}:${jar}`, mainClass], {
         encoding: 'utf8',
         timeout: 20_000,
       });
       if (run.status !== 0) {
-        problems.push(`задача ${task.id}: код не выполнился — ${run.stderr.trim().split('\n')[0]}`);
+        problems.push(`${where}: код не выполнился — ${run.stderr.trim().split('\n')[0]}`);
         continue;
       }
       const actual = run.stdout
@@ -268,7 +344,7 @@ async function verifyKotlin(list) {
       const got = actual.map(normalize);
       if (expected.length !== got.length || expected.some((line, i) => line !== got[i])) {
         problems.push(
-          `задача ${task.id}: заявленный вывод расходится с фактическим\n` +
+          `${where}: заявленный вывод расходится с фактическим\n` +
             `    ожидалось: ${JSON.stringify(task.expectedOutput)}\n` +
             `    получено : ${JSON.stringify(actual)}`,
         );
@@ -291,7 +367,16 @@ async function verifyKotlin(list) {
  */
 function wrapKotlin(code, name) {
   const hasMain = /\bfun\s+main\s*\(/.test(code);
-  return hasMain ? code : `fun main() {\n${code}\n}\n`;
+  const body = hasMain ? code : `fun main() {\n${code}\n}\n`;
+  // Свой пакет на задачу: объявления верхнего уровня иначе сталкиваются именами.
+  // Так столкнулись одноимённые `load` в русской и английской версии одной задачи —
+  // они компилируются вместе, и без пакетов это «conflicting overloads».
+  return `package ${packageOf(name)}\n\n${body}`;
+}
+
+/** Имя пакета для задачи: `Task3` -> `task3`. */
+function packageOf(name) {
+  return name.toLowerCase();
 }
 
 function hasKotlinc() {
@@ -311,4 +396,7 @@ for (const note of notes) {
   console.warn('  ! ' + note);
 }
 
-console.log(`Корпус в порядке: ${cards.length} карточек, ${tasks.length} задач.`);
+const summary = [...corpus]
+  .map(([lang, set]) => `${lang}: ${set.cards.length} карточек, ${set.tasks.length} задач`)
+  .join('; ');
+console.log(`Корпус в порядке — ${summary}.`);

@@ -2,9 +2,9 @@
   <header class="head">
     <a mat-button routerLink="/code">
       <mat-icon>arrow_back</mat-icon>
-      Задачи
+      {{ t().nav.tasks }}
     </a>
-    <span class="meta">{{ titles[task.topic] }} · {{ task.subtopic }}</span>
+    <span class="meta">{{ t().topics[task.topic] }} · {{ task.subtopic }}</span>
   </header>
 
   <h1>{{ task.title }}</h1>
@@ -21,13 +21,12 @@
   @if (!runnable()) {
     <p class="not-runnable">
       <mat-icon>info</mat-icon>
-      Kotlin в браузере не выполняется: ответ сверяется с записанным в задаче — он проверен на
-      настоящем компиляторе при сборке. Редактор только для чтения.
+      {{ t().task.notRunnable }}
     </p>
   }
 
   <mat-form-field appearance="outline" class="prediction">
-    <mat-label>Что выведет? По строке на каждый вывод</mat-label>
+    <mat-label>{{ t().task.predictionLabel }}</mat-label>
     <textarea
       matInput
       rows="5"
@@ -35,7 +34,7 @@
       [ngModel]="prediction()"
       (ngModelChange)="prediction.set($event)"
     ></textarea>
-    <mat-hint>Кавычки и лишние пробелы не важны — сверяется содержимое строк</mat-hint>
+    <mat-hint>{{ t().task.predictionHint }}</mat-hint>
   </mat-form-field>
 
   <div class="actions">
@@ -43,15 +42,15 @@
       @if (running()) {
         <mat-spinner diameter="18" />
       }
-      {{ runnable() ? 'Проверить' : 'Показать ответ' }}
+      {{ runnable() ? t().task.check : t().task.revealAnswer }}
     </button>
     <!-- «Ещё раз» нужна и после сорвавшегося запуска: именно ею предлагается
          вернуть исходный код, и прятать её в этот момент нельзя. -->
     @if (revealed() || runError()) {
-      <button mat-stroked-button type="button" (click)="retry()">Ещё раз</button>
+      <button mat-stroked-button type="button" (click)="retry()">{{ t().task.retry }}</button>
     }
     @if (revealed()) {
-      <button mat-button type="button" (click)="goNext()">Следующая задача</button>
+      <button mat-button type="button" (click)="goNext()">{{ t().task.nextTask }}</button>
     }
   </div>
 
@@ -60,13 +59,10 @@
       <mat-card-content>
         <div class="verdict-head">
           <mat-icon>error</mat-icon>
-          <b>Код не выполнился</b>
+          <b>{{ t().task.runFailed }}</b>
         </div>
         <p class="run-error">{{ runError() }}</p>
-        <p class="muted">
-          Вердикт не выносится: сверять ответ не с чем. Поправьте код или верните исходный кнопкой
-          «Ещё раз».
-        </p>
+        <p class="muted">{{ t().task.noVerdict }}</p>
       </mat-card-content>
     </mat-card>
   }
@@ -78,9 +74,9 @@
           <mat-icon>
             {{ verdict.passed ? 'check_circle' : 'cancel' }}
           </mat-icon>
-          <b>{{ verdict.passed ? 'Верно' : 'Не сходится' }}</b>
+          <b>{{ verdict.passed ? t().task.passed : t().task.failed }}</b>
           @if (!verdict.passed && verdict.firstMismatch !== null) {
-            <span class="muted">расхождение со строки {{ verdict.firstMismatch + 1 }}</span>
+            <span class="muted">{{ t().task.mismatch(verdict.firstMismatch + 1) }}</span>
           }
         </div>
 
@@ -90,11 +86,11 @@
 
         <div class="columns">
           <div>
-            <h3>Ваш ответ</h3>
+            <h3>{{ t().task.yourAnswer }}</h3>
             <pre class="output">{{ verdict.actual.join('\n') || '—' }}</pre>
           </div>
           <div>
-            <h3>{{ runnable() ? 'Фактический вывод' : 'Правильный ответ' }}</h3>
+            <h3>{{ runnable() ? t().task.actualOutput : t().task.correctAnswer }}</h3>
             <pre class="output">{{ verdict.expected.join('\n') || '—' }}</pre>
           </div>
         </div>
@@ -103,11 +99,13 @@
 
     <mat-card appearance="outlined" class="explanation">
       <mat-card-content>
-        <h3>Разбор</h3>
+        <h3>{{ t().task.explanation }}</h3>
         <div class="md" [innerHTML]="task.explanation | md"></div>
       </mat-card-content>
     </mat-card>
   }
 } @else {
-  <p class="muted">Задача не найдена. <a routerLink="/code">К списку задач</a></p>
+  <p class="muted">
+    {{ t().task.notFound }} <a routerLink="/code">{{ t().task.toList }}</a>
+  </p>
 }

@@ -94,3 +94,12 @@
     font-size: 0.9em;
   }
 }
+
+/* Плашка о непереведённой колоде: не ошибка, но и не рядовой текст —
+   рамка отделяет её от содержимого карточки. */
+.fallback {
+  border-left: 3px solid var(--mat-sys-outline-variant);
+  padding-left: 10px;
+  font-size: 0.85rem;
+  color: var(--mat-sys-on-surface-variant);
+}

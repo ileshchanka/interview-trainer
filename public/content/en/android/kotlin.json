@@ -1,0 +1,794 @@
+[
+ {
+  "id": "kt-val-var",
+  "topic": "kotlin",
+  "subtopic": "the basics",
+  "question": "How does `val` differ from `var`, and what does `val` not guarantee?",
+  "answer": "`val` forbids reassigning the reference, `var` allows it. `val` gives no immutability of the object itself: `var` fields inside it change freely.",
+  "example": "```kotlin\nval name = \"Anna\"     // cannot be reassigned\nvar count = 0\ncount++               // this is allowed\n\nval user = User(mutableListOf())\nuser.tags.add(\"new\")  // val does not object: the object changes, not the reference\n```",
+  "explanation": "Exactly like `const` in JavaScript. On top of that a `val` may be computed: `val size get() = items.size` is recalculated on every read."
+ },
+ {
+  "id": "kt-const-val",
+  "topic": "kotlin",
+  "subtopic": "the basics",
+  "question": "How does `const val` differ from an ordinary `val`?",
+  "answer": "`const val` is a compile-time constant: it is inlined at the use site, is allowed only at the top level or inside an `object`/`companion`, and only for primitives and strings.",
+  "example": "```kotlin\nconst val API_URL = \"https://example.com\"   // inlined at the use site\nval startedAt = System.currentTimeMillis()  // computed at runtime\n\n@Deprecated(API_URL)  // works with const, a compile error with an ordinary val\nfun old() {}\n```",
+  "explanation": "An ordinary `val` is computed at runtime and can be anything. `const` is also what makes a value usable inside annotations."
+ },
+ {
+  "id": "kt-type-inference",
+  "topic": "kotlin",
+  "subtopic": "the basics",
+  "question": "When must a type be written out explicitly?",
+  "answer": "In a public API (the compiler demands an explicit type for public members whose type is not public), in recursion, for empty collections, and whenever the inferred type is wider or narrower than the one you need.",
+  "example": "```kotlin\nval count = 0                  // Int is inferred, no need to write it\nval items = mutableListOf<String>()  // here the type argument is unavoidable\n\n// In a public API the type is part of the contract, so it is written out:\nfun loadUsers(): List<User> = repository.all()\n```",
+  "explanation": "For local variables inference is almost always enough, but an explicit type on a public function is part of the contract rather than verbosity."
+ },
+ {
+  "id": "kt-expression-body",
+  "topic": "kotlin",
+  "subtopic": "the basics",
+  "question": "What is an expression body of a function?",
+  "answer": "The form `fun f() = expression` instead of a block with a `return`. The return type is then inferred automatically.",
+  "example": "```kotlin\nfun square(x: Int) = x * x          // the type is inferred: Int\n\nfun describe(user: User): String =  // in a public API the type is explicit\n    \"${user.name}, ${user.age}\"\n```",
+  "explanation": "For a public API it is better to state the type: otherwise an accidental change to the expression silently changes the signature."
+ },
+ {
+  "id": "kt-if-when-expression",
+  "topic": "kotlin",
+  "subtopic": "the basics",
+  "question": "Why are `if` and `when` expressions in Kotlin?",
+  "answer": "They return a value, which is why the language has no ternary operator: `val x = if (a) 1 else 2`. When used as an expression the `else` branch is mandatory.",
+  "example": "```kotlin\nval label = if (count > 0) \"some\" else \"none\"   // there is no ternary operator\n\nval category = when {\n    age < 18 -> \"junior\"\n    age < 65 -> \"adult\"\n    else -> \"senior\"\n}\n```",
+  "explanation": "A `when` without an argument replaces a chain of `else if`, and a `when` over a sealed type is checked for exhaustiveness."
+ },
+ {
+  "id": "kt-string-templates",
+  "topic": "kotlin",
+  "subtopic": "the basics",
+  "question": "How do string templates and raw strings work?",
+  "answer": "`\"$name\"` and `\"${expr}\"` substitute values. Triple quotes give a raw string with no escaping, and `trimIndent()` removes the common indentation.",
+  "example": "```kotlin\nval name = \"Anna\"\nprintln(\"Hello, $name! Length: ${name.length}\")\n\nval json = \"\"\"\n    { \"name\": \"$name\" }\n\"\"\".trimIndent()\n\nval price = \"${'$'}100\"   // the only way to insert a literal dollar sign\n```",
+  "explanation": "In a raw string a `$` is inserted as `${'$'}` — the only way to escape it."
+ },
+ {
+  "id": "kt-equality",
+  "topic": "kotlin",
+  "subtopic": "the basics",
+  "question": "How does `==` differ from `===`?",
+  "answer": "`==` calls `equals` (handling null correctly), `===` compares references. This is the opposite of JavaScript, where `==` means type coercion.",
+  "example": "```kotlin\nval a = \"text\"\nval b = buildString { append(\"text\") }\n\nprintln(a == b)    // true  — equals is called\nprintln(a === b)   // false — different objects\n```",
+  "explanation": "For primitive types `===` is meaningless: the compiler forbids it for types that cannot be compared that way."
+ },
+ {
+  "id": "kt-ranges",
+  "topic": "kotlin",
+  "subtopic": "the basics",
+  "question": "How do you write a range, and how does `until` differ from `..`?",
+  "answer": "`1..5` includes both bounds, `1..<5` (and the older `1 until 5`) excludes the upper one. `downTo` counts down, `step` sets the stride.",
+  "example": "```kotlin\nfor (i in 1..5) print(i)        // 12345\nfor (i in 1..<5) print(i)       // 1234\nfor (i in 5 downTo 1 step 2) print(i)  // 531\n\nif (age in 18..64) println(\"adult\")\n```",
+  "explanation": "A range is an ordinary object, so `x in 1..5` works both in a `when` and in conditions."
+ },
+ {
+  "id": "kt-null-safety",
+  "topic": "kotlin",
+  "subtopic": "null safety",
+  "question": "How does Kotlin's type system protect you from NPEs?",
+  "answer": "A type does not admit null by default; a nullable type is written with a `?`, and the compiler demands a check before dereferencing.",
+  "example": "```kotlin\nvar name: String = \"Anna\"\n// name = null          // a compile error\n\nvar nickname: String? = null\n// println(nickname.length)     // error: a check is required\nprintln(nickname?.length)       // null\n```",
+  "explanation": "This is exactly `strictNullChecks` from TypeScript, only it cannot be switched off. Three holes remain: `!!`, platform types from Java, and `lateinit`."
+ },
+ {
+  "id": "kt-safe-call-elvis",
+  "topic": "kotlin",
+  "subtopic": "null safety",
+  "question": "What do `?.`, `?:` and `!!` do?",
+  "answer": "`?.` returns null instead of calling on a null. `?:` (elvis) substitutes a fallback when the left-hand side is null. `!!` asserts that the value is not null and throws an NPE if you were wrong.",
+  "example": "```kotlin\nval length = text?.length ?: 0          // null -> 0\nval user = findUser(id) ?: return null  // elvis with an early return\nval forced = text!!.length              // an NPE if text == null\n```",
+  "explanation": "`?:` reacts only to null — zero and an empty string pass through as they are, unlike `||` in JavaScript."
+ },
+ {
+  "id": "kt-platform-types",
+  "topic": "kotlin",
+  "subtopic": "null safety",
+  "question": "What are platform types?",
+  "answer": "Types coming from Java, about whose nullability the compiler knows nothing (`String!`). It demands no checks, and an NPE is possible.",
+  "example": "```kotlin\n// Java: public String getName() { ... }\nval name = javaObject.name       // the type is String! — the compiler demands no checks\nprintln(name.length)             // may fail with an NPE\n\nval safe: String? = javaObject.name   // narrowed to an honest type straight away\n```",
+  "explanation": "That is why `@Nullable`/`@NonNull` annotations in Java code matter: Kotlin restores the precise type from them. Values from a Java API are best coerced to an explicit `String?` right away."
+ },
+ {
+  "id": "kt-lateinit",
+  "topic": "kotlin",
+  "subtopic": "null safety",
+  "question": "When do you use `lateinit`, and when `by lazy`?",
+  "answer": "`lateinit var` is for a value assigned from outside after the constructor (injection, `onCreate`); touching it before the assignment throws an `UninitializedPropertyAccessException`. `by lazy` is for a value that computes itself on first access.",
+  "example": "```kotlin\nclass ProfileFragment : Fragment() {\n    @Inject lateinit var repository: UserRepository  // will be assigned from outside\n    private val adapter by lazy { UserAdapter() }    // created on first access\n\n    fun isReady() = ::repository.isInitialized\n}\n```",
+  "explanation": "`lateinit` does not work with primitives or with `val`; the state can be checked through `::field.isInitialized`."
+ },
+ {
+  "id": "kt-smart-cast",
+  "topic": "kotlin",
+  "subtopic": "null safety",
+  "question": "What is a smart cast, and when does it not work?",
+  "answer": "After an `if (x is String)` check the compiler treats `x` as a string by itself. It does not work for `var` properties of a class or for an `open val`: the value could have changed between the check and the use.",
+  "example": "```kotlin\nfun show(value: Any) {\n    if (value is String) {\n        println(value.length)   // a smart cast: value is already a String\n    }\n}\n\nclass Screen(var title: String?) {\n    fun render() {\n        // if (title != null) println(title.length)  // error: a var property\n        val local = title ?: return\n        println(local.length)   // this works\n    }\n}\n```",
+  "explanation": "The workaround is assigning to a local variable: `val local = field ?: return`."
+ },
+ {
+  "id": "kt-data-class",
+  "topic": "kotlin",
+  "subtopic": "classes",
+  "question": "What does a `data class` generate, and what are its restrictions?",
+  "answer": "`equals`/`hashCode`, `toString`, `copy` and `componentN` for destructuring — from the properties of the **primary constructor**. The class cannot be `abstract`, `open`, `sealed` or `inner`.",
+  "example": "```kotlin\ndata class User(val id: Long, val name: String) {\n    var lastSeen: Long = 0   // in the class body: NOT included in equals or copy\n}\n\nval a = User(1, \"Anna\")\nval b = a.copy(name = \"Boris\")\nprintln(a == User(1, \"Anna\"))  // true\n```",
+  "explanation": "Properties declared in the class body do not reach the generated methods — a frequent cause of “why does equals not see my field”."
+ },
+ {
+  "id": "kt-sealed",
+  "topic": "kotlin",
+  "subtopic": "classes",
+  "question": "What are `sealed class` and `sealed interface` for?",
+  "answer": "To limit a hierarchy to a known set of subclasses, so that a `when` over it is checked for exhaustiveness by the compiler.",
+  "example": "```kotlin\nsealed interface UiState\ndata object Loading : UiState\ndata class Content(val items: List<Item>) : UiState\ndata class Failure(val error: Throwable) : UiState\n\nfun render(state: UiState) = when (state) {   // no else needed\n    Loading -> showSpinner()\n    is Content -> showItems(state.items)\n    is Failure -> showError(state.error)\n}\n```",
+  "explanation": "Since Kotlin 1.5 the subclasses may live in any file of the same module and package. A `sealed interface` lets a type belong to several hierarchies at once."
+ },
+ {
+  "id": "kt-object-companion",
+  "topic": "kotlin",
+  "subtopic": "classes",
+  "question": "How does an `object` differ from a `companion object`?",
+  "answer": "An `object` is a singleton declared on its own. A `companion object` is a singleton attached to a class; it is where factories and constants live instead of Java's static members.",
+  "example": "```kotlin\nobject Analytics {                 // a singleton in its own right\n    fun track(event: String) { }\n}\n\nclass User private constructor(val name: String) {\n    companion object {             // attached to the class\n        fun create(name: String) = User(name)\n    }\n}\n\nAnalytics.track(\"open\")\nval user = User.create(\"Anna\")\n```",
+  "explanation": "Both are initialised lazily, on first access. To call them from Java as statics you need `@JvmStatic`/`@JvmField`."
+ },
+ {
+  "id": "kt-visibility",
+  "topic": "kotlin",
+  "subtopic": "classes",
+  "question": "What visibility modifiers are there, and what is `internal` good for?",
+  "answer": "`public` (the default), `private`, `protected`, and `internal` — visible within the compilation module.",
+  "example": "```kotlin\ninternal class Cache          // visible to the whole module, not to its consumers\nprivate fun helper() {}       // to this file only\n\nclass Repository {\n    private val db = ...      // inside the class only\n    protected open fun hook() {}  // the class and its subclasses\n}\n```",
+  "explanation": "`internal` is what Java lacks: it gives an API open to the whole module yet closed to its consumers. At file level `private` means “visible in this file only”."
+ },
+ {
+  "id": "kt-open-final",
+  "topic": "kotlin",
+  "subtopic": "classes",
+  "question": "Why are classes in Kotlin final by default?",
+  "answer": "Inheritance should be deliberate: an unplanned method override breaks a class's invariants. Opening a class and a method requires an explicit `open`.",
+  "example": "```kotlin\nopen class Base {\n    open fun render() {}      // without open it cannot be overridden\n    fun fixed() {}\n}\n\nclass Child : Base() {\n    override fun render() {}\n    // override fun fixed() {}   // error: the method is final\n}\n```",
+  "explanation": "For Android this matters practically too: mocks in tests need open classes, hence the `all-open` plugin for Spring and `mockk` with its instrumentation."
+ },
+ {
+  "id": "kt-nested-inner",
+  "topic": "kotlin",
+  "subtopic": "classes",
+  "question": "How does a nested class differ from an `inner` one?",
+  "answer": "A nested class (the default) holds no reference to the outer instance. An `inner` one does, and can reach its members through `this@Outer`.",
+  "example": "```kotlin\nclass Outer(private val name: String) {\n    class Nested {                      // no reference to Outer\n        fun hello() = \"hello\"\n    }\n    inner class Inner {                 // holds a reference to Outer\n        fun hello() = \"hello, $name\"\n    }\n}\n\nOuter.Nested().hello()\nOuter(\"Anna\").Inner().hello()\n```",
+  "explanation": "On Android `inner` is a classic source of leaks: a non-static inner class holds on to the Activity."
+ },
+ {
+  "id": "kt-interface-default",
+  "topic": "kotlin",
+  "subtopic": "classes",
+  "question": "What can an interface in Kotlin do that an abstract class cannot?",
+  "answer": "Several interfaces can be implemented at once. An interface may contain method implementations and abstract properties, but it cannot hold state — its properties have no backing field.",
+  "example": "```kotlin\ninterface Clickable {\n    val label: String            // an abstract property, with no field\n    fun click()\n    fun describe() = \"button $label\"   // a default implementation\n}\n\nclass Button : Clickable {\n    override val label = \"OK\"\n    override fun click() {}\n}\n```",
+  "explanation": "When two interfaces provide the same method, an explicit `super<A>.method()` is required."
+ },
+ {
+  "id": "kt-delegation-by",
+  "topic": "kotlin",
+  "subtopic": "classes",
+  "question": "What does `class A(b: B) : B by b` do?",
+  "answer": "Implementation delegation: the compiler generates the methods of interface `B` forwarding the calls to `b`. Composition instead of inheritance, without writing it out by hand.",
+  "example": "```kotlin\ninterface Repository {\n    fun load(): List<Item>\n}\n\nclass CachingRepository(\n    private val origin: Repository,\n) : Repository by origin {          // the remaining methods are delegated\n    private var cache: List<Item>? = null\n    override fun load() = cache ?: origin.load().also { cache = it }\n}\n```",
+  "explanation": "An important subtlety: the delegate knows nothing about the methods overridden in `A` — calls made inside `b` go to its own implementation."
+ },
+ {
+  "id": "kt-delegated-properties",
+  "topic": "kotlin",
+  "subtopic": "classes",
+  "question": "What property delegates are there?",
+  "answer": "`by lazy` for lazy computation, `Delegates.observable`/`vetoable` for reacting to changes, `by map` for reading from a dictionary, and any class of your own with `getValue`/`setValue`.",
+  "example": "```kotlin\nclass Screen {\n    val adapter by lazy { Adapter() }\n\n    var title: String by Delegates.observable(\"\") { _, old, new ->\n        println(\"$old -> $new\")\n    }\n\n    private val prefs: Map<String, Any> = mapOf(\"theme\" to \"dark\")\n    val theme: Any by prefs        // read from the map by the property's name\n}\n```",
+  "explanation": "On Android `by viewModels()`, `by activityViewModels()` and `by viewBinding()` are all built on delegates."
+ },
+ {
+  "id": "kt-enum-vs-sealed",
+  "topic": "kotlin",
+  "subtopic": "classes",
+  "question": "When do you take an `enum`, and when a `sealed` type?",
+  "answer": "An `enum` is a fixed set of values **with no data of their own**. A `sealed` type is for when the variants carry different fields.",
+  "example": "```kotlin\nenum class Direction { UP, DOWN }        // variants with no data of their own\n\nsealed interface Payment\ndata class Card(val number: String) : Payment\ndata class Cash(val amount: Int) : Payment\n\n// entries instead of values(): it does not allocate a new array on every call\nDirection.entries.forEach(::println)\n```",
+  "explanation": "Since Kotlin 1.9 an enum has `entries` instead of `values()`: it does not allocate a new array on every call."
+ },
+ {
+  "id": "kt-value-class",
+  "topic": "kotlin",
+  "subtopic": "classes",
+  "question": "What does a `value class` (an inline class) give you?",
+  "answer": "A wrapper around a single value that at runtime is usually erased down to that value: the type safety of a `UserId` with no overhead.",
+  "example": "```kotlin\n@JvmInline\nvalue class UserId(val value: String)\n\nfun load(id: UserId) { }\n\nload(UserId(\"u-1\"))\n// load(\"u-1\")   // a compile error — unlike with a typealias\n```",
+  "explanation": "The erasure does not happen when the value is used as a nullable or as a generic type argument. This is the closest analogue of TypeScript's “branded” types, but with a real check."
+ },
+ {
+  "id": "kt-default-named-args",
+  "topic": "kotlin",
+  "subtopic": "functions",
+  "question": "What do default values and named arguments give you?",
+  "answer": "They replace overloads: one function instead of five. Named arguments let you skip parameters and make the call readable.",
+  "example": "```kotlin\nfun show(\n    text: String,\n    duration: Int = 2000,\n    action: (() -> Unit)? = null,\n) { }\n\nshow(\"Done\")\nshow(\"Done\", action = { undo() })   // duration skipped by naming the next one\n\n@JvmOverloads                        // overloads for calling from Java\nfun log(message: String, level: Int = 0) { }\n```",
+  "explanation": "Java callers need `@JvmOverloads` — otherwise no overloads appear in the bytecode."
+ },
+ {
+  "id": "kt-extension-functions",
+  "topic": "kotlin",
+  "subtopic": "functions",
+  "question": "How do extension functions work?",
+  "answer": "They compile into static functions with the receiver as the first parameter. Dispatch is static — by the declared type of the variable, not by the actual one.",
+  "example": "```kotlin\nfun String.initials() = split(\" \").mapNotNull { it.firstOrNull() }.joinToString(\"\")\n\n\"Anna Ivanova\".initials()   // \"AI\"\n\n// Dispatch is static: the declared type of the variable is what matters\nopen class Animal\nclass Dog : Animal()\nfun Animal.name() = \"an animal\"\nfun Dog.name() = \"a dog\"\n\nval pet: Animal = Dog()\nprintln(pet.name())         // an animal\n```",
+  "explanation": "An extension cannot reach a class's private members and does not override its methods: when the signatures match, the member wins."
+ },
+ {
+  "id": "kt-infix",
+  "topic": "kotlin",
+  "subtopic": "functions",
+  "question": "What is an infix function?",
+  "answer": "A single-parameter function marked `infix` that can be called without a dot or parentheses: `1 to 2`, `x shl 2`.",
+  "example": "```kotlin\ninfix fun Int.pow(n: Int): Int = (1..n).fold(1) { acc, _ -> acc * this }\n\nprintln(2 pow 10)     // 1024\nval pair = \"key\" to \"value\"   // the same mechanism in the standard library\n```",
+  "explanation": "`to`, which builds a `Pair`, works this way. Overusing it makes code unreadable: infix notation belongs where it reads as a natural phrase."
+ },
+ {
+  "id": "kt-inline-functions",
+  "topic": "kotlin",
+  "subtopic": "functions",
+  "question": "What is `inline` for, and when is it harmful?",
+  "answer": "It substitutes the body of the function and its lambdas at the call site, removing the allocation of the lambda object. It is harmful for large functions: the code bloats at every call site.",
+  "example": "```kotlin\ninline fun measure(block: () -> Unit): Long {\n    val start = System.nanoTime()\n    block()                      // inlined at the call site, with no lambda object\n    return System.nanoTime() - start\n}\n\nval ns = measure { heavyWork() }\n```",
+  "explanation": "`inline` makes sense precisely for higher-order functions. For ordinary ones the compiler copes on its own, and the IDE issues a warning."
+ },
+ {
+  "id": "kt-reified",
+  "topic": "kotlin",
+  "subtopic": "functions",
+  "question": "What does `reified` do, and why is it impossible without `inline`?",
+  "answer": "It lets you touch a type parameter at runtime (`T::class`, `is T`). It works only in inline functions: the type is substituted at the call site, where it is known.",
+  "example": "```kotlin\ninline fun <reified T> Bundle.get(key: String): T? = get(key) as? T\n\nval id: Long? = bundle.get(\"id\")\n\ninline fun <reified T : Activity> Context.start() =\n    startActivity(Intent(this, T::class.java))   // without reified the type would be erased\n\ncontext.start<MainActivity>()\n```",
+  "explanation": "The classic example is `inline fun <reified T> Gson.fromJson(json: String): T`. Without `reified` the type would be erased, as in Java."
+ },
+ {
+  "id": "kt-crossinline-noinline",
+  "topic": "kotlin",
+  "subtopic": "functions",
+  "question": "What are `crossinline` and `noinline` for?",
+  "answer": "`crossinline` forbids a non-local `return` from a lambda — needed when the lambda is called not directly but from another context. `noinline` keeps the lambda an ordinary object so that it can be stored or passed on.",
+  "example": "```kotlin\ninline fun run(\n    crossinline onEach: () -> Unit,   // a return from the lambda is forbidden\n    noinline onDone: () -> Unit,      // the lambda can be stored\n) {\n    listOf(1, 2).forEach { onEach() }\n    callbacks += onDone\n}\n```",
+  "explanation": "Without them the compiler simply refuses to compile such inline code."
+ },
+ {
+  "id": "kt-higher-order",
+  "topic": "kotlin",
+  "subtopic": "functions",
+  "question": "What is a function type, and how do you pass a reference to a function?",
+  "answer": "A type of the form `(Int) -> String`. A reference to an existing function is `::name`, to an object's method `obj::method`, to a constructor `::ClassName`.",
+  "example": "```kotlin\nval transform: (Int) -> String = { it.toString() }\n\nfun apply(values: List<Int>, block: (Int) -> String) = values.map(block)\n\napply(listOf(1, 2), ::describe)      // a function reference\napply(listOf(1, 2)) { \"#$it\" }       // a trailing lambda goes outside the parentheses\n```",
+  "explanation": "A single-parameter lambda may use the implicit `it`. A trailing lambda goes outside the parentheses — the whole DSL style of Kotlin is built on that."
+ },
+ {
+  "id": "kt-vararg-spread",
+  "topic": "kotlin",
+  "subtopic": "functions",
+  "question": "How do you declare a variable number of arguments and pass an array?",
+  "answer": "`vararg items: Int` in the declaration; at the call site an array is unpacked with the `*` operator: `f(*array)`.",
+  "example": "```kotlin\nfun log(vararg parts: String) = parts.joinToString(\" \")\n\nlog(\"a\", \"b\")\n\nval array = arrayOf(\"a\", \"b\")\nlog(*array)          // unpacking the array\n```",
+  "explanation": "Inside the function a `vararg` is an ordinary array. A parameter that follows a `vararg` can only be passed by name."
+ },
+ {
+  "id": "kt-tailrec",
+  "topic": "kotlin",
+  "subtopic": "functions",
+  "question": "What does `tailrec` do?",
+  "answer": "It turns tail recursion into a loop, removing the risk of a stack overflow. It works only when the recursive call is the last operation.",
+  "example": "```kotlin\ntailrec fun sum(n: Int, acc: Long = 0): Long =\n    if (n == 0) acc else sum(n - 1, acc + n)   // the recursive call is the last operation\n\nsum(1_000_000)   // without tailrec this would be a StackOverflowError\n```",
+  "explanation": "When the condition is not met the compiler issues a warning rather than an error — easy to miss."
+ },
+ {
+  "id": "kt-collections-readonly",
+  "topic": "kotlin",
+  "subtopic": "collections",
+  "question": "How does `List` differ from `MutableList`?",
+  "answer": "`List` is a read-only interface, not an immutable collection: underneath it there may be a `MutableList` that somebody else changes.",
+  "example": "```kotlin\nval mutable = mutableListOf(1, 2)\nval readOnly: List<Int> = mutable\n\nmutable.add(3)\nprintln(readOnly)        // [1, 2, 3] — the same object\n\nval snapshot = readOnly.toList()   // now this is a real copy\n```",
+  "explanation": "A real snapshot comes from `toList()`. Genuinely immutable collections appear only in `kotlinx.collections.immutable`."
+ },
+ {
+  "id": "kt-sequence",
+  "topic": "kotlin",
+  "subtopic": "collections",
+  "question": "When is a `Sequence` better than a `List`?",
+  "answer": "When the chain of operations is long, the collection is large, or you do not need the whole result: a `Sequence` computes lazily, element by element, and creates no intermediate collections.",
+  "example": "```kotlin\nval first = listOf(1, 2, 3, 4)\n    .asSequence()\n    .map { expensive(it) }   // computed for 1 and 2 only\n    .first { it > 10 }\n\n// without asSequence the map would walk all four elements\n```",
+  "explanation": "On short lists a sequence is slower because of the overhead. Terminal operations (`toList`, `first`, `sum`) start the computation."
+ },
+ {
+  "id": "kt-map-vs-flatmap",
+  "topic": "kotlin",
+  "subtopic": "collections",
+  "question": "How does `map` differ from `flatMap`, and `filter` from `partition`?",
+  "answer": "`flatMap` unrolls nested collections into one. `partition` splits a collection into two by a predicate and returns a `Pair`.",
+  "example": "```kotlin\nval users = listOf(user1, user2)\n\nusers.map { it.name }                 // [String]\nusers.flatMap { it.tags }             // the tags of every user in a single list\n\nval (active, rest) = users.partition { it.isActive }\n```",
+  "explanation": "Useful neighbours: `associateBy` builds a Map by a key, `groupBy` a Map of lists, and `chunked`/`windowed` cut a collection into pieces."
+ },
+ {
+  "id": "kt-mutable-hidden",
+  "topic": "kotlin",
+  "subtopic": "collections",
+  "question": "Why are `listOf()` and `mapOf()` preferable to `ArrayList()`?",
+  "answer": "They return a read-only interface and prevent accidentally changing a collection through a reference handed to the outside.",
+  "example": "```kotlin\nclass Basket {\n    private val _items = mutableListOf<Item>()\n    val items: List<Item> get() = _items.toList()  // a snapshot goes outside\n\n    fun add(item: Item) { _items += item }\n}\n```",
+  "explanation": "In a public API it is better to hand out `toList()` from a `MutableList`: otherwise the internal state is edited from the outside."
+ },
+ {
+  "id": "kt-destructuring",
+  "topic": "kotlin",
+  "subtopic": "collections",
+  "question": "How does destructuring work?",
+  "answer": "Through the `component1()`, `component2()` functions — which a `data class`, `Pair`, `Triple` and Map entries get automatically.",
+  "example": "```kotlin\nval (id, name) = user               // componentN of a data class\n\nfor ((key, value) in map) { }\n\nval (_, second) = pair              // an unneeded component is an underscore\n```",
+  "explanation": "The order is positional rather than by name: swapping fields in a data class silently changes the meaning of the code. An unneeded component is written as `_`."
+ },
+ {
+  "id": "kt-variance",
+  "topic": "kotlin",
+  "subtopic": "generics",
+  "question": "What do `out` and `in` mean in a generic declaration?",
+  "answer": "`out T` is covariance, the type is only returned (`List<out E>`): a `List<Dog>` fits where a `List<Animal>` is expected. `in T` is contravariance, the type is only accepted (`Comparable<in T>`).",
+  "example": "```kotlin\ninterface Producer<out T> { fun get(): T }      // only returns\ninterface Consumer<in T> { fun accept(value: T) }  // only accepts\n\nval dogs: Producer<Dog> = ...\nval animals: Producer<Animal> = dogs   // covariance\n\nfun copy(from: Array<out Any>, to: Array<Any>) { }  // use-site variance\n```",
+  "explanation": "A hint: a producer is `out`, a consumer is `in` (Java's PECS). Use-site variance is supported too: `Array<out Any>`."
+ },
+ {
+  "id": "kt-star-projection",
+  "topic": "kotlin",
+  "subtopic": "generics",
+  "question": "What does `List<*>` mean?",
+  "answer": "A star projection: the type argument is unknown. The elements can be read as `Any?`, and nothing at all can be written.",
+  "example": "```kotlin\nfun sizeOf(list: List<*>) = list.size    // the element type does not matter\n\nval items: List<*> = listOf(1, \"two\")\nval first: Any? = items.first()          // read as Any?\n// items.add(1)                          // writing is not allowed\n```",
+  "explanation": "It differs from `List<Any?>`, into which anything at all can be put."
+ },
+ {
+  "id": "kt-type-erasure",
+  "topic": "kotlin",
+  "subtopic": "generics",
+  "question": "Are generic types erased in Kotlin?",
+  "answer": "Yes, as in Java: at runtime `List<String>` and `List<Int>` are indistinguishable. The only way around it is `inline` plus `reified`.",
+  "example": "```kotlin\nfun check(value: Any) {\n    // if (value is List<String>) { }   // error: the type is erased\n    if (value is List<*>) println(\"a list\")\n}\n\ninline fun <reified T> isType(value: Any) = value is T   // this is allowed\n```",
+  "explanation": "Hence the warning on `is List<String>` — all you can check is `is List<*>`."
+ },
+ {
+  "id": "kt-generic-constraints",
+  "topic": "kotlin",
+  "subtopic": "generics",
+  "question": "How do you constrain a type parameter?",
+  "answer": "`<T : Number>` is an upper bound; several bounds are written as `where T : A, T : B`.",
+  "example": "```kotlin\nfun <T : Number> sum(items: List<T>) = items.sumOf { it.toDouble() }\n\nfun <T> copy(items: List<T>): List<T> where T : Cloneable, T : Comparable<T> = items\n\nfun <T : Any> requireValue(value: T?): T = value ?: error(\"no value\")\n```",
+  "explanation": "By default the bound is `Any?`, meaning the type parameter admits null. `<T : Any>` forbids that."
+ },
+ {
+  "id": "kt-no-checked-exceptions",
+  "topic": "kotlin",
+  "subtopic": "exceptions",
+  "question": "Why does Kotlin have no checked exceptions?",
+  "answer": "Java's experience showed that they breed empty `catch` blocks and do not improve reliability. Every exception in Kotlin is unchecked.",
+  "example": "```kotlin\n@Throws(IOException::class)          // a hint for calling Java code\nfun read(): String = file.readText()\n\n// Kotlin does not force a try/catch:\nval text = try { read() } catch (e: IOException) { \"\" }\n```",
+  "explanation": "For Java callers the signature can be refined with a `@Throws` annotation. The alternative to exceptions in an API is a `Result` or a sealed type."
+ },
+ {
+  "id": "kt-runcatching",
+  "topic": "kotlin",
+  "subtopic": "exceptions",
+  "question": "What does `runCatching` do, and what is dangerous about it?",
+  "answer": "It wraps a call into a `Result`, catching any exception. The danger is that it also catches `CancellationException`, breaking coroutine cancellation.",
+  "example": "```kotlin\nval result = runCatching { api.load() }\n    .getOrElse { error ->\n        if (error is CancellationException) throw error   // rethrow cancellation\n        Fallback\n    }\n```",
+  "explanation": "Inside coroutines, cancellation must be rethrown after a `runCatching`: `getOrElse { if (it is CancellationException) throw it else … }`."
+ },
+ {
+  "id": "kt-java-interop",
+  "topic": "kotlin",
+  "subtopic": "interop",
+  "question": "What do you need to know about calling Kotlin from Java?",
+  "answer": "`@JvmStatic` makes companion members static, `@JvmField` removes the getter, `@JvmOverloads` generates overloads for default values, and `@JvmName` changes the name in the bytecode.",
+  "example": "```kotlin\n// Kotlin\nclass Config {\n    companion object {\n        @JvmStatic fun default() = Config()\n        @JvmField val VERSION = 1\n    }\n}\n\n// Java\nConfig.default();\nint v = Config.VERSION;\n```",
+  "explanation": "Top-level functions land in a class named `FileNameKt`. Properties turn into getters and setters."
+ },
+ {
+  "id": "kt-scope-functions-choice",
+  "topic": "kotlin",
+  "subtopic": "scope functions",
+  "question": "How do you choose between `let`, `run`, `with`, `apply` and `also`?",
+  "answer": "Returning the lambda's result: `let` (`it`), `run` and `with` (`this`). Returning the object itself: `apply` (`this`, for configuration) and `also` (`it`, for a side action).",
+  "example": "```kotlin\nval user = User().apply {      // configuration, returns the object itself\n    name = \"Anna\"\n    age = 30\n}\n\nval length = user.name?.let { it.length } ?: 0   // only when it is not null\n\nuser.also { log(it) }          // a side action in the middle of a chain\nval label = with(user) { \"$name, $age\" }         // grouping several accesses\n```",
+  "explanation": "`?.let` is the idiom for “do something if it is not null”. `apply` is handy for configuring an object, `also` for logging in the middle of a chain."
+ },
+ {
+  "id": "kt-takeif",
+  "topic": "kotlin",
+  "subtopic": "scope functions",
+  "question": "What do `takeIf` and `takeUnless` do?",
+  "answer": "They return the object itself when the predicate holds (or does not hold), and null otherwise — turning a condition into a link in a call chain.",
+  "example": "```kotlin\nval name = input.takeIf { it.isNotBlank() } ?: \"anonymous\"\nval even = number.takeUnless { it % 2 != 0 }\n```",
+  "explanation": "`name.takeIf { it.isNotBlank() } ?: \"anonymous\"` reads better than an `if`, but overusing it turns the code into a puzzle."
+ },
+ {
+  "id": "kt-operator-overloading",
+  "topic": "kotlin",
+  "subtopic": "operators",
+  "question": "How do you overload an operator?",
+  "answer": "With a function marked `operator` and carrying a fixed name: `plus`, `minus`, `get`, `set`, `invoke`, `contains`, `compareTo`, `rangeTo`.",
+  "example": "```kotlin\ndata class Money(val cents: Int) {\n    operator fun plus(other: Money) = Money(cents + other.cents)\n    operator fun compareTo(other: Money) = cents.compareTo(other.cents)\n}\n\nclass Config(private val map: Map<String, String>) {\n    operator fun get(key: String) = map[key]\n    operator fun contains(key: String) = key in map\n}\n\nMoney(100) + Money(50)\nif (\"theme\" in config) println(config[\"theme\"])\n```",
+  "explanation": "`get`/`set` give the `obj[key]` syntax, `invoke` lets an object be called like a function, and `contains` powers the `in` operator."
+ },
+ {
+  "id": "kt-any-unit-nothing",
+  "topic": "kotlin",
+  "subtopic": "the type system",
+  "question": "How do `Any`, `Unit` and `Nothing` differ?",
+  "answer": "`Any` is the root of the hierarchy, the counterpart of `Object`. `Unit` is a type with a single value, the counterpart of `void` but a real type. `Nothing` is a type with no values: it marks whatever never returns control.",
+  "example": "```kotlin\nfun log(value: Any) {}          // accepts anything\nfun save(): Unit {}             // the counterpart of void, but a real type\nfun fail(message: String): Nothing = throw IllegalStateException(message)\n\nval name: String = user.name ?: fail(\"no name\")   // Nothing fits everywhere\n```",
+  "explanation": "A function returning `Nothing` (a `throw`, an infinite loop, `TODO()`) may stand in any branch of a `when`, because `Nothing` is a subtype of every type. `null` has the type `Nothing?`."
+ },
+ {
+  "id": "kt-as-safe-cast",
+  "topic": "kotlin",
+  "subtopic": "the type system",
+  "question": "How does `as` differ from `as?`?",
+  "answer": "`as` throws a `ClassCastException` when the cast is impossible. `as?` returns `null` — which is why it is usually paired with `?:`.",
+  "example": "```kotlin\nval text = value as String        // ClassCastException if it is not a string\nval safe = value as? String       // null instead of an exception\nval length = (value as? String)?.length ?: 0\n```",
+  "explanation": "`value as? String ?: return` is the idiom for “either a string or we are done here”. Checking the type is better done with `is` plus a smart cast."
+ },
+ {
+  "id": "kt-nothing-type-use",
+  "topic": "kotlin",
+  "subtopic": "the type system",
+  "question": "Where does the `Nothing` type show up in practice?",
+  "answer": "In `TODO()`, `error()`, a `throw` expression and the empty list `emptyList<Nothing>()`. It lets such an expression be used wherever any type is expected.",
+  "example": "```kotlin\nfun notImplemented(): Nothing = TODO(\"will write it later\")\n\nval config: Config = loadConfig() ?: error(\"config not found\")\n\nval empty: List<String> = emptyList()   // a List<Nothing> underneath\n```",
+  "explanation": "That is why `val x: String = TODO()` compiles: `Nothing` is substitutable for anything at all."
+ },
+ {
+  "id": "kt-numeric-conversion",
+  "topic": "kotlin",
+  "subtopic": "the type system",
+  "question": "Why does `val x: Long = 1` work while `val y: Long = intValue` does not?",
+  "answer": "The compiler treats a literal as a value of the required type, and Kotlin has no implicit conversions between numeric types: an explicit `toLong()` is needed.",
+  "example": "```kotlin\nval long: Long = 1          // a literal — allowed\nval int: Int = 1\n// val bad: Long = int      // a compile error\nval ok: Long = int.toLong()\n```",
+  "explanation": "It is designed that way so that `equals` between different numeric types cannot give surprising results. The flip side is verbosity when working with Java APIs."
+ },
+ {
+  "id": "kt-float-equality",
+  "topic": "kotlin",
+  "subtopic": "the type system",
+  "question": "How does comparing `Double` in Kotlin differ from Java?",
+  "answer": "When the type is known statically, IEEE 754 applies: `NaN != NaN`, `-0.0 == 0.0`. But once the values are coerced to `Any` or placed in a collection, `equals` takes over, where `NaN == NaN` is true and `-0.0 != 0.0`.",
+  "example": "```kotlin\nprintln(Double.NaN == Double.NaN)                 // false — the static type is known\nprintln(listOf(Double.NaN).contains(Double.NaN))  // true  — equals is used\n\nprintln(0.0 == -0.0)                              // true\nprintln(setOf(0.0).contains(-0.0))                // false\n```",
+  "explanation": "An interview trap: `listOf(Double.NaN).contains(Double.NaN)` returns `true`."
+ },
+ {
+  "id": "kt-integer-overflow",
+  "topic": "kotlin",
+  "subtopic": "the type system",
+  "question": "What happens when an `Int` overflows?",
+  "answer": "The value silently wraps around by two's-complement rules — there is no exception. `Int.MAX_VALUE + 1` gives `Int.MIN_VALUE`.",
+  "example": "```kotlin\nprintln(Int.MAX_VALUE + 1)      // -2147483648, no exception\n\nval safe = Math.addExact(Int.MAX_VALUE, 1)   // ArithmeticException\nval big = Int.MAX_VALUE.toLong() + 1         // 2147483648\n```",
+  "explanation": "For protection there is Java's `Math.addExact` or moving to `Long`. Unsigned types (`UInt`) exist but are rarely used in APIs."
+ },
+ {
+  "id": "kt-string-vs-stringbuilder",
+  "topic": "kotlin",
+  "subtopic": "the type system",
+  "question": "Why is concatenating strings in a loop a bad idea?",
+  "answer": "Strings are immutable: every concatenation creates a new object. In a loop that means quadratic complexity and garbage for the collector.",
+  "example": "```kotlin\n// Bad: a new string on every iteration\nvar text = \"\"\nfor (word in words) text += word\n\n// Good\nval result = buildString { words.forEach(::append) }\nval joined = words.joinToString(\", \")\n```",
+  "explanation": "The solutions are `StringBuilder`, `buildString { }`, and `joinToString` for collections."
+ },
+ {
+  "id": "kt-array-vs-list",
+  "topic": "kotlin",
+  "subtopic": "collections",
+  "question": "How does `Array` differ from `List`, and when do you need an `IntArray`?",
+  "answer": "An `Array` has a fixed size and is mutable, a `List` is an interface with a rich API. An `IntArray` stores primitives without boxing, while an `Array<Int>` stores objects.",
+  "example": "```kotlin\nval boxed: Array<Int> = arrayOf(1, 2, 3)   // Integer objects\nval raw: IntArray = intArrayOf(1, 2, 3)    // primitives, no boxing\n\nval list = listOf(1, 2, 3)                 // a rich API, fixed size\nval mutable = mutableListOf(1, 2, 3)\n```",
+  "explanation": "On a hot path the specialised arrays save memory and boxing time; in ordinary code the readability of `List` matters more."
+ },
+ {
+  "id": "kt-typealias",
+  "topic": "kotlin",
+  "subtopic": "the type system",
+  "question": "What does `typealias` do, and what does it not do?",
+  "answer": "It gives a short name to an existing type. It creates no new type: `typealias UserId = String` is interchangeable with `String`, and it will not catch a mistake.",
+  "example": "```kotlin\ntypealias UserId = String            // just a short name\ntypealias Handler = (Event) -> Unit\n\nfun load(id: UserId) {}\nload(\"anything at all\")              // the compiler will not catch the mistake\n\n@JvmInline value class RealUserId(val value: String)  // this one does protect you\n```",
+  "explanation": "Real type safety comes from a `value class`. `typealias` fits long function types and generics."
+ },
+ {
+  "id": "kt-constructors",
+  "topic": "kotlin",
+  "subtopic": "classes",
+  "question": "How does the primary constructor differ from a secondary one?",
+  "answer": "The primary one is declared in the class header and cannot contain code — `init` blocks do that work. Secondary ones are declared in the body and must delegate to the primary one through `this(...)`.",
+  "example": "```kotlin\nclass User(val name: String, val age: Int) {   // the primary constructor\n    init {\n        require(age >= 0) { \"the age is negative\" }\n    }\n\n    constructor(name: String) : this(name, 0)  // a secondary one delegating to the primary\n}\n```",
+  "explanation": "Property initialisers and `init` blocks run in declaration order as part of the primary constructor — before the body of a secondary one."
+ },
+ {
+  "id": "kt-init-order",
+  "topic": "kotlin",
+  "subtopic": "classes",
+  "question": "In what order does initialisation happen with inheritance?",
+  "answer": "The base class's constructor and initialisers first, then the subclass's initialisers and `init` blocks. That is why calling an `open` method from a base class constructor sees the subclass's fields uninitialised.",
+  "example": "```kotlin\nopen class Base {\n    init { render() }              // runs before Child is initialised\n    open fun render() {}\n}\n\nclass Child : Base() {\n    private val title = \"a heading\"\n    override fun render() = println(title)   // prints null\n}\n```",
+  "explanation": "This is one of the main traps of inheritance: an `open` call in a constructor is almost always a mistake."
+ },
+ {
+  "id": "kt-backing-field",
+  "topic": "kotlin",
+  "subtopic": "classes",
+  "question": "What is a backing field, and when is one created?",
+  "answer": "A hidden field holding the property's value. It is created only when at least one accessor uses the `field` keyword, or when the default implementation is used.",
+  "example": "```kotlin\nclass Screen {\n    var title: String = \"\"\n        set(value) {\n            field = value.trim()   // field is that hidden storage\n        }\n\n    val isEmpty: Boolean get() = title.isEmpty()  // no field, computed every time\n}\n```",
+  "explanation": "A property with a computed getter (`val size get() = items.size`) has no field and is recomputed on every access."
+ },
+ {
+  "id": "kt-custom-accessors",
+  "topic": "kotlin",
+  "subtopic": "classes",
+  "question": "How do you write your own setter with validation?",
+  "answer": "In the property's body: `set(value) { field = value.coerceIn(0, 100) }`. Inside an accessor the storage is reached through `field`, not by the property's name — otherwise you get infinite recursion.",
+  "example": "```kotlin\nclass Player {\n    var volume: Int = 50\n        set(value) { field = value.coerceIn(0, 100) }\n\n    var state: State = State.Idle\n        private set               // changeable only from inside the class\n}\n```",
+  "explanation": "The setter's visibility can be narrowed: `var state: State = …; private set`."
+ },
+ {
+  "id": "kt-anonymous-object",
+  "topic": "kotlin",
+  "subtopic": "classes",
+  "question": "What does `object : Interface { }` do?",
+  "answer": "It creates an anonymous object — an implementation of an interface or a subclass of a class, right there. Unlike in Java, it can implement several interfaces at once.",
+  "example": "```kotlin\nval listener = object : View.OnClickListener {\n    override fun onClick(v: View) { open() }\n}\n\n// It captures the surrounding variables and lives as long as the subscription:\nbutton.setOnClickListener(listener)   // remember to remove it when the View is destroyed\n```",
+  "explanation": "An anonymous object captures the surrounding variables and therefore easily holds on to the Activity — the classic source of leaks in callbacks."
+ },
+ {
+  "id": "kt-fun-interface",
+  "topic": "kotlin",
+  "subtopic": "classes",
+  "question": "What is a `fun interface` and SAM conversion?",
+  "answer": "An interface with a single abstract method, marked `fun`. Its implementation can be passed as a lambda instead of an `object :`.",
+  "example": "```kotlin\nfun interface Mapper {\n    fun map(value: String): Int\n}\n\nval mapper = Mapper { it.length }        // a lambda instead of object :\nprintln(mapper.map(\"texts\"))             // 5\n```",
+  "explanation": "For Java interfaces SAM conversion always works; for Kotlin interfaces only with the `fun` modifier."
+ },
+ {
+  "id": "kt-data-object",
+  "topic": "kotlin",
+  "subtopic": "classes",
+  "question": "What is a `data object` for?",
+  "answer": "It gives an object a meaningful `toString` (its name instead of an address) and correct `equals`/`hashCode` — which matters for sealed state hierarchies that get compared and logged.",
+  "example": "```kotlin\nsealed interface State\ndata object Loading : State\nobject Legacy : State\n\nprintln(Loading)   // Loading\nprintln(Legacy)    // Legacy@4a2f7 — useless in the logs\n```",
+  "explanation": "An ordinary `object` prints as `Loading@4a2f7` and is useless in the logs."
+ },
+ {
+  "id": "kt-equals-hashcode",
+  "topic": "kotlin",
+  "subtopic": "classes",
+  "question": "What contract binds `equals` and `hashCode`?",
+  "answer": "Equal objects must have equal `hashCode`s; the converse does not hold. Breaking it ruins `HashMap` and `HashSet`: the object gets “lost” in its bucket.",
+  "example": "```kotlin\nclass Point(val x: Int, val y: Int) {\n    override fun equals(other: Any?) = other is Point && x == other.x && y == other.y\n    override fun hashCode() = 31 * x + y     // without it the object is “lost” in a HashSet\n}\n\nval set = hashSetOf(Point(1, 1))\nprintln(Point(1, 1) in set)   // true only when hashCode agrees with equals\n```",
+  "explanation": "The second rule: the fields taking part in `equals` must not change while the object sits in a hash collection."
+ },
+ {
+  "id": "kt-extension-property",
+  "topic": "kotlin",
+  "subtopic": "functions",
+  "question": "Can an extension be a property?",
+  "answer": "Yes: `val String.lastChar get() = this[length - 1]`. But it cannot hold state — an extension never has a backing field.",
+  "example": "```kotlin\nval String.lastChar: Char get() = this[length - 1]   // the getter is mandatory\nval <T> List<T>.secondOrNull: T? get() = getOrNull(1)\n\n\"text\".lastChar\n```",
+  "explanation": "That is why an extension property must have an explicit getter."
+ },
+ {
+  "id": "kt-local-functions",
+  "topic": "kotlin",
+  "subtopic": "functions",
+  "question": "What are local functions for?",
+  "answer": "They are visible only inside the enclosing function and have access to its variables — a way to extract a repeated fragment without cluttering the class with private methods.",
+  "example": "```kotlin\nfun process(users: List<User>) {\n    fun validate(user: User) {           // visible only here\n        require(user.name.isNotBlank()) { \"the name is empty\" }\n    }\n\n    users.forEach { validate(it) }\n}\n```",
+  "explanation": "Overusing them makes the function long: once there are more than two local functions, it is usually time to extract a class."
+ },
+ {
+  "id": "kt-labels-return",
+  "topic": "kotlin",
+  "subtopic": "functions",
+  "question": "How do you return from a lambda only, not from the enclosing function?",
+  "answer": "With a label: `return@forEach`. By default the label is the name of the function taking the lambda; you can set your own: `loop@ for (...) { break@loop }`.",
+  "example": "```kotlin\nfun findFirst(items: List<Int>): Int? {\n    items.forEach { if (it > 0) return it }   // returns from findFirst\n    return null\n}\n\nitems.forEach {\n    if (it < 0) return@forEach   // skip the element, continue the loop\n    println(it)\n}\n\nouter@ for (row in rows) {\n    for (cell in row) if (cell.isEmpty()) break@outer\n}\n```",
+  "explanation": "Without a label a `return` inside the lambda of an inline function returns from the enclosing function — that is a non-local return."
+ },
+ {
+  "id": "kt-require-check-error",
+  "topic": "kotlin",
+  "subtopic": "exceptions",
+  "question": "How do `require`, `check` and `error` differ?",
+  "answer": "`require` validates arguments and throws an `IllegalArgumentException`. `check` validates state and throws an `IllegalStateException`. `error` simply throws an `IllegalStateException` with a message.",
+  "example": "```kotlin\nfun transfer(amount: Int, account: Account?) {\n    require(amount > 0) { \"the amount must be positive\" }       // IllegalArgumentException\n    val target = requireNotNull(account) { \"no account given\" } // it also narrows the type\n    check(target.isOpen) { \"the account is closed\" }            // IllegalStateException\n}\n```",
+  "explanation": "There are also `requireNotNull` and `checkNotNull`, which additionally narrow the type to non-null — they are preferred over `!!`."
+ },
+ {
+  "id": "kt-try-expression",
+  "topic": "kotlin",
+  "subtopic": "exceptions",
+  "question": "Is `try` an expression?",
+  "answer": "Yes: `val x = try { parse(s) } catch (e: Exception) { null }`. The value is the last expression of whichever branch was taken.",
+  "example": "```kotlin\nval port = try {\n    text.toInt()\n} catch (e: NumberFormatException) {\n    8080\n}\n\nval safe = text.toIntOrNull() ?: 8080   // no exceptions at all\n```",
+  "explanation": "A `finally` block does not affect the value — unlike in Java, where a `return` in `finally` overrides it."
+ },
+ {
+  "id": "kt-result-type",
+  "topic": "kotlin",
+  "subtopic": "exceptions",
+  "question": "What is `Result`, and why is it rarely returned from an API?",
+  "answer": "A wrapper around “a success or an exception”. For a long time it could not be returned from public functions (a compiler restriction), and it does not distinguish kinds of errors.",
+  "example": "```kotlin\nval result: Result<User> = runCatching { api.load() }\nresult.onSuccess(::show).onFailure(::report)\n\n// In a domain API a type of your own is usually more precise:\nsealed interface LoadResult\ndata class Success(val user: User) : LoadResult\ndata object NotFound : LoadResult\ndata class Failure(val cause: Throwable) : LoadResult\n```",
+  "explanation": "For domain errors people usually take a sealed type of their own: it enumerates the possible outcomes and is checked for exhaustiveness by `when`."
+ },
+ {
+  "id": "kt-fold-reduce",
+  "topic": "kotlin",
+  "subtopic": "collections",
+  "question": "How does `fold` differ from `reduce`?",
+  "answer": "`fold` takes an initial value and thereby sets the result type; `reduce` starts from the first element and fails on an empty collection.",
+  "example": "```kotlin\nval sum = listOf(1, 2, 3).reduce { acc, x -> acc + x }        // 6\nval text = listOf(1, 2, 3).fold(\"\") { acc, x -> acc + x }     // \"123\", the type is set\n\nemptyList<Int>().fold(0) { a, b -> a + b }   // 0\n// emptyList<Int>().reduce { a, b -> a + b } // UnsupportedOperationException\n```",
+  "explanation": "Exactly the same pair as `reduce` with and without an initial value in JavaScript."
+ },
+ {
+  "id": "kt-group-associate",
+  "topic": "kotlin",
+  "subtopic": "collections",
+  "question": "How does `groupBy` differ from `associateBy`?",
+  "answer": "`groupBy` returns a `Map<K, List<V>>` — every element sharing a key. `associateBy` returns a `Map<K, V>`, and when keys collide the last element wins.",
+  "example": "```kotlin\nval byCity: Map<String, List<User>> = users.groupBy { it.city }\nval byId: Map<Long, User> = users.associateBy { it.id }\n\n// With a non-unique key associateBy silently keeps the last one:\nlistOf(a1, a2).associateBy { it.city }   // one entry instead of two\n```",
+  "explanation": "Silent data loss in `associateBy` with a non-unique key is a frequent bug."
+ },
+ {
+  "id": "kt-zip-windowed",
+  "topic": "kotlin",
+  "subtopic": "collections",
+  "question": "What do `zip`, `chunked` and `windowed` do?",
+  "answer": "`zip` pairs two collections up to the shorter length. `chunked(n)` cuts a collection into non-overlapping pieces, `windowed(n)` gives a sliding window.",
+  "example": "```kotlin\nlistOf(1, 2, 3).zip(listOf(\"a\", \"b\"))     // [(1, a), (2, b)] — up to the shorter one\nlistOf(1, 2, 3, 4).chunked(2)             // [[1, 2], [3, 4]]\nlistOf(1, 2, 3, 4).windowed(2)            // [[1, 2], [2, 3], [3, 4]]\nlistOf(1, 4, 9).zipWithNext { a, b -> b - a }   // [3, 5]\n```",
+  "explanation": "`zipWithNext()` is a common way to compute the difference between neighbouring elements."
+ },
+ {
+  "id": "kt-sorted-comparator",
+  "topic": "kotlin",
+  "subtopic": "collections",
+  "question": "How do you sort by several fields?",
+  "answer": "`sortedWith(compareBy({ it.a }, { it.b }))` or `compareBy<T> { it.a }.thenByDescending { it.b }`.",
+  "example": "```kotlin\nusers.sortedBy { it.age }\nusers.sortedWith(compareBy({ it.city }, { it.age }))\nusers.sortedWith(compareBy<User> { it.city }.thenByDescending { it.age })\n\nmutableUsers.sortBy { it.age }   // changes the list itself\n```",
+  "explanation": "`sortedBy` works on a copy and returns a new list, while `sort` mutates a `MutableList` in place. The sort is stable."
+ },
+ {
+  "id": "kt-map-getordefault",
+  "topic": "kotlin",
+  "subtopic": "collections",
+  "question": "How do `getOrElse`, `getOrPut` and `getOrDefault` differ for a `Map`?",
+  "answer": "`getOrElse` computes a fallback and stores nothing. `getOrPut` computes it and **puts** it into the map. `getOrDefault` returns the value you passed, with no computation.",
+  "example": "```kotlin\nval counts = mutableMapOf<String, Int>()\n\ncounts.getOrElse(\"a\") { 0 }        // returns 0, writes nothing to the map\ncounts.getOrPut(\"a\") { 0 }         // returns 0 and puts it into the map\ncounts.getOrDefault(\"a\", 0)        // with no computation\n\nval cache = mutableMapOf<Long, User>()\nfun user(id: Long) = cache.getOrPut(id) { loadUser(id) }\n```",
+  "explanation": "`getOrPut` is the standard way to implement a cache in one line."
+ },
+ {
+  "id": "kt-iterable-vs-collection",
+  "topic": "kotlin",
+  "subtopic": "collections",
+  "question": "How do `Iterable`, `Collection` and `List` differ?",
+  "answer": "`Iterable` can only be iterated, `Collection` adds a size and a containment check, `List` adds indexed access and ordering.",
+  "example": "```kotlin\nfun sum(values: Iterable<Int>) = values.sumOf { it }        // iteration is enough\nfun isEmpty(values: Collection<*>) = values.size == 0       // a size is needed\nfun first(values: List<*>) = values[0]                      // an index is needed\n\nsum(setOf(1, 2))      // any Iterable will do\n```",
+  "explanation": "Parameters are best typed with the weakest sufficient type: usually `Iterable` or `Collection`."
+ },
+ {
+  "id": "kt-mutable-shared-state",
+  "topic": "kotlin",
+  "subtopic": "collections",
+  "question": "Why is a mutable collection in a public API dangerous?",
+  "answer": "By handing out a `MutableList` a class loses control of its own state: it will be changed around the invariants, and possibly from another thread.",
+  "example": "```kotlin\nclass Cart {\n    private val items = mutableListOf<Item>()\n\n    fun items(): List<Item> = items.toList()   // a snapshot\n    // fun items(): MutableList<Item> = items  // this way the state is edited from outside\n}\n```",
+  "explanation": "Hand out a `toList()` or a read-only interface; keep the mutable one inside."
+ },
+ {
+  "id": "kt-lazy-modes",
+  "topic": "kotlin",
+  "subtopic": "delegates",
+  "question": "What modes does `lazy` have, and when do you need a non-default one?",
+  "answer": "`SYNCHRONIZED` (the default) is thread-safe and computes once. `PUBLICATION` lets several threads compute it, and the first result wins. `NONE` has no synchronisation and is for guaranteed single-threaded access only.",
+  "example": "```kotlin\nval heavy by lazy { Parser() }                              // SYNCHRONIZED\nval uiOnly by lazy(LazyThreadSafetyMode.NONE) { Adapter() } // no synchronisation\nval racy by lazy(LazyThreadSafetyMode.PUBLICATION) { Id() } // the first one wins\n```",
+  "explanation": "`NONE` is cheaper, and in UI code that runs on the main thread only it is justified."
+ },
+ {
+  "id": "kt-observable-vetoable",
+  "topic": "kotlin",
+  "subtopic": "delegates",
+  "question": "What do `Delegates.observable` and `Delegates.vetoable` do?",
+  "answer": "`observable` calls a callback after the property changes, `vetoable` calls it before and can reject the change by returning `false`.",
+  "example": "```kotlin\nvar title: String by Delegates.observable(\"\") { _, old, new ->\n    println(\"$old -> $new\")\n}\n\nvar age: Int by Delegates.vetoable(0) { _, _, new ->\n    new >= 0            // false — the change is rejected\n}\n```",
+  "explanation": "They are useful for logging and validation without a hand-written setter."
+ },
+ {
+  "id": "kt-reflection",
+  "topic": "kotlin",
+  "subtopic": "reflection",
+  "question": "How does `KClass` differ from `Class`, and what does reflection cost?",
+  "answer": "`KClass` is the Kotlin representation, with access to properties, constructors and Kotlin's modifiers; `Class` is the Java one. The bridges are `::class` and `::class.java`.",
+  "example": "```kotlin\nval kClass = user::class          // KClass\nval jClass = user::class.java     // Class\n\nkClass.simpleName\nkClass.memberProperties.forEach { println(\"${it.name} = ${it.get(user)}\") }\n```",
+  "explanation": "Full reflection requires the `kotlin-reflect` dependency (several megabytes) and is slow; it also breaks under R8 without `-keep` rules."
+ },
+ {
+  "id": "kt-annotations",
+  "topic": "kotlin",
+  "subtopic": "reflection",
+  "question": "How do you declare an annotation, and what do `@Target`/`@Retention` set?",
+  "answer": "`annotation class Marker`. `@Target` lists where it may be applied, `@Retention` says whether it survives to runtime (`RUNTIME`), stays in the class file (`BINARY`) or lives in the sources only (`SOURCE`).",
+  "example": "```kotlin\n@Target(AnnotationTarget.CLASS)\n@Retention(AnnotationRetention.RUNTIME)\nannotation class Screen(val route: String)\n\n@Screen(\"profile\")\nclass ProfileFragment\n```",
+  "explanation": "Annotations with `SOURCE` retention are used by code generators (KSP), and `RUNTIME` ones by reflection."
+ },
+ {
+  "id": "kt-ksp-kapt",
+  "topic": "kotlin",
+  "subtopic": "tooling",
+  "question": "Why is KSP better than kapt?",
+  "answer": "KSP works directly with the Kotlin tree, generating no Java stubs, and is therefore several times faster. kapt is the older mechanism built on Java annotation processors.",
+  "example": "```kotlin\n// build.gradle.kts\nplugins {\n    id(\"com.google.devtools.ksp\")\n}\n\ndependencies {\n    ksp(\"androidx.room:room-compiler:2.6.1\")   // used to be kapt(...)\n}\n```",
+  "explanation": "Room, Hilt and Moshi support KSP; migrating usually amounts to swapping the plugin and its configuration."
+ },
+ {
+  "id": "kt-expect-actual",
+  "topic": "kotlin",
+  "subtopic": "multiplatform",
+  "question": "What do `expect` and `actual` mean?",
+  "answer": "The KMP mechanism: the shared module declares an `expect` declaration with no implementation, and each platform supplies its own `actual`.",
+  "example": "```kotlin\n// commonMain\nexpect fun currentTimeMillis(): Long\n\n// androidMain\nactual fun currentTimeMillis(): Long = System.currentTimeMillis()\n\n// iosMain\nactual fun currentTimeMillis(): Long = (NSDate().timeIntervalSince1970 * 1000).toLong()\n```",
+  "explanation": "It is used for platform APIs (files, cryptography, time). The bulk of the logic stays shared and needs no such pair."
+ },
+ {
+  "id": "kt-coroutines-vs-rx",
+  "topic": "kotlin",
+  "subtopic": "comparison",
+  "question": "Why are coroutines better than RxJava, and where is Rx still stronger?",
+  "answer": "Coroutines give linear code with no operator chains, structured concurrency and cancellation out of the box, and they are cheaper. Rx has a richer set of operators and suits complex streaming scenarios better.",
+  "example": "```kotlin\n// RxJava\napi.load()\n    .subscribeOn(Schedulers.io())\n    .observeOn(AndroidSchedulers.mainThread())\n    .subscribe(::show, ::showError)\n\n// Coroutines: linear code, cancellation by scope\nviewModelScope.launch {\n    runCatching { api.load() }.onSuccess(::show).onFailure(::showError)\n}\n```",
+  "explanation": "In practice Flow covers most needs; mixing both in one project is a source of confusion in error handling."
+ },
+ {
+  "id": "kt-kotlin-vs-java",
+  "topic": "kotlin",
+  "subtopic": "comparison",
+  "question": "What would you name as Kotlin's main advantages over Java in an interview?",
+  "answer": "Null safety at the type level, conciseness (data classes, properties, type inference), extension functions, coroutines, sealed hierarchies with exhaustiveness checks, and full interoperability with Java.",
+  "example": "```kotlin\n// Java\npublic final class User {\n    private final String name;\n    public User(String name) { this.name = name; }\n    public String getName() { return name; }\n    // equals, hashCode, toString — by hand\n}\n\n// Kotlin\ndata class User(val name: String)\n```",
+  "explanation": "It is worth naming the honest downsides too: build time, runtime size, and the complexity of some abstractions (inline, reified, variance)."
+ },
+ {
+  "id": "kt-string-comparison",
+  "topic": "kotlin",
+  "subtopic": "the type system",
+  "question": "What is the right way to compare strings case-insensitively?",
+  "answer": "`a.equals(b, ignoreCase = true)` or `a.compareTo(b, ignoreCase = true) == 0`. Lower-casing depends on the locale: in the Turkish locale `I` does not become `i`.",
+  "example": "```kotlin\na.equals(b, ignoreCase = true)\n\n// Careful with the locale: in Turkish \"I\".lowercase() gives \"ı\"\n\"I\".lowercase(Locale.ROOT)\n\"Straße\".compareTo(\"strasse\", ignoreCase = true)\n```",
+  "explanation": "For locale-independent conversion there is `lowercase()` with no argument (it uses Locale.ROOT)."
+ },
+ {
+  "id": "kt-copy-on-write",
+  "topic": "kotlin",
+  "subtopic": "collections",
+  "question": "How do you safely hand out an immutable snapshot of mutable state?",
+  "answer": "By copying: `toList()`, `toMap()`, `toSet()`. A `MutableList as List` cast creates no snapshot — underneath it is still the same mutable object.",
+  "example": "```kotlin\nprivate val _items = mutableListOf<Item>()\n\nval snapshot: List<Item> = _items.toList()   // an independent copy\nval fake: List<Item> = _items                // the same reference, changes along with it\n\n_items.add(newItem)\nprintln(snapshot.size)   // unchanged\n```",
+  "explanation": "The same principle as `structuredClone` versus spread in JavaScript, only for a single level of nesting."
+ }
+]
