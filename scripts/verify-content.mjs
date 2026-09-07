@@ -98,6 +98,21 @@ for (const lang of LANGS) {
   corpus.set(lang, { cards, tasks, ids: new Set() });
 }
 
+/**
+ * Инлайновый код вопроса, без блоков: имя вроде `Array.prototype.map` в строке
+ * уместно, а выражение из нескольких операторов — нет: вытянутое в предложение,
+ * оно не читается и не подсвечивается.
+ */
+const INLINE_CODE_LIMIT = 40;
+
+function inlineCode(text) {
+  if (typeof text !== 'string') {
+    return [];
+  }
+  const withoutBlocks = text.replace(/```[\s\S]*?```/g, '');
+  return [...withoutBlocks.matchAll(/`([^`\n]+)`/g)].map((match) => match[1]);
+}
+
 for (const [lang, set] of corpus) {
   // Уникальность id проверяется внутри языка, а не по всему корпусу: перевод
   // намеренно несёт те же id, что оригинал, — на них завязан прогресс.
@@ -118,6 +133,19 @@ for (const [lang, set] of corpus) {
       problems.push(`${where}: повторяющийся id — прогресс двух карточек слился бы в один`);
     }
     seen.add(card.id);
+
+    // Многооператорный код в вопросе обязан быть блоком, а не инлайном:
+    // вытянутый в строку внутри предложения, он и не читается, и не
+    // подсвечивается — инлайновому коду подсветка не полагается.
+    for (const fragment of inlineCode(card.question)) {
+      const multiStatement = fragment.includes(';');
+      // Длинное имя без пробелов — вроде `ExpressionChangedAfterItHasBeenCheckedError` —
+      // остаётся именем: в строке предложения ему самое место.
+      const longExpression = fragment.length > INLINE_CODE_LIMIT && fragment.includes(' ');
+      if (multiStatement || longExpression) {
+        problems.push(`${where}: код в вопросе оформлен инлайном — «${fragment}»`);
+      }
+    }
 
     // Пример обязан быть блоком кода: без ограждения из трёх обратных кавычек
     // Markdown склеит его в абзац, и отступы с переводами строк потеряются.

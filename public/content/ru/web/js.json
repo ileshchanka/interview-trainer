@@ -12,7 +12,7 @@
   "id": "js-microtask-vs-macrotask",
   "topic": "js",
   "subtopic": "event loop",
-  "question": "Что выведет: `setTimeout(() => console.log(1)); Promise.resolve().then(() => console.log(2)); console.log(3);`",
+  "question": "Что выведет этот код?\n\n```js\nsetTimeout(() => console.log(1));\nPromise.resolve().then(() => console.log(2));\nconsole.log(3);\n```",
   "answer": "`3`, `2`, `1`.",
   "example": "```js\nsetTimeout(() => console.log(1));            // очередь макрозадач\nPromise.resolve().then(() => console.log(2)); // очередь микрозадач\nconsole.log(3);                               // стек, прямо сейчас\n\n// 3 → 2 → 1\n```",
   "explanation": "`console.log(3)` синхронный — первым. `then` кладёт колбэк в очередь микрозадач, `setTimeout` — в очередь макрозадач. Микрозадачи разбираются до следующей макрозадачи, поэтому `2` раньше `1`."
@@ -66,7 +66,7 @@
   "id": "js-closure-var-loop",
   "topic": "js",
   "subtopic": "замыкания",
-  "question": "Почему `for (var i = 0; i < 3; i++) setTimeout(() => console.log(i))` печатает `3 3 3`?",
+  "question": "Почему этот код печатает `3 3 3`?\n\n```js\nfor (var i = 0; i < 3; i++) {\n  setTimeout(() => console.log(i));\n}\n```",
   "answer": "`var` создаёт одну переменную на всю функцию. Все три колбэка замкнулись на неё же, а к моменту их выполнения цикл уже довёл `i` до 3.",
   "example": "```js\nfor (var i = 0; i < 3; i++) {\n  setTimeout(() => console.log(i)); // 3 3 3 — одна переменная на всех\n}\n\nfor (let i = 0; i < 3; i++) {\n  setTimeout(() => console.log(i)); // 0 1 2 — let создаёт привязку на каждой итерации\n}\n```",
   "explanation": "С `let` на каждой итерации создаётся новая привязка `i`, и вывод будет `0 1 2`. До ES6 то же чинили через IIFE: `(function(j){ setTimeout(() => console.log(j)) })(i)`."
@@ -111,7 +111,7 @@
   "id": "js-this-lost",
   "topic": "js",
   "subtopic": "this",
-  "question": "Почему `const f = obj.method; f()` теряет `this`?",
+  "question": "Почему при таком вызове теряется `this`?\n\n```js\nconst f = obj.method;\nf();\n```",
   "answer": "Потому что `this` определяется вызовом. При `f()` объекта-получателя нет, и `this` становится `undefined` (строгий режим).",
   "example": "```js\nconst user = {\n  name: 'Аня',\n  greet() {\n    return `Привет, ${this.name}`;\n  },\n};\n\nuser.greet();               // 'Привет, Аня'\n\nconst greet = user.greet;\ngreet();                    // TypeError: this — undefined\n\nsetTimeout(user.greet, 100);        // та же потеря: функцию передали без объекта\nsetTimeout(() => user.greet(), 100); // а так вызов остаётся вызовом через точку\nsetTimeout(user.greet.bind(user), 100);\n```",
   "explanation": "Лечится `obj.method.bind(obj)`, стрелкой-обёрткой или полем класса со стрелкой. Тот же баг ловят, передавая метод в `setTimeout` или в обработчик события."

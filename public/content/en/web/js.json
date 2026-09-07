@@ -12,7 +12,7 @@
   "id": "js-microtask-vs-macrotask",
   "topic": "js",
   "subtopic": "event loop",
-  "question": "What does this print: `setTimeout(() => console.log(1)); Promise.resolve().then(() => console.log(2)); console.log(3);`",
+  "question": "What does this code print?\n\n```js\nsetTimeout(() => console.log(1));\nPromise.resolve().then(() => console.log(2));\nconsole.log(3);\n```",
   "answer": "`3`, `2`, `1`.",
   "example": "```js\nsetTimeout(() => console.log(1));            // macrotask queue\nPromise.resolve().then(() => console.log(2)); // microtask queue\nconsole.log(3);                               // the stack, right now\n\n// 3 → 2 → 1\n```",
   "explanation": "`console.log(3)` is synchronous, so it goes first. `then` puts its callback in the microtask queue, `setTimeout` in the macrotask queue. Microtasks are drained before the next macrotask, so `2` comes before `1`."
@@ -66,7 +66,7 @@
   "id": "js-closure-var-loop",
   "topic": "js",
   "subtopic": "closures",
-  "question": "Why does `for (var i = 0; i < 3; i++) setTimeout(() => console.log(i))` print `3 3 3`?",
+  "question": "Why does this code print `3 3 3`?\n\n```js\nfor (var i = 0; i < 3; i++) {\n  setTimeout(() => console.log(i));\n}\n```",
   "answer": "`var` creates a single variable for the whole function. All three callbacks closed over that same variable, and by the time they run the loop has already pushed `i` to 3.",
   "example": "```js\nfor (var i = 0; i < 3; i++) {\n  setTimeout(() => console.log(i)); // 3 3 3 — one variable shared by all\n}\n\nfor (let i = 0; i < 3; i++) {\n  setTimeout(() => console.log(i)); // 0 1 2 — let creates a binding per iteration\n}\n```",
   "explanation": "With `let` a fresh binding of `i` is created on every iteration, so the output is `0 1 2`. Before ES6 the same was fixed with an IIFE: `(function(j){ setTimeout(() => console.log(j)) })(i)`."
@@ -111,7 +111,7 @@
   "id": "js-this-lost",
   "topic": "js",
   "subtopic": "this",
-  "question": "Why does `const f = obj.method; f()` lose `this`?",
+  "question": "Why does this call lose `this`?\n\n```js\nconst f = obj.method;\nf();\n```",
   "answer": "Because `this` is determined by the call. In `f()` there is no receiver object, so `this` becomes `undefined` (strict mode).",
   "example": "```js\nconst user = {\n  name: 'Anna',\n  greet() {\n    return `Hello, ${this.name}`;\n  },\n};\n\nuser.greet();               // 'Hello, Anna'\n\nconst greet = user.greet;\ngreet();                    // TypeError: this is undefined\n\nsetTimeout(user.greet, 100);        // the same loss: the function was passed without its object\nsetTimeout(() => user.greet(), 100); // this way the call stays a call through the dot\nsetTimeout(user.greet.bind(user), 100);\n```",
   "explanation": "Cured with `obj.method.bind(obj)`, an arrow wrapper, or a class field holding an arrow. The same bug shows up when passing a method to `setTimeout` or to an event handler."
