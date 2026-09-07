@@ -5,6 +5,7 @@
   "subtopic": "event loop",
   "question": "В каком порядке выполняются синхронный код, микрозадачи и макрозадачи?",
   "answer": "Сначала весь синхронный код, затем **вся** очередь микрозадач, и только потом одна макрозадача — после которой очередь микрозадач снова опустошается целиком.",
+  "example": "```js\nconsole.log('синхронно');\n\nsetTimeout(() => console.log('макрозадача'), 0);\n\nPromise.resolve()\n  .then(() => console.log('микрозадача 1'))\n  .then(() => console.log('микрозадача 2')); // добавилась по ходу — всё равно раньше таймера\n\nconsole.log('тоже синхронно');\n\n// синхронно → тоже синхронно → микрозадача 1 → микрозадача 2 → макрозадача\n```",
   "explanation": "Макрозадачи: `setTimeout`, `setInterval`, обработчики событий, I/O. Микрозадачи: колбэки промисов (`then`/`catch`/`finally`), `queueMicrotask`, `MutationObserver`.\n\nКлючевое: между двумя макрозадачами движок опустошает очередь микрозадач **полностью**, включая те, что добавились по ходу. Поэтому бесконечная цепочка микрозадач подвешивает страницу так же надёжно, как `while (true)`."
  },
  {
@@ -13,6 +14,7 @@
   "subtopic": "event loop",
   "question": "Что выведет: `setTimeout(() => console.log(1)); Promise.resolve().then(() => console.log(2)); console.log(3);`",
   "answer": "`3`, `2`, `1`.",
+  "example": "```js\nsetTimeout(() => console.log(1));            // очередь макрозадач\nPromise.resolve().then(() => console.log(2)); // очередь микрозадач\nconsole.log(3);                               // стек, прямо сейчас\n\n// 3 → 2 → 1\n```",
   "explanation": "`console.log(3)` синхронный — первым. `then` кладёт колбэк в очередь микрозадач, `setTimeout` — в очередь макрозадач. Микрозадачи разбираются до следующей макрозадачи, поэтому `2` раньше `1`."
  },
  {
@@ -21,6 +23,7 @@
   "subtopic": "event loop",
   "question": "Гарантирует ли `setTimeout(fn, 0)` немедленное выполнение?",
   "answer": "Нет. Он лишь ставит задачу в очередь: колбэк выполнится не раньше, чем освободится стек, и не раньше минимальной задержки (после 5 вложенных таймеров браузер поднимает её до 4 мс).",
+  "example": "```js\nsetTimeout(() => console.log('таймер'), 0);\n\n// стек занят секунду — колбэк ждёт, ноль в задержке ничего не решает\nconst until = Date.now() + 1000;\nwhile (Date.now() < until) {}\n\nconsole.log('стек освободился'); // печатается ПЕРЕД «таймер»\n```",
   "explanation": "Отсюда типичный баг: `setTimeout(fn, 0)` внутри длинного синхронного цикла не «вклинится» в него. Задержка — это минимум, а не обещание."
  },
  {
@@ -29,6 +32,7 @@
   "subtopic": "event loop",
   "question": "Чем `queueMicrotask` отличается от `setTimeout(fn, 0)` и от `Promise.resolve().then(fn)`?",
   "answer": "`queueMicrotask` ставит задачу в ту же очередь микрозадач, что и `then`, но без создания промиса. `setTimeout` — другая очередь, макрозадач.",
+  "example": "```js\nqueueMicrotask(() => console.log('микро: без промиса'));\nPromise.resolve().then(() => console.log('микро: через промис'));\nsetTimeout(() => console.log('макро'));\n\n// обе микрозадачи — в порядке постановки, затем макрозадача\n```",
   "explanation": "Практическая разница с `then`: ошибка внутри `queueMicrotask` уходит в глобальный обработчик, а не превращается в отклонённый промис."
  },
  {
@@ -37,6 +41,7 @@
   "subtopic": "event loop",
   "question": "Когда выполняется колбэк `requestAnimationFrame`?",
   "answer": "Перед следующей отрисовкой кадра, то есть примерно раз в 16 мс при 60 fps, и не выполняется вовсе, пока вкладка неактивна.",
+  "example": "```js\nrequestAnimationFrame((time) => {\n  // time — момент начала кадра, общий для всех колбэков этого кадра\n  box.style.transform = `translateX(${time / 10}px)`;\n});\n\n// анимация циклом: каждый кадр планирует следующий\nfunction tick() {\n  step();\n  requestAnimationFrame(tick); // во вкладке в фоне вызовы прекращаются\n}\n```",
   "explanation": "Для анимации `rAF` предпочтительнее `setInterval`: он синхронизирован с частотой обновления экрана и не тратит батарею в фоне."
  },
  {
@@ -45,6 +50,7 @@
   "subtopic": "event loop",
   "question": "Почему тяжёлые вычисления в JS «вешают» интерфейс и как этого избежать?",
   "answer": "Движок однопоточный: пока выполняется синхронный код, ни отрисовка, ни обработка событий не идут. Выход — Web Worker или разбиение работы на куски с уступкой потока.",
+  "example": "```js\n// вешает вкладку: ни клика, ни отрисовки, пока цикл не кончится\nfor (let i = 0; i < 1e10; i++) sum += i;\n\n// выход 1 — вынести в поток\nconst worker = new Worker('./heavy.js');\nworker.postMessage(data);\nworker.onmessage = (e) => render(e.data);\n\n// выход 2 — резать на куски и уступать поток между ними\nasync function chunked(items) {\n  for (let i = 0; i < items.length; i += 1000) {\n    process(items.slice(i, i + 1000));\n    await new Promise((r) => setTimeout(r)); // браузер успевает отрисовать кадр\n  }\n}\n```",
   "explanation": "Web Worker выполняется в отдельном потоке и общается через `postMessage`, но не имеет доступа к DOM. Дробление — `setTimeout`/`scheduler.yield` между кусками работы."
  },
  {
@@ -53,6 +59,7 @@
   "subtopic": "замыкания",
   "question": "Что такое замыкание?",
   "answer": "Функция вместе с окружением, в котором она была создана: она сохраняет доступ к переменным внешней области видимости даже после того, как внешняя функция завершилась.",
+  "example": "```js\nfunction counter() {\n  let count = 0;              // живёт, пока жива возвращённая функция\n  return () => ++count;\n}\n\nconst next = counter();\nnext(); // 1\nnext(); // 2\n\nconst other = counter();\nother(); // 1 — у каждого вызова своё окружение\n```",
   "explanation": "Замыкание держит ссылку на **переменную**, а не на её значение на момент создания. Отсюда и классический баг с `var` в цикле, и приватные счётчики, и мемоизация."
  },
  {
@@ -61,6 +68,7 @@
   "subtopic": "замыкания",
   "question": "Почему `for (var i = 0; i < 3; i++) setTimeout(() => console.log(i))` печатает `3 3 3`?",
   "answer": "`var` создаёт одну переменную на всю функцию. Все три колбэка замкнулись на неё же, а к моменту их выполнения цикл уже довёл `i` до 3.",
+  "example": "```js\nfor (var i = 0; i < 3; i++) {\n  setTimeout(() => console.log(i)); // 3 3 3 — одна переменная на всех\n}\n\nfor (let i = 0; i < 3; i++) {\n  setTimeout(() => console.log(i)); // 0 1 2 — let создаёт привязку на каждой итерации\n}\n```",
   "explanation": "С `let` на каждой итерации создаётся новая привязка `i`, и вывод будет `0 1 2`. До ES6 то же чинили через IIFE: `(function(j){ setTimeout(() => console.log(j)) })(i)`."
  },
  {
@@ -69,6 +77,7 @@
   "subtopic": "замыкания",
   "question": "Как сделать приватное состояние на замыкании?",
   "answer": "Вернуть из функции объект с методами, а само состояние оставить локальной переменной — снаружи к ней нет доступа.",
+  "example": "```js\nfunction createAccount(initial) {\n  let balance = initial;      // снаружи не достать: ни через точку, ни через Object.keys\n\n  return {\n    deposit: (sum) => (balance += sum),\n    get balance() {\n      return balance;\n    },\n  };\n}\n\nconst acc = createAccount(100);\nacc.deposit(50);\nacc.balance;  // 150\nacc.balance = 0; // геттер без сеттера — присваивание молча игнорируется\n```",
   "explanation": "```js\nfunction counter() {\n  let value = 0;\n  return { inc: () => ++value, get: () => value };\n}\n```\nСовременная альтернатива — приватные поля класса (`#value`), которые дают то же самое на уровне синтаксиса."
  },
  {
@@ -77,6 +86,7 @@
   "subtopic": "замыкания",
   "question": "Могут ли замыкания приводить к утечкам памяти?",
   "answer": "Да: пока живёт функция-замыкание, живо и всё её лексическое окружение, включая большие объекты, которые в самой функции уже не нужны.",
+  "example": "```js\nfunction makeHandler() {\n  const huge = new Array(1e6).fill('данные'); // нужен только здесь\n  const size = huge.length;\n\n  // замкнулись на huge целиком, хотя пользуемся одним числом\n  return () => console.log(huge.length);\n}\n\n// лучше: замкнуться на том, что действительно нужно\nfunction makeHandlerFixed() {\n  const huge = new Array(1e6).fill('данные');\n  const size = huge.length;   // huge освободится сразу после выхода\n  return () => console.log(size);\n}\n```",
   "explanation": "Типичный случай — обработчик события, замкнувшийся на большой DOM-узел и не снятый через `removeEventListener`."
  },
  {
@@ -85,6 +95,7 @@
   "subtopic": "this",
   "question": "От чего зависит значение `this` в обычной функции?",
   "answer": "От способа вызова, а не от места объявления: `obj.f()` — `this` это `obj`; просто `f()` — `undefined` в строгом режиме и `globalThis` в нестрогом; `new F()` — новый объект; `f.call(x)` — `x`.",
+  "example": "```js\n'use strict';\n\nfunction who() {\n  return this;\n}\n\nconst obj = { name: 'obj', who };\n\nobj.who();          // obj        — вызов через точку\nwho();              // undefined  — свободный вызов в строгом режиме\nnew who();          // {}         — новый объект\nwho.call('привет'); // 'привет'   — явная привязка\n```",
   "explanation": "Порядок приоритета: `new` → явная привязка (`call`/`apply`/`bind`) → вызов как метод → всё остальное."
  },
  {
@@ -93,6 +104,7 @@
   "subtopic": "this",
   "question": "Чем `this` в стрелочной функции отличается от обычной?",
   "answer": "У стрелки нет собственного `this` — она берёт его из окружающей области видимости на момент создания. `call`, `apply` и `bind` его не меняют.",
+  "example": "```js\nconst timer = {\n  seconds: 0,\n\n  startBroken() {\n    setInterval(function () {\n      this.seconds++; // this — не timer: обычная функция, свободный вызов\n    }, 1000);\n  },\n\n  startOk() {\n    setInterval(() => {\n      this.seconds++; // стрелка взяла this из startOk, то есть timer\n    }, 1000);\n  },\n};\n\nconst f = () => this;\nf.call({ a: 1 }); // call не помог: у стрелки нет своего this\n```",
   "explanation": "Поэтому стрелка удобна как колбэк внутри метода и непригодна как метод объекта: `this` там укажет на внешнюю область, а не на объект."
  },
  {
@@ -101,6 +113,7 @@
   "subtopic": "this",
   "question": "Почему `const f = obj.method; f()` теряет `this`?",
   "answer": "Потому что `this` определяется вызовом. При `f()` объекта-получателя нет, и `this` становится `undefined` (строгий режим).",
+  "example": "```js\nconst user = {\n  name: 'Аня',\n  greet() {\n    return `Привет, ${this.name}`;\n  },\n};\n\nuser.greet();               // 'Привет, Аня'\n\nconst greet = user.greet;\ngreet();                    // TypeError: this — undefined\n\nsetTimeout(user.greet, 100);        // та же потеря: функцию передали без объекта\nsetTimeout(() => user.greet(), 100); // а так вызов остаётся вызовом через точку\nsetTimeout(user.greet.bind(user), 100);\n```",
   "explanation": "Лечится `obj.method.bind(obj)`, стрелкой-обёрткой или полем класса со стрелкой. Тот же баг ловят, передавая метод в `setTimeout` или в обработчик события."
  },
  {
@@ -109,6 +122,7 @@
   "subtopic": "this",
   "question": "Чем `call`, `apply` и `bind` отличаются друг от друга?",
   "answer": "`call(this, a, b)` и `apply(this, [a, b])` вызывают функцию немедленно и различаются только формой передачи аргументов. `bind` не вызывает, а возвращает новую функцию с зафиксированным `this`.",
+  "example": "```js\nfunction intro(greeting, mark) {\n  return `${greeting}, ${this.name}${mark}`;\n}\n\nconst user = { name: 'Аня' };\n\nintro.call(user, 'Привет', '!');   // вызов сразу, аргументы через запятую\nintro.apply(user, ['Привет', '!']); // вызов сразу, аргументы массивом\n\nconst hello = intro.bind(user, 'Привет'); // не вызывает — возвращает функцию\nhello('!');                               // 'Привет, Аня!'\n\nhello.call({ name: 'Другой' }, '?'); // всё равно «Аня»: bind не перебить\n```",
   "explanation": "Привязанную через `bind` функцию нельзя перепривязать: повторный `bind` игнорируется. Но `new` на ней всё же создаёт новый объект, игнорируя привязанный `this`."
  },
  {
@@ -117,6 +131,7 @@
   "subtopic": "прототипы",
   "question": "Как работает поиск свойства по цепочке прототипов?",
   "answer": "Движок ищет свойство в самом объекте, затем в его `[[Prototype]]`, затем в прототипе прототипа — и так до `null`. Не нашёл — `undefined`.",
+  "example": "```js\nconst animal = { legs: 4 };\nconst dog = Object.create(animal);\ndog.name = 'Рекс';\n\ndog.name;  // 'Рекс'  — своё свойство\ndog.legs;  // 4       — нашлось в прототипе\ndog.wings; // undefined — дошли до null и не нашли\n\nObject.getPrototypeOf(dog) === animal;    // true\ndog.hasOwnProperty('legs');               // false — своё только name\n```",
   "explanation": "`__proto__` (нестандартный, но повсеместный) и `Object.getPrototypeOf` дают ссылку на прототип. Свойство `prototype` есть только у функций — это то, что станет прототипом объектов, созданных через `new`."
  },
  {
@@ -125,6 +140,7 @@
   "subtopic": "прототипы",
   "question": "В чём разница между `F.prototype` и `obj.__proto__`?",
   "answer": "`F.prototype` — объект, который будет назначен прототипом экземплярам при `new F()`. `obj.__proto__` — ссылка на фактический прототип конкретного объекта.",
+  "example": "```js\nfunction User(name) {\n  this.name = name;\n}\nUser.prototype.hi = function () {\n  return `Привет, ${this.name}`;\n};\n\nconst u = new User('Аня');\n\nObject.getPrototypeOf(u) === User.prototype; // true\nu.__proto__ === User.prototype;              // то же самое, устаревшая форма\nu.prototype;                                 // undefined — у экземпляра его нет\n\nUser.__proto__ === Function.prototype;       // сама функция — тоже объект\n```",
   "explanation": "То есть `(new F()).__proto__ === F.prototype`. У обычных объектов свойства `prototype` нет вовсе."
  },
  {
@@ -133,6 +149,7 @@
   "subtopic": "прототипы",
   "question": "Классы в JS — это новая сущность или синтаксический сахар?",
   "answer": "Сахар над прототипами, но не полностью: тело класса всегда в строгом режиме, методы не перечисляемы, вызов класса без `new` бросает ошибку, а объявление не всплывает с инициализацией.",
+  "example": "```js\nclass User {\n  #secret = 42;          // приватное поле — на прототипах так не умели\n  static kind = 'user';\n\n  hi() {}\n}\n\ntypeof User;                              // 'function'\nObject.getOwnPropertyNames(User.prototype); // ['constructor', 'hi']\n\nUser();  // TypeError: Class constructor cannot be invoked without 'new'\n\n// метод не перечисляем, в отличие от присваивания в prototype\nfor (const k in new User()) console.log(k); // ничего не выведет\n```",
   "explanation": "`extends` настраивает цепочку прототипов и для экземпляров, и для статических членов. `super` работает через `[[HomeObject]]`, поэтому вырванный из класса метод теряет `super`."
  },
  {
@@ -141,6 +158,7 @@
   "subtopic": "прототипы",
   "question": "Что на самом деле проверяет `instanceof`?",
   "answer": "Есть ли `Constructor.prototype` в цепочке прототипов объекта.",
+  "example": "```js\nclass Animal {}\nclass Dog extends Animal {}\n\nconst rex = new Dog();\nrex instanceof Dog;    // true\nrex instanceof Animal; // true — Animal.prototype есть в цепочке\n\n// проверка идёт по прототипу, а не по «типу»\nDog.prototype = {};        // подменили прототип конструктора\nrex instanceof Dog;        // false — старый объект ссылается на прежний\n\n// поэтому массив из другого фрейма instanceof Array не пройдёт\nArray.isArray(value); // надёжнее\n```",
   "explanation": "Поэтому `instanceof` врёт между разными реалмами (iframe, воркер): там свой `Array`, и `arr instanceof Array` вернёт `false`. Надёжнее `Array.isArray`."
  },
  {
@@ -149,6 +167,7 @@
   "subtopic": "типы",
   "question": "Почему `typeof null === 'object'`?",
   "answer": "Историческая ошибка первой реализации: значения хранились с тегом типа в младших битах, а `null` представлялся нулевым указателем с тегом объекта. Исправить нельзя — сломается веб.",
+  "example": "```js\ntypeof null;        // 'object'  — та самая ошибка\ntypeof undefined;   // 'undefined'\ntypeof function(){};// 'function'\ntypeof [];          // 'object'  — массив тоже объект\n\n// как проверять на самом деле\nvalue === null;                       // именно null\nvalue == null;                        // null или undefined — редкий случай, где == уместен\nObject.prototype.toString.call(null);  // '[object Null]'\n```",
   "explanation": "Проверять на null нужно строгим сравнением `value === null`."
  },
  {
@@ -157,6 +176,7 @@
   "subtopic": "типы",
   "question": "Чем `==` отличается от `===`?",
   "answer": "`===` сравнивает без приведения типов: разные типы — сразу `false`. `==` приводит операнды к общему типу по довольно запутанным правилам.",
+  "example": "```js\n0 == '';        // true  — оба приводятся к числу 0\n0 == '0';       // true\n'' == '0';      // false — а вот здесь оба уже строки\nnull == undefined; // true, но null == 0 — false\n[] == false;    // true  — [] → '' → 0\nNaN == NaN;     // false — единственное значение, не равное себе\n\n0 === '';       // false\nObject.is(NaN, NaN); // true, а Object.is(0, -0) — false\n```",
   "explanation": "Полезные факты про `==`: `null == undefined` истинно, но с другими значениями `null` не равен ничему; `NaN` не равен ничему, включая себя; объект сравнивается через `valueOf`/`toString`. Правило простое: всегда `===`, кроме умышленной проверки `value == null` на «null или undefined»."
  },
  {
@@ -165,6 +185,7 @@
   "subtopic": "типы",
   "question": "Как надёжно проверить, что значение — `NaN`?",
   "answer": "`Number.isNaN(value)`. Глобальный `isNaN` сначала приводит аргумент к числу, поэтому `isNaN('abc')` даёт `true`.",
+  "example": "```js\nNumber.isNaN(NaN);    // true\nNumber.isNaN('abc');  // false — это строка, а не NaN\n\nisNaN('abc');         // true  — сначала Number('abc') → NaN\nisNaN('42');          // false\n\n// откуда NaN берётся\nNumber('привет');  // NaN\n0 / 0;             // NaN\nparseInt('');      // NaN\n```",
   "explanation": "Ещё способ — `value !== value`: `NaN` единственное значение, не равное самому себе. Именно на этом основан `Object.is(NaN, NaN) === true`."
  },
  {
@@ -173,6 +194,7 @@
   "subtopic": "типы",
   "question": "Перечислите все ложные (falsy) значения.",
   "answer": "`false`, `0`, `-0`, `0n`, `''`, `null`, `undefined`, `NaN`. Всё остальное — истинно, включая `[]`, `{}` и `'0'`.",
+  "example": "```js\nfor (const v of [false, 0, -0, 0n, '', null, undefined, NaN]) {\n  if (v) console.log('не сюда'); // ни одна не пройдёт\n}\n\nif ([]) console.log('пустой массив истинен');   // выведет\nif ({}) console.log('пустой объект истинен');   // выведет\nif ('0') console.log('строка «0» истинна');     // выведет\n\n[] == false; // true — но это уже приведение при ==, а не проверка на falsy\n```",
   "explanation": "Отсюда классическая ошибка `if (count)`: для `count === 0` условие ложно, хотя значение вполне валидное. Для проверки «есть значение» используйте `!= null` или `??`."
  },
  {
@@ -181,6 +203,7 @@
   "subtopic": "типы",
   "question": "Чем `??` отличается от `||`?",
   "answer": "`??` подставляет запасное значение только для `null` и `undefined`, а `||` — для любого falsy, включая `0` и `''`.",
+  "example": "```js\nconst settings = { volume: 0, title: '' };\n\nsettings.volume || 50;  // 50 — ноль сочли «пустым», громкость подменили\nsettings.volume ?? 50;  // 0  — значение задано, ничего не подставляем\n\nsettings.title || 'Без названия'; // 'Без названия'\nsettings.title ?? 'Без названия'; // '' — пустая строка это тоже значение\n\n// смешивать без скобок нельзя — SyntaxError\n// a || b ?? c\n(a || b) ?? c;\n```",
   "explanation": "```js\nconst port = input || 3000;  // 0 превратится в 3000\nconst port = input ?? 3000;  // 0 останется 0\n```\nТо же различие у `??=` и `||=`."
  },
  {
@@ -189,6 +212,7 @@
   "subtopic": "типы",
   "question": "Что делает `?.` и где он не помогает?",
   "answer": "Прерывает цепочку и возвращает `undefined`, если слева `null` или `undefined`. Не помогает от опечаток в именах свойств и не заменяет проверку на пустую строку или ноль.",
+  "example": "```js\nconst user = { profile: { name: 'Аня' } };\n\nuser.address?.city;        // undefined — не падаем\nuser.getName?.();          // вызов, только если метод есть\nuser.tags?.[0];            // то же для индекса\n\n// не помогает от опечатки: молча вернёт undefined\nuser.porfile?.name;        // undefined, а ошибку заметить негде\n\n// и не заменяет проверку значения\nconst count = data?.count ?? 0; // ?. страхует путь, ?? — само значение\n```",
   "explanation": "Работает и для вызовов (`obj.method?.()`), и для индексов (`arr?.[0]`). Злоупотребление маскирует настоящие ошибки: если объекта там быть не должно, лучше упасть."
  },
  {
@@ -197,7 +221,17 @@
   "subtopic": "типы",
   "question": "Почему `0.1 + 0.2 !== 0.3`?",
   "answer": "Числа — двоичные с плавающей точкой (IEEE 754 double). Десятичные 0.1 и 0.2 в двоичной системе бесконечны, округление даёт `0.30000000000000004`.",
+  "example": "```js\n0.1 + 0.2;              // 0.30000000000000004\n0.1 + 0.2 === 0.3;      // false\n\n// сравнение с допуском\nMath.abs(0.1 + 0.2 - 0.3) < Number.EPSILON; // true\n\n// деньги — в минимальных единицах, целыми\nconst priceKop = 1050;  // 10 рублей 50 копеек\n(priceKop / 100).toFixed(2); // '10.50' только для показа\n\n9007199254740993;       // 9007199254740992 — вышли за Number.MAX_SAFE_INTEGER\n9007199254740993n;      // BigInt считает точно\n```",
   "explanation": "Для денег — целые числа минимальных единиц (копейки) или `BigInt`. Для сравнения — эпсилон: `Math.abs(a - b) < Number.EPSILON`."
+ },
+ {
+  "id": "js-symbol",
+  "topic": "js",
+  "subtopic": "типы",
+  "question": "Зачем нужны символы?",
+  "answer": "Уникальные ключи свойств, которые не пересекаются с обычными и не попадают в `Object.keys` и `JSON.stringify`. Плюс well-known символы (`Symbol.iterator`, `Symbol.asyncIterator`) настраивают поведение объекта в языковых конструкциях.",
+  "example": "```js\nconst id = Symbol('id');     // описание только для отладки\nSymbol('id') === Symbol('id'); // false — каждый вызов даёт новый\n\nconst user = { name: 'Аня', [id]: 42 };\nObject.keys(user);           // ['name'] — символа нет\nJSON.stringify(user);        // {\"name\":\"Аня\"}\nuser[id];                    // 42, если есть ссылка на символ\n\n// well-known символы настраивают поведение объекта\nclass Range {\n  *[Symbol.iterator]() { yield 1; }\n  get [Symbol.toStringTag]() { return 'Range'; }\n}\nString(new Range());          // '[object Range]'\n```",
+  "explanation": "`Symbol('a') !== Symbol('a')`: описание нужно только для отладки."
  },
  {
   "id": "js-var-let-const",
@@ -205,6 +239,7 @@
   "subtopic": "области видимости",
   "question": "Чем различаются `var`, `let` и `const`?",
   "answer": "`var` — область видимости функции, всплывает со значением `undefined`, можно переобъявлять. `let` и `const` — блочная область и временная мёртвая зона; `const` дополнительно запрещает переприсваивание самой привязки.",
+  "example": "```js\nfunction demo() {\n  console.log(v); // undefined — var всплыл\n  console.log(l); // ReferenceError — TDZ\n\n  var v = 1;\n  let l = 2;\n\n  if (true) {\n    var inFunction = 'видна снаружи блока';\n    let inBlock = 'только внутри';\n  }\n  console.log(inFunction); // работает\n  console.log(inBlock);    // ReferenceError\n}\n\nconst obj = { a: 1 };\nobj.a = 2;   // можно: меняется объект, а не привязка\nobj = {};    // TypeError: Assignment to constant variable\n```",
   "explanation": "`const` не делает значение неизменяемым: поля объекта под `const` менять можно. Для запрета — `Object.freeze` (поверхностный)."
  },
  {
@@ -213,6 +248,7 @@
   "subtopic": "области видимости",
   "question": "Что такое временная мёртвая зона (TDZ)?",
   "answer": "Промежуток от начала блока до строки объявления `let`/`const`, в котором обращение к переменной бросает `ReferenceError`.",
+  "example": "```js\n{\n  // здесь уже началась TDZ переменной x\n  typeof x; // ReferenceError — даже typeof не спасает, в отличие от необъявленной\n  let x = 1;\n}\n\ntypeof неОбъявленная; // 'undefined' — ошибки нет\n\n// классическая ловушка на собеседовании\nlet value = 'внешняя';\n{\n  console.log(value); // ReferenceError, а не 'внешняя'\n  let value = 'внутренняя';\n}\n```",
   "explanation": "Переменная «всплывает», но не инициализирована — в отличие от `var`, где обращение до объявления даёт `undefined`. TDZ превращает тихий баг в громкую ошибку."
  },
  {
@@ -221,6 +257,7 @@
   "subtopic": "области видимости",
   "question": "Что всплывает, а что нет?",
   "answer": "Объявления функций всплывают целиком и вызываются до объявления. `var` всплывает с `undefined`. `let`, `const` и `class` попадают в TDZ. Функциональные выражения не всплывают вообще.",
+  "example": "```js\nsayHi();          // работает — объявление функции всплыло целиком\nfunction sayHi() {}\n\nconsole.log(a);   // undefined\nvar a = 1;\n\nconsole.log(b);   // ReferenceError — TDZ\nlet b = 2;\n\nsayBye();         // TypeError: sayBye is not a function\nvar sayBye = function () {}; // всплыла переменная, но не значение\n\nnew Foo();        // ReferenceError — class тоже в TDZ\nclass Foo {}\n```",
   "explanation": "Поэтому `foo()` до `function foo() {}` работает, а до `const foo = () => {}` — бросает `ReferenceError`."
  },
  {
@@ -229,6 +266,7 @@
   "subtopic": "области видимости",
   "question": "Зачем нужны IIFE и что их заменило?",
   "answer": "Раньше — единственный способ создать приватную область видимости и не засорять глобальную. Сегодня их роль закрывают блочная область `let`/`const` и модули.",
+  "example": "```js\n// как писали до модулей\nvar App = (function () {\n  var private = 0;               // не попадает в глобальную область\n  return { inc: function () { return ++private; } };\n})();\n\n// сегодня хватает блока\n{\n  const private = 0;\n}\n\n// или модуля — у него своя область видимости по умолчанию\n// app.js\nconst private = 0;\nexport function inc() {}\n\n// IIFE остался для одного: await на верхнем уровне там, где его нет\n(async () => {\n  await init();\n})();\n```",
   "explanation": "Модуль ES сам по себе изолированная область: переменные верхнего уровня не попадают в глобальный объект."
  },
  {
@@ -237,6 +275,7 @@
   "subtopic": "промисы",
   "question": "Какие бывают состояния промиса и можно ли их менять?",
   "answer": "`pending`, `fulfilled`, `rejected`. Переход происходит ровно один раз и необратим — повторные `resolve`/`reject` игнорируются.",
+  "example": "```js\nconst p = new Promise((resolve, reject) => {\n  resolve('первый');\n  resolve('второй');  // игнорируется — состояние уже зафиксировано\n  reject('ошибка');   // тоже игнорируется\n});\n\np.then(console.log); // 'первый'\n\n// состояние снаружи не прочитать: только подписаться\nPromise.resolve(1).then((v) => v);      // fulfilled\nPromise.reject(new Error()).catch(() => {}); // rejected, обработали\n```",
   "explanation": "«Settled» — общее название для двух конечных состояний."
  },
  {
@@ -245,6 +284,7 @@
   "subtopic": "промисы",
   "question": "Чем различаются `Promise.all`, `allSettled`, `race` и `any`?",
   "answer": "`all` — все успешно или первая же ошибка. `allSettled` — ждёт всех и отдаёт список статусов, никогда не отклоняется. `race` — первый **завершившийся** любым образом. `any` — первый успешный, а если все упали — `AggregateError`.",
+  "example": "```js\nconst ok = Promise.resolve('ок');\nconst bad = Promise.reject(new Error('упал'));\n\nawait Promise.all([ok, bad]);        // бросит сразу, результат ok потерян\nawait Promise.allSettled([ok, bad]);\n// [{ status: 'fulfilled', value: 'ок' },\n//  { status: 'rejected', reason: Error('упал') }]\n\nawait Promise.race([ok, bad]);       // кто первый завершился — тот и ответ\nawait Promise.any([bad, ok]);        // 'ок' — ждём первый УСПЕШНЫЙ\nawait Promise.any([bad, bad]);       // AggregateError со всеми причинами\n```",
   "explanation": "Практика: `all` для «нужно всё», `allSettled` для «покажем что получилось», `any` для запасных источников, `race` — обычно для таймаутов."
  },
  {
@@ -253,6 +293,7 @@
   "subtopic": "промисы",
   "question": "Можно ли отменить промис?",
   "answer": "Нет. Промис — это уже начавшаяся операция и её результат. Отменяют не промис, а саму операцию — через `AbortController`.",
+  "example": "```js\n// отменяется операция, а не промис\nconst ctrl = new AbortController();\n\nconst request = fetch('/api/items', { signal: ctrl.signal })\n  .catch((e) => {\n    if (e.name === 'AbortError') return null; // не ошибка, а отмена\n    throw e;\n  });\n\nctrl.abort(); // запрос прерван, промис отклонился AbortError\n\n// «отменить» промис самому нельзя — можно лишь перестать слушать\nlet cancelled = false;\npromise.then((v) => { if (!cancelled) render(v); }); // работа всё равно шла\n```",
   "explanation": "`AbortController` передаётся в `fetch` как `signal`; при `abort()` промис отклоняется с `AbortError`, но код внутри промиса продолжает выполняться, если сам не проверяет сигнал."
  },
  {
@@ -261,6 +302,7 @@
   "subtopic": "промисы",
   "question": "Что возвращает `async`-функция и что делает `await`?",
   "answer": "`async`-функция всегда возвращает промис. `await` приостанавливает её выполнение до завершения ожидаемого промиса, не блокируя поток, — остаток функции становится микрозадачей.",
+  "example": "```js\nasync function load() {\n  return 42;          // обернётся в промис автоматически\n}\nload() instanceof Promise; // true\n\nasync function main() {\n  console.log('до');\n  const value = await load(); // остаток функции — микрозадача\n  console.log('после', value);\n}\n\nmain();\nconsole.log('синхронный хвост');\n\n// до → синхронный хвост → после 42\n```",
   "explanation": "`return value` внутри `async` эквивалентен `Promise.resolve(value)`, `throw` — отклонённому промису."
  },
  {
@@ -269,6 +311,7 @@
   "subtopic": "промисы",
   "question": "Чем плох `await` внутри цикла и когда он всё же уместен?",
   "answer": "Он превращает параллельные операции в последовательные: десять запросов по 200 мс займут 2 секунды вместо 200 мс. Уместен, когда следующая итерация зависит от предыдущей или нужно щадить сервер.",
+  "example": "```js\n// последовательно: 10 запросов по 200 мс = 2 секунды\nfor (const id of ids) {\n  results.push(await fetchItem(id));\n}\n\n// параллельно: те же 10 запросов ≈ 200 мс\nconst results = await Promise.all(ids.map(fetchItem));\n\n// а здесь await в цикле оправдан: следующий шаг зависит от предыдущего\nlet cursor;\ndo {\n  const page = await fetchPage(cursor);\n  cursor = page.next;\n} while (cursor);\n```",
   "explanation": "Параллельный вариант: `await Promise.all(items.map(fetchOne))`. Для ограничения параллелизма — пул или библиотека вроде `p-limit`."
  },
  {
@@ -277,6 +320,7 @@
   "subtopic": "промисы",
   "question": "Что произойдёт, если у отклонённого промиса нет обработчика?",
   "answer": "Сработает событие `unhandledrejection` (в Node — `unhandledRejection`), браузер напишет ошибку в консоль, а Node по умолчанию завершит процесс.",
+  "example": "```js\nPromise.reject(new Error('никто не ловит')); // unhandledrejection\n\n// обработчик, добавленный позже в том же тике, ещё считается своевременным\nconst p = Promise.reject(new Error('поздно?'));\nsetTimeout(() => p.catch(() => {}), 0); // а вот это уже поздно — событие сработало\n\nwindow.addEventListener('unhandledrejection', (e) => {\n  report(e.reason);\n  e.preventDefault(); // убрать ошибку из консоли\n});\n\n// частая причина: забыли await у async-вызова\nasync function save() { throw new Error('x'); }\nsave(); // промис никто не ждёт — и ошибку никто не ловит\n```",
   "explanation": "Частая причина — забытый `await` или `return` в цепочке: промис создан, ошибка есть, а обработать её некому."
  },
  {
@@ -285,6 +329,7 @@
   "subtopic": "промисы",
   "question": "В чём разница между `p.then(f, g)` и `p.then(f).catch(g)`?",
   "answer": "Во втором случае `g` поймает и ошибку исходного промиса, и ошибку, брошенную внутри `f`. В первом — только ошибку исходного промиса.",
+  "example": "```js\nconst p = Promise.resolve('ок');\n\np.then(\n  () => { throw new Error('ошибка в обработчике'); },\n  (err) => console.log('не сработает: этот обработчик только для ошибок p'),\n);\n// ошибка улетает дальше по цепочке, здесь её ловить некому\n\np.then(() => { throw new Error('ошибка в обработчике'); })\n .catch((err) => console.log('поймали:', err.message)); // поймали\n\n// поэтому catch в конце цепочки — почти всегда правильный выбор\n```",
   "explanation": "`finally` не меняет значение цепочки: он получает результат «как есть» и пропускает его дальше, если сам не бросил ошибку."
  },
  {
@@ -293,6 +338,7 @@
   "subtopic": "массивы",
   "question": "Какие методы массива изменяют исходный массив?",
   "answer": "`push`, `pop`, `shift`, `unshift`, `splice`, `sort`, `reverse`, `fill`, `copyWithin`. Остальные (`map`, `filter`, `slice`, `concat`, `flat`) возвращают новый.",
+  "example": "```js\nconst nums = [3, 1, 2];\n\nnums.sort();     // изменил nums, вернул его же\nnums.reverse();  // тоже на месте\nnums.splice(0, 1);\n\n// неизменяющие аналоги (ES2023)\nconst sorted = nums.toSorted((a, b) => a - b);\nconst reversed = nums.toReversed();\nconst replaced = nums.with(0, 99);   // копия с заменённым элементом\n\n// частая ошибка в реактивном коде: сигнал не заметит мутацию\nitems().push(newItem);          // ссылка та же — перерисовки нет\nitems.set([...items(), newItem]); // новый массив — есть\n```",
   "explanation": "У `sort` и `reverse` есть неизменяющие двойники — `toSorted`, `toReversed`, `toSpliced`, `with` (ES2023). Они особенно удобны в реактивных фреймворках, где мутация массива не видна системе изменений."
  },
  {
@@ -301,6 +347,7 @@
   "subtopic": "массивы",
   "question": "Почему `[10, 9, 1].sort()` даёт `[1, 10, 9]`?",
   "answer": "Без компаратора `sort` приводит элементы к строкам и сравнивает лексикографически. Для чисел нужен `sort((a, b) => a - b)`.",
+  "example": "```js\n[10, 9, 1].sort();                 // [1, 10, 9] — сравнивались строки\n[10, 9, 1].sort((a, b) => a - b);  // [1, 9, 10]\n\n// строки с кириллицей и регистром — через локаль\n['Яблоко', 'арбуз', 'Банан'].sort();\n// ['Банан', 'Яблоко', 'арбуз'] — по кодам символов, заглавные раньше строчных\n['Яблоко', 'арбуз', 'Банан'].sort((a, b) => a.localeCompare(b, 'ru'));\n// ['арбуз', 'Банан', 'Яблоко']\n\n// undefined всегда уезжают в конец, компаратор их даже не увидит\n[3, undefined, 1].sort((a, b) => a - b); // [1, 3, undefined]\n```",
   "explanation": "С ES2019 `sort` гарантированно стабилен: элементы с равными ключами сохраняют исходный порядок."
  },
  {
@@ -309,6 +356,7 @@
   "subtopic": "массивы",
   "question": "Что делает `reduce` и зачем ему начальное значение?",
   "answer": "Сворачивает массив в одно значение, прогоняя аккумулятор через все элементы. Без начального значения первым аккумулятором становится нулевой элемент, а на пустом массиве метод бросает `TypeError`.",
+  "example": "```js\n[1, 2, 3].reduce((acc, n) => acc + n, 0); // 6\n\n// без начального значения аккумулятор — первый элемент\n[1, 2, 3].reduce((acc, n) => acc + n);    // 6, но тип задаётся элементом\n[].reduce((a, b) => a + b);               // TypeError: Reduce of empty array\n[].reduce((a, b) => a + b, 0);            // 0\n\n// группировка — типичное применение\nconst byRole = users.reduce((acc, u) => {\n  (acc[u.role] ??= []).push(u);\n  return acc;\n}, {});\n\nObject.groupBy(users, (u) => u.role); // то же самое, ES2024\n```",
   "explanation": "Начальное значение задаёт ещё и тип результата, что особенно важно в TypeScript."
  },
  {
@@ -317,6 +365,7 @@
   "subtopic": "объекты",
   "question": "Чем поверхностное копирование отличается от глубокого и как сделать каждое?",
   "answer": "Поверхностное (`{...obj}`, `Object.assign`, `slice`) копирует только верхний уровень — вложенные объекты остаются общими. Глубокое — `structuredClone(obj)`.",
+  "example": "```js\nconst user = { name: 'Аня', tags: ['a'] };\n\nconst shallow = { ...user };\nshallow.name = 'Другая';    // user не тронут\nshallow.tags.push('b');     // а массив общий — user.tags тоже изменился\n\nconst deep = structuredClone(user);\ndeep.tags.push('c');        // user.tags цел\n\n// structuredClone умеет Map, Set, Date, циклы,\n// но не функции, не Symbol и не прототипы классов\nstructuredClone({ fn: () => {} }); // DataCloneError\n```",
   "explanation": "`JSON.parse(JSON.stringify(obj))` — старый приём с потерями: теряются `undefined`, функции, `Date` превращается в строку, а циклические ссылки бросают ошибку. `structuredClone` умеет `Date`, `Map`, `Set` и циклы, но не функции."
  },
  {
@@ -325,6 +374,7 @@
   "subtopic": "объекты",
   "question": "Когда `Map` предпочтительнее обычного объекта?",
   "answer": "Когда ключи не только строки, когда важен порядок вставки и частое добавление/удаление, когда нужен честный `size` и итерация без риска зацепить прототип.",
+  "example": "```js\nconst key = { id: 1 };\n\nconst obj = {};\nobj[key] = 'значение';    // ключ стал строкой '[object Object]'\nObject.keys(obj);          // ['[object Object]']\n\nconst map = new Map();\nmap.set(key, 'значение');  // ключ — сам объект\nmap.get(key);              // 'значение'\nmap.size;                  // 1, без Object.keys(...).length\n\n// объект тащит прототип, Map — нет\n({}).toString;             // функция из Object.prototype\nmap.has('toString');       // false\n\nfor (const [k, v] of map) {} // порядок вставки гарантирован для любых ключей\n```",
   "explanation": "Ключи объекта всегда строки или символы: `obj[1]` и `obj['1']` — одно и то же. У `Map` ключом может быть объект, функция, `NaN`."
  },
  {
@@ -333,6 +383,7 @@
   "subtopic": "объекты",
   "question": "Зачем нужны `WeakMap` и `WeakSet`?",
   "answer": "Они держат ключи слабо: если на объект-ключ больше нет других ссылок, запись удаляется сборщиком мусора. Утечки при кэшировании по объекту не возникает.",
+  "example": "```js\nconst cache = new WeakMap();\n\nfunction heavy(node) {\n  if (cache.has(node)) return cache.get(node);\n  const result = compute(node);\n  cache.set(node, result); // узел удалили из DOM — запись уйдёт сама\n  return result;\n}\n\n// с обычным Map кэш держал бы узлы вечно\nconst leaking = new Map();\n\n// цена: у WeakMap нет size, нет итерации и нет clear —\n// иначе сборка мусора стала бы наблюдаемой\n```",
   "explanation": "Плата — их нельзя перебрать и у них нет `size`: содержимое зависит от работы сборщика мусора и потому недетерминированно."
  },
  {
@@ -341,6 +392,7 @@
   "subtopic": "объекты",
   "question": "В каком порядке перебираются ключи объекта?",
   "answer": "Сначала целочисленные ключи по возрастанию, затем строковые в порядке добавления, затем символы.",
+  "example": "```js\nconst obj = { b: 1, 2: 2, a: 3, 1: 4, [Symbol('s')]: 5 };\n\nObject.keys(obj);            // ['1', '2', 'b', 'a']\n// целые по возрастанию → строковые в порядке добавления → символы\n\n// поэтому «числовые» id перестраиваются сами\nconst byId = { 100: 'сто', 2: 'два' };\nObject.keys(byId);           // ['2', '100'] — а не порядок записи\n\n// нужен свой порядок — берите Map\nnew Map([[100, 'сто'], [2, 'два']]); // порядок как записали\n```",
   "explanation": "Поэтому `{2: 'b', 1: 'a'}` перебирается как `1, 2`. Если порядок важен — берите `Map` или массив пар."
  },
  {
@@ -349,6 +401,7 @@
   "subtopic": "объекты",
   "question": "Чем `...` в объявлении параметров отличается от `...` в вызове?",
   "answer": "В параметрах это rest — сбор остатка аргументов в массив. В вызове и в литералах это spread — распаковка итерируемого или свойств объекта.",
+  "example": "```js\n// rest — сбор: в объявлении, всегда последний параметр\nfunction sum(first, ...others) {\n  return others.reduce((a, b) => a + b, first);\n}\n\n// spread — распаковка: в вызове и в литералах\nsum(...[1, 2, 3]);\nconst merged = { ...defaults, ...options };  // правый побеждает\nconst copy = [...items];\n\n// rest работает и в деструктуризации\nconst { id, ...withoutId } = user;\nconst [head, ...tail] = list;\n\n// spread разворачивает итерируемое, rest собирает в настоящий массив\n[...'абв'];        // ['а', 'б', 'в']\n```",
   "explanation": "Rest всегда последний в списке параметров. Spread объекта копирует только собственные перечисляемые свойства, геттеры при этом вычисляются."
  },
  {
@@ -357,7 +410,26 @@
   "subtopic": "объекты",
   "question": "Когда срабатывает значение по умолчанию при деструктуризации?",
   "answer": "Только когда значение строго равно `undefined`. Для `null`, `0` или `''` умолчание не применяется.",
+  "example": "```js\nconst { size = 'M' } = { size: undefined };  // 'M'\nconst { size = 'M' } = { size: null };       // null — умолчание не сработало\nconst { size = 'M' } = { size: 0 };          // 0\nconst { size = 'M' } = {};                   // 'M'\n\n// частая ловушка: деструктуризация параметра без умолчания\nfunction draw({ x = 0, y = 0 }) {}\ndraw();          // TypeError: нечего деструктурировать\nfunction draw({ x = 0, y = 0 } = {}) {}\ndraw();          // теперь нормально\n\n// умолчание вычисляется лениво и видит предыдущие поля\nconst { width, height = width } = { width: 10 }; // height === 10\n```",
   "explanation": "```js\nconst { a = 1 } = { a: null }; // a === null\n```"
+ },
+ {
+  "id": "js-getter-setter",
+  "topic": "js",
+  "subtopic": "объекты",
+  "question": "Что такое геттеры и сеттеры и чем они опасны?",
+  "answer": "Свойства-аксессоры: обращение как к полю, а под ним вызов функции. Опасны неочевидностью — простое чтение свойства может оказаться дорогим вычислением или иметь побочные эффекты.",
+  "example": "```js\nconst cart = {\n  items: [],\n  get total() {\n    return this.items.reduce((s, i) => s + i.price, 0); // считается при каждом чтении\n  },\n  set discount(percent) {\n    if (percent < 0 || percent > 100) throw new RangeError('0..100');\n    this._discount = percent;\n  },\n};\n\ncart.total;        // выглядит как поле, а это вызов\ncart.discount = 10;\n\n// опасность: цикл читает свойство тысячу раз и тысячу раз пересчитывает\nfor (const i of list) use(cart.total);\nconst total = cart.total; // прочитать один раз\n\n// геттер без сеттера: присваивание молча теряется (в строгом режиме — TypeError)\n```",
+  "explanation": "Определяются в литерале (`get x() {}`) или через `Object.defineProperty`. Spread объекта вычисляет геттеры, превращая их в обычные значения."
+ },
+ {
+  "id": "js-deep-equal",
+  "topic": "js",
+  "subtopic": "объекты",
+  "question": "Почему `{a: 1} === {a: 1}` даёт `false` и как сравнивать объекты по значению?",
+  "answer": "Объекты сравниваются по ссылке, а не по содержимому. Сравнение по значению пишут рекурсивно самому либо берут готовую реализацию — встроенной в язык нет.",
+  "example": "```js\n{ a: 1 } === { a: 1 };  // false — два разных объекта\nconst x = { a: 1 };\nx === x;                 // true\n\n// быстрый способ, у которого много «но»\nJSON.stringify({ a: 1, b: 2 }) === JSON.stringify({ b: 2, a: 1 }); // false: порядок ключей\n\nfunction deepEqual(a, b) {\n  if (Object.is(a, b)) return true;\n  if (typeof a !== 'object' || typeof b !== 'object' || !a || !b) return false;\n  const ka = Object.keys(a);\n  const kb = Object.keys(b);\n  return ka.length === kb.length && ka.every((k) => deepEqual(a[k], b[k]));\n}\n```",
+  "explanation": "Реализация выше не покрывает `Date`, `Map`, `Set`, циклы и прототипы — в проде берут `lodash.isEqual` или сравнение из библиотеки тестов.\n\nВ реактивном коде сравнение по значению обычно не нужно: изменения отслеживают по ссылке, а состояние обновляют иммутабельно. Так работают и сигналы Angular с их `equal`."
  },
  {
   "id": "js-esm-vs-cjs",
@@ -365,6 +437,7 @@
   "subtopic": "модули",
   "question": "Чем ES-модули отличаются от CommonJS?",
   "answer": "ESM статичны (импорты разбираются до выполнения, отсюда tree-shaking), асинхронны, всегда в строгом режиме и дают живые связывания. CommonJS загружается синхронно, `require` можно звать откуда угодно, а экспорт копируется по значению.",
+  "example": "```js\n// ESM — статичный разбор до выполнения\nimport { helper } from './utils.js';\nexport const value = 1;\n\n// живая связь: импортёр видит изменения переменной\n// counter.js\nexport let count = 0;\nexport const inc = () => count++;\n// main.js\nimport { count, inc } from './counter.js';\ninc();\nconsole.log(count); // 1 — не копия\n\n// CommonJS — выполняется на месте, экспорт копируется\nconst { count, inc } = require('./counter'); // count останется 0\nif (needed) require('./optional'); // условный импорт разрешён\n```",
   "explanation": "«Живое связывание» значит: если модуль поменяет экспортированную переменную, импортирующий увидит новое значение. В CJS у импортёра останется старая копия."
  },
  {
@@ -373,6 +446,7 @@
   "subtopic": "модули",
   "question": "Что возвращает `import()` и зачем он нужен?",
   "answer": "Промис с объектом пространства имён модуля. Нужен для ленивой загрузки: код попадает в отдельный чанк и грузится только когда действительно понадобился.",
+  "example": "```js\nbutton.addEventListener('click', async () => {\n  const { Chart } = await import('./chart.js'); // отдельный чанк, грузится по клику\n  new Chart(canvas);\n});\n\n// путь может быть вычисляемым — статический import так не умеет\nconst locale = await import(`./i18n/${lang}.js`);\n\n// в Angular тем же механизмом работают ленивые маршруты\n{ path: 'stats', loadComponent: () => import('./stats-page').then((m) => m.StatsPage) }\n```",
   "explanation": "На нём же построены `loadComponent` в роутере Angular и вообще любой code splitting."
  },
  {
@@ -381,6 +455,7 @@
   "subtopic": "паттерны",
   "question": "Чем debounce отличается от throttle?",
   "answer": "Debounce откладывает вызов до паузы в потоке событий — сработает один раз после затишья. Throttle пропускает не чаще одного вызова в интервал.",
+  "example": "```js\nfunction debounce(fn, ms) {\n  let timer;\n  return (...args) => {\n    clearTimeout(timer);              // каждое событие отодвигает вызов\n    timer = setTimeout(() => fn(...args), ms);\n  };\n}\n\nfunction throttle(fn, ms) {\n  let last = 0;\n  return (...args) => {\n    if (Date.now() - last < ms) return; // лишние события просто выбрасываем\n    last = Date.now();\n    fn(...args);\n  };\n}\n\ninput.oninput = debounce(search, 300);   // ищем, когда перестали печатать\nwindow.onscroll = throttle(onScroll, 100); // считаем позицию не чаще 10 раз в секунду\n```",
   "explanation": "Поиск по мере ввода — debounce; обработчик `scroll` или `resize` — throttle."
  },
  {
@@ -389,6 +464,7 @@
   "subtopic": "генераторы",
   "question": "Что делает `function*` и `yield`?",
   "answer": "Создаёт генератор — функцию, выполнение которой можно приостанавливать. `yield` отдаёт значение наружу и замораживает состояние до следующего `next()`.",
+  "example": "```js\nfunction* range(from, to) {\n  for (let i = from; i <= to; i++) {\n    yield i;              // отдали значение и замерли\n  }\n  return 'готово';\n}\n\nconst it = range(1, 3);\nit.next(); // { value: 1, done: false }\nit.next(); // { value: 2, done: false }\n\n[...range(1, 3)];         // [1, 2, 3] — генератор итерируем\n\n// бесконечная последовательность — считается ровно столько, сколько взяли\nfunction* ids() {\n  let i = 0;\n  while (true) yield i++;\n}\n```",
   "explanation": "`next(value)` умеет и передавать значение внутрь — оно становится результатом выражения `yield`. На генераторах построены ленивые последовательности и, например, `redux-saga`."
  },
  {
@@ -397,7 +473,17 @@
   "subtopic": "итераторы",
   "question": "Что делает объект итерируемым?",
   "answer": "Метод `[Symbol.iterator]`, возвращающий итератор — объект с методом `next()`, который отдаёт `{ value, done }`.",
+  "example": "```js\nconst range = {\n  from: 1,\n  to: 3,\n  [Symbol.iterator]() {\n    let current = this.from;\n    const last = this.to;\n    return {\n      next: () => (current <= last ? { value: current++, done: false } : { value: undefined, done: true }),\n    };\n  },\n};\n\n[...range];                 // [1, 2, 3]\nfor (const n of range) {}   // работает\nArray.from(range);          // тоже\n\n// проще — генератором\nconst range2 = { *[Symbol.iterator]() { yield 1; yield 2; } };\n```",
   "explanation": "Именно этот протокол используют `for...of`, spread и деструктуризация массива. Обычные объекты его не реализуют — отсюда `TypeError: obj is not iterable`."
+ },
+ {
+  "id": "js-async-iterators",
+  "topic": "js",
+  "subtopic": "итераторы",
+  "question": "Что делают `for await...of` и асинхронные генераторы?",
+  "answer": "Перебирают источник, каждый шаг которого — промис: `Symbol.asyncIterator` вместо `Symbol.iterator`. Так читают потоки, постраничные API и события, не собирая всё в память.",
+  "example": "```js\nasync function* pages(url) {\n  let next = url;\n  while (next) {\n    const res = await fetch(next);\n    const page = await res.json();\n    yield* page.items;      // отдаём по одному элементу\n    next = page.next;\n  }\n}\n\nfor await (const item of pages('/api/items')) {\n  render(item);             // первая страница видна, пока грузятся остальные\n  if (enough()) break;      // прерывание закроет генератор\n}\n\n// чтение тела ответа кусками\nfor await (const chunk of res.body) process(chunk);\n```",
+  "explanation": "`for await...of` обрабатывает элементы строго по одному: это последовательность, а не параллельность. Если нужны параллельные запросы, берут `Promise.all`.\n\n`break` внутри цикла вызывает `return()` у генератора, поэтому `finally` в нём сработает — там и закрывают соединение."
  },
  {
   "id": "js-error-handling-async",
@@ -405,7 +491,26 @@
   "subtopic": "ошибки",
   "question": "Почему `try/catch` не ловит ошибку из колбэка `setTimeout`?",
   "answer": "К моменту выполнения колбэка стек, в котором стоял `try`, уже размотан. Колбэк выполняется в новой макрозадаче, и его ошибка уходит в глобальный обработчик.",
+  "example": "```js\ntry {\n  setTimeout(() => {\n    throw new Error('не поймается'); // стек с try уже размотан\n  }, 0);\n} catch (e) {\n  // сюда не попадём\n}\n\n// ловить нужно там же, где бросается\nsetTimeout(() => {\n  try {\n    risky();\n  } catch (e) {\n    report(e);\n  }\n}, 0);\n\n// с промисами try/catch работает, потому что await возвращает управление в ту же функцию\ntry {\n  await failing();\n} catch (e) {\n  report(e); // поймается\n}\n```",
   "explanation": "С `async/await` `try/catch` работает как ожидается, потому что `await` сохраняет контекст функции."
+ },
+ {
+  "id": "js-custom-errors",
+  "topic": "js",
+  "subtopic": "ошибки",
+  "question": "Как правильно объявить свой класс ошибки?",
+  "answer": "Наследованием от `Error` с установкой `name` и передачей причины через `cause`. Без этого стек и сообщение теряются, а `instanceof` перестаёт быть надёжным.",
+  "example": "```js\nclass ApiError extends Error {\n  constructor(status, message, options) {\n    super(message, options);   // options.cause сохранит исходную ошибку\n    this.name = 'ApiError';\n    this.status = status;\n  }\n}\n\ntry {\n  await load();\n} catch (e) {\n  throw new ApiError(500, 'Не удалось загрузить профиль', { cause: e });\n}\n\n// разбор на верхнем уровне\ncatch (e) {\n  if (e instanceof ApiError && e.status === 401) redirect('/login');\n  console.error(e.cause); // исходная ошибка не потерялась\n}\n\nthrow 'просто строка'; // так не надо: ни стека, ни имени\n```",
+  "explanation": "`cause` (ES2022) заменяет самодельные поля `originalError` и печатается движками в цепочке стека.\n\nБросить в JS можно что угодно, поэтому в `catch` перед разбором проверяют `e instanceof Error` — в TypeScript со `strict` это требование компилятора: переменная там имеет тип `unknown`."
+ },
+ {
+  "id": "js-try-finally",
+  "topic": "js",
+  "subtopic": "ошибки",
+  "question": "Что произойдёт, если и в `try`, и в `finally` есть `return`?",
+  "answer": "Победит `finally`: его `return` перезаписывает и возвращаемое значение, и брошенное исключение. Именно поэтому `return` внутри `finally` считается ошибкой.",
+  "example": "```js\nfunction f() {\n  try {\n    return 'из try';\n  } finally {\n    return 'из finally'; // 'из finally'\n  }\n}\n\nfunction g() {\n  try {\n    throw new Error('важная ошибка');\n  } finally {\n    return 'ошибка проглочена'; // исключение исчезло бесследно\n  }\n}\n\n// правильно: finally только освобождает ресурсы\nasync function load() {\n  this.loading.set(true);\n  try {\n    return await this.http.get('/api');\n  } finally {\n    this.loading.set(false); // выполнится и при успехе, и при ошибке\n  }\n}\n```",
+  "explanation": "`finally` выполняется при любом выходе из блока: обычном, через `return`, через `break` и через исключение. Это делает его правильным местом для снятия флага загрузки или закрытия ресурса.\n\nВычисленное в `try` значение `return` запоминается до выполнения `finally` — поэтому изменение переменной в `finally` на результат уже не влияет, а вот собственный `return` влияет."
  },
  {
   "id": "js-event-delegation",
@@ -413,6 +518,7 @@
   "subtopic": "DOM",
   "question": "Что такое делегирование событий и зачем оно нужно?",
   "answer": "Один обработчик на общего предка вместо обработчика на каждом элементе: событие всплывает, и по `event.target` определяется источник.",
+  "example": "```js\n// вместо обработчика на каждой строке — один на таблице\ntable.addEventListener('click', (e) => {\n  const row = e.target.closest('tr[data-id]');\n  if (!row || !table.contains(row)) return;\n  select(row.dataset.id);\n});\n\n// работает и для строк, добавленных позже — подписываться заново не надо\n\n// не всплывают: focus, blur, mouseenter, mouseleave —\n// для них есть всплывающие пары focusin / focusout / mouseover / mouseout\n```",
   "explanation": "Экономит память, работает для элементов, добавленных позже, и не требует переподписки при перерисовке списка."
  },
  {
@@ -421,6 +527,7 @@
   "subtopic": "DOM",
   "question": "Какие фазы проходит событие в DOM?",
   "answer": "Погружение (capturing) от `window` к цели, целевая фаза, всплытие (bubbling) обратно наверх.",
+  "example": "```js\nparent.addEventListener('click', () => console.log('родитель, погружение'), true);\nparent.addEventListener('click', () => console.log('родитель, всплытие'));\nchild.addEventListener('click', () => console.log('цель'));\n\n// клик по child:\n// родитель, погружение → цель → родитель, всплытие\n\nelement.addEventListener('click', (e) => {\n  e.eventPhase;            // 1 capturing, 2 at target, 3 bubbling\n  e.stopPropagation();     // дальше не пойдёт\n  e.stopImmediatePropagation(); // и остальные обработчики этого же элемента тоже\n});\n```",
   "explanation": "`addEventListener(type, fn, true)` подписывает на фазу погружения. `stopPropagation` прекращает дальнейшее распространение, `preventDefault` отменяет действие браузера по умолчанию — это разные вещи."
  },
  {
@@ -429,23 +536,8 @@
   "subtopic": "строгий режим",
   "question": "Что меняет строгий режим?",
   "answer": "Запрещает неявные глобальные переменные, делает `this` в обычном вызове `undefined`, бросает ошибки при записи в неизменяемые свойства, запрещает `with` и восьмеричные литералы.",
+  "example": "```js\n'use strict';\n\nundeclared = 1;      // ReferenceError, а не новая глобальная переменная\n\nfunction f() { return this; }\nf();                 // undefined вместо globalThis\n\nconst frozen = Object.freeze({ a: 1 });\nfrozen.a = 2;        // TypeError вместо молчаливого игнорирования\n\n// модули и тела классов строги всегда — 'use strict' там писать незачем\nclass C { m() { return this; } }\nconst m = new C().m;\nm();                 // undefined\n```",
   "explanation": "Модули и тела классов строгие всегда — директиву писать не нужно."
- },
- {
-  "id": "js-symbol",
-  "topic": "js",
-  "subtopic": "типы",
-  "question": "Зачем нужны символы?",
-  "answer": "Уникальные ключи свойств, которые не пересекаются с обычными и не попадают в `Object.keys` и `JSON.stringify`. Плюс well-known символы (`Symbol.iterator`, `Symbol.asyncIterator`) настраивают поведение объекта в языковых конструкциях.",
-  "explanation": "`Symbol('a') !== Symbol('a')`: описание нужно только для отладки."
- },
- {
-  "id": "js-getter-setter",
-  "topic": "js",
-  "subtopic": "объекты",
-  "question": "Что такое геттеры и сеттеры и чем они опасны?",
-  "answer": "Свойства-аксессоры: обращение как к полю, а под ним вызов функции. Опасны неочевидностью — простое чтение свойства может оказаться дорогим вычислением или иметь побочные эффекты.",
-  "explanation": "Определяются в литерале (`get x() {}`) или через `Object.defineProperty`. Spread объекта вычисляет геттеры, превращая их в обычные значения."
  },
  {
   "id": "js-proxy",
@@ -453,6 +545,232 @@
   "subtopic": "метапрограммирование",
   "question": "Что такое `Proxy` и где он реально применяется?",
   "answer": "Объект-перехватчик: подменяет базовые операции (чтение, запись, удаление свойства) собственными ловушками.",
+  "example": "```js\nconst withDefault = new Proxy({}, {\n  get: (target, key) => (key in target ? target[key] : 'нет значения'),\n  set: (target, key, value) => {\n    if (typeof value !== 'string') throw new TypeError('только строки');\n    target[key] = value;\n    return true;\n  },\n});\n\nwithDefault.missing;   // 'нет значения'\n\n// где встречается по-настоящему: реактивность Vue, моки в тестах,\n// негативные индексы, ленивая загрузка полей ORM\n\n// цена: каждая операция идёт через ловушку — заметно медленнее прямого доступа,\n// и объект перестаёт быть прозрачным для отладки\n```",
   "explanation": "На нём построены реактивность Vue 3, `immer`, валидаторы и мок-объекты в тестах. Плата — заметные накладные расходы и непрозрачность для отладки."
+ },
+ {
+  "id": "js-class-private-fields",
+  "topic": "js",
+  "subtopic": "классы",
+  "question": "Чем приватное поле `#count` отличается от соглашения `_count`?",
+  "answer": "Приватность настоящая, на уровне синтаксиса: обращение снаружи — ошибка ещё на этапе разбора, поле не видно ни в `Object.keys`, ни в `JSON.stringify`, ни в отладчике как обычное свойство. `_count` — только договорённость.",
+  "example": "```js\nclass Counter {\n  #count = 0;\n  _legacy = 0;\n\n  inc() {\n    this.#count++;\n  }\n\n  static isCounter(obj) {\n    return #count in obj; // проверка «свой ли это класс» без try/catch\n  }\n}\n\nconst c = new Counter();\nc._legacy;          // 0 — доступно всем желающим\nc.#count;           // SyntaxError ещё до выполнения\nObject.keys(c);     // ['_legacy']\nJSON.stringify(c);  // {\"_legacy\":0}\n```",
+  "explanation": "Приватные поля привязаны к классу, а не к экземпляру: метод одного объекта может читать `#count` другого объекта того же класса — это нужно, например, для `equals`.\n\nОбратная сторона — `structuredClone` и обычное копирование через spread приватные поля не переносят: объект получится «пустым» изнутри."
+ },
+ {
+  "id": "js-class-static",
+  "topic": "js",
+  "subtopic": "классы",
+  "question": "Что можно объявить статическим в классе?",
+  "answer": "Методы, поля, приватные поля и статический блок инициализации. Всё это принадлежит самому классу, а не экземплярам, и наследуется подклассами.",
+  "example": "```js\nclass Config {\n  static #instances = 0;\n  static defaults = { retries: 3 };\n\n  static {\n    // статический блок: сложная инициализация при загрузке класса\n    Config.defaults = Object.freeze({ ...Config.defaults, ...readEnv() });\n  }\n\n  static create() {\n    Config.#instances++;\n    return new Config();\n  }\n}\n\nConfig.defaults;      // читается через класс\nnew Config().defaults; // undefined — у экземпляра его нет\n\nclass Extended extends Config {}\nExtended.defaults;    // унаследовалось: цепочка прототипов есть и у классов\n```",
+  "explanation": "`this` внутри статического метода — сам класс, поэтому `static create()` в подклассе создаст экземпляр подкласса.\n\nСтатический блок выполняется один раз при вычислении определения класса и видит приватные поля — это единственное место, где можно сделать сложную настройку без фабричной функции снаружи."
+ },
+ {
+  "id": "js-super-extends",
+  "topic": "js",
+  "subtopic": "классы",
+  "question": "В каком порядке выполняются конструкторы при `extends` и зачем нужен `super()`?",
+  "answer": "Сначала конструктор базового класса, потом производного. `super()` создаёт `this`, поэтому обращаться к `this` до его вызова нельзя — будет `ReferenceError`.",
+  "example": "```js\nclass Base {\n  constructor() {\n    this.init();       // вызовется переопределённый метод из Child\n  }\n  init() {}\n}\n\nclass Child extends Base {\n  value = 42;          // поля инициализируются ПОСЛЕ super()\n\n  constructor() {\n    // this.value;     // ReferenceError: Must call super constructor first\n    super();\n    this.value;        // 42\n  }\n\n  init() {\n    console.log(this.value); // undefined — поле ещё не присвоено\n  }\n}\n```",
+  "explanation": "Вызов переопределяемого метода из конструктора базового класса — классическая ловушка: к этому моменту поля производного класса ещё не инициализированы.\n\n`super.method()` в обычном методе обращается к реализации родителя. Если конструктор в производном классе не написан вовсе, подставляется `constructor(...args) { super(...args) }`."
+ },
+ {
+  "id": "js-currying",
+  "topic": "js",
+  "subtopic": "функции",
+  "question": "Что такое каррирование и частичное применение?",
+  "answer": "Каррирование превращает функцию от нескольких аргументов в цепочку функций от одного. Частичное применение фиксирует часть аргументов и возвращает функцию от остальных.",
+  "example": "```js\n// каррирование\nconst log = (level) => (module) => (message) =>\n  console.log(`[${level}] ${module}: ${message}`);\n\nconst warn = log('warn');\nconst warnApi = warn('api');\nwarnApi('таймаут');   // [warn] api: таймаут\n\n// частичное применение — то же самое делает bind\nfunction request(method, url, body) {}\nconst post = request.bind(null, 'POST');\npost('/api/items', {});\n\n// частая ошибка: передать метод напрямую в map\n['1', '2', '3'].map(parseInt);        // [1, NaN, NaN] — map отдаёт ещё и индекс\n['1', '2', '3'].map((s) => parseInt(s)); // [1, 2, 3]\n```",
+  "explanation": "На практике каррирование ценно там, где функцию нужно передать дальше уже настроенной: обработчики, конвейеры, конфигурация валидаторов.\n\nЗлоупотребление им делает стек вызовов нечитаемым: в отладчике видно несколько безымянных функций подряд вместо одной осмысленной."
+ },
+ {
+  "id": "js-arguments-vs-rest",
+  "topic": "js",
+  "subtopic": "функции",
+  "question": "Чем `arguments` отличается от rest-параметра?",
+  "answer": "`arguments` — псевдомассив без методов массива, недоступный в стрелочных функциях. Rest-параметр даёт настоящий массив и собирает только те аргументы, что идут после объявленных.",
+  "example": "```js\nfunction old() {\n  arguments.length;\n  arguments.map;          // undefined — не массив\n  Array.from(arguments);  // приходилось приводить\n}\n\nfunction modern(first, ...rest) {\n  rest.map((x) => x * 2);  // настоящий массив\n}\n\nconst arrow = () => arguments; // ReferenceError: своего arguments у стрелки нет\n\n// в нестрогом режиме arguments ещё и связан с параметрами\nfunction link(a) {\n  arguments[0] = 99;\n  return a;               // 99 — в строгом режиме вернулось бы исходное\n}\n```",
+  "explanation": "`arguments` остаётся в старом коде и мешает оптимизациям движка. Единственное, ради чего он ещё встречается, — `arguments.callee` в анонимной рекурсии, но в строгом режиме и это запрещено.\n\nRest-параметр обязан быть последним, и он не считает параметры со значениями по умолчанию: `function f(a = 1, ...rest)` — `f.length === 0`."
+ },
+ {
+  "id": "js-default-params",
+  "topic": "js",
+  "subtopic": "функции",
+  "question": "Когда вычисляется значение параметра по умолчанию?",
+  "answer": "При каждом вызове, в котором аргумент не передан или равен `undefined`. Выражение вычисляется лениво и может ссылаться на предыдущие параметры.",
+  "example": "```js\nfunction push(item, list = []) {\n  list.push(item);\n  return list;\n}\npush(1); // [1]\npush(2); // [2] — новый массив каждый раз, ловушки Python здесь нет\n\nfunction area(width, height = width) {} // видит предыдущий параметр\nfunction bad(a = b, b = 2) {}           // ReferenceError: b ещё в TDZ\n\nf(undefined); // умолчание сработает\nf(null);      // нет: null это значение\n\n// длина функции считает только параметры до первого с умолчанием\nfunction g(a, b = 1, c) {}\ng.length; // 1\n```",
+  "explanation": "Умолчание срабатывает строго на `undefined` — та же логика, что у `??` и у деструктуризации.\n\nЧастый приём — сделать аргумент обязательным без лишних проверок: `function f(id = required('id'))`, где `required` бросает ошибку."
+ },
+ {
+  "id": "js-recursion-stack",
+  "topic": "js",
+  "subtopic": "функции",
+  "question": "Почему глубокая рекурсия в JS падает и что с этим делать?",
+  "answer": "Стек вызовов ограничен (обычно десятки тысяч кадров) — при переполнении бросается `RangeError: Maximum call stack size exceeded`. Оптимизации хвостовых вызовов в движках фактически нет, поэтому спасает переписывание в цикл или явный стек.",
+  "example": "```js\nconst sum = (n) => (n === 0 ? 0 : n + sum(n - 1));\nsum(100000); // RangeError\n\n// цикл вместо рекурсии\nlet total = 0;\nfor (let i = 100000; i > 0; i--) total += i;\n\n// обход дерева со своим стеком — глубина ограничена только памятью\nfunction walk(root) {\n  const stack = [root];\n  while (stack.length) {\n    const node = stack.pop();\n    visit(node);\n    stack.push(...node.children);\n  }\n}\n```",
+  "explanation": "Хвостовая рекурсия описана в стандарте (ES2015), но реализована только в Safari — писать код в расчёте на неё нельзя.\n\nПереполнение стека часто выдаёт не глубину, а случайную бесконечную рекурсию: геттер, читающий сам себя, или `toString`, вызывающий шаблонную строку с этим же объектом."
+ },
+ {
+  "id": "js-string-methods",
+  "topic": "js",
+  "subtopic": "строки",
+  "question": "Чем `slice`, `substring` и `at` отличаются друг от друга?",
+  "answer": "`slice` понимает отрицательные индексы и отсчитывает их с конца. `substring` отрицательные превращает в ноль и молча меняет аргументы местами, если начало больше конца. `at` возвращает один символ и тоже понимает отрицательный индекс.",
+  "example": "```js\nconst s = 'привет';\n\ns.slice(-3);        // 'вет'\ns.substring(-3);    // 'привет' — минус стал нулём\ns.slice(4, 1);      // ''       — пустая строка\ns.substring(4, 1);  // 'рив'    — аргументы поменялись местами\n\ns.at(-1);           // 'т'\ns[s.length - 1];    // то же, но длиннее\n\ns.replace('и', 'И');    // только первое вхождение\ns.replaceAll('и', 'И'); // все\n'  x '.trimStart();      // есть и trimEnd\n'5'.padStart(3, '0');    // '005'\n```",
+  "explanation": "`substring` держат ради совместимости — в новом коде берут `slice`, поведение которого совпадает с массивами.\n\n`replace` со строкой заменяет одно вхождение, с регуляркой без флага `g` — тоже одно; `replaceAll` с регуляркой без `g` бросает `TypeError`, чтобы ошибка не прошла молча."
+ },
+ {
+  "id": "js-string-unicode",
+  "topic": "js",
+  "subtopic": "строки",
+  "question": "Почему `'🙂'.length === 2` и как считать символы правильно?",
+  "answer": "Строки хранятся в UTF-16, и `length` — число кодовых единиц, а не символов. Эмодзи и редкие иероглифы занимают две единицы (суррогатную пару), а составные эмодзи — ещё больше.",
+  "example": "```js\n'🙂'.length;          // 2\n[...'🙂'].length;     // 1 — итератор строки идёт по кодовым точкам\n'🙂'[0];              // '\\uD83D' — половина пары, мусор\n\n'👨‍👩‍👧'.length;         // 8: три эмодзи, склеенные zero-width joiner\n[...'👨‍👩‍👧'].length;    // 5 — всё ещё не 1\n\n// честный подсчёт видимых символов\nconst seg = new Intl.Segmenter('ru', { granularity: 'grapheme' });\n[...seg.segment('👨‍👩‍👧')].length; // 1\n\n'é' === 'é';                     // false: составной и готовый символ\n'é'.normalize() === 'é'.normalize(); // true\n```",
+  "explanation": "Отсюда практическое правило: обрезать строку по `slice` для показа пользователю нельзя — можно разрезать пару и получить «квадратик».\n\n`normalize()` нужен всюду, где строки сравниваются или используются как ключи: одно и то же слово из разных источников может быть записано разными последовательностями кодовых точек."
+ },
+ {
+  "id": "js-tagged-templates",
+  "topic": "js",
+  "subtopic": "строки",
+  "question": "Что такое теговый шаблон и где он применяется?",
+  "answer": "Функция, вызываемая перед шаблонной строкой: она получает массив статических кусков и отдельно подставляемые значения, и сама решает, как собрать результат.",
+  "example": "```js\nfunction html(strings, ...values) {\n  return strings.reduce(\n    (acc, part, i) => acc + part + (i < values.length ? escape(values[i]) : ''),\n    '',\n  );\n}\n\nconst unsafe = '<script>alert(1)</script>';\nhtml`<p>${unsafe}</p>`; // значение экранировано, разметка вокруг — нет\n\n// первый аргумент несёт и «сырой» вариант без обработки escape-последовательностей\nfunction raw(strings) {\n  return strings.raw[0];\n}\nraw`\\n`; // '\\\\n' — два символа, а не перевод строки\n```",
+  "explanation": "Так устроены `String.raw`, GraphQL-запросы `gql\\`...\\``, css-in-js и безопасная сборка SQL и HTML: тег видит границу между «своим» текстом и подставленными данными и может обработать их по-разному.\n\nМассив `strings` для одного и того же места в коде всегда один и тот же объект — на этом строят кэширование разобранных шаблонов."
+ },
+ {
+  "id": "js-number-formatting",
+  "topic": "js",
+  "subtopic": "числа",
+  "question": "Чем `toFixed` плох для округления и что использовать вместо него?",
+  "answer": "`toFixed` работает с двоичным представлением, поэтому округляет не всегда так, как ожидает человек, и возвращает строку. Для показа пользователю берут `Intl.NumberFormat`, для расчётов — целые числа в минимальных единицах.",
+  "example": "```js\n(1.005).toFixed(2);  // '1.00', а не '1.01': в двоичном виде это 1.00499999...\n(2.675).toFixed(2);  // '2.67'\n(1.5).toFixed(0);    // '2'\n(2.5).toFixed(0);    // '3' — а Math.round(2.5) тоже 3, но Math.round(-2.5) даёт -2\n\nnew Intl.NumberFormat('ru-RU', {\n  style: 'currency',\n  currency: 'RUB',\n  maximumFractionDigits: 2,\n}).format(1234.5); // '1 234,50 ₽'\n\n// расчёты — в копейках\nconst totalKop = items.reduce((s, i) => s + i.priceKop, 0);\n```",
+  "explanation": "`Intl.NumberFormat` заодно решает разделители разрядов, локальную запятую и валюту — вручную это делают неправильно почти всегда.\n\nЕсли нужна точная десятичная арифметика (деньги, налоги), в JS её нет: берут целые числа либо библиотеку вроде decimal.js."
+ },
+ {
+  "id": "js-bigint",
+  "topic": "js",
+  "subtopic": "числа",
+  "question": "Когда нужен `BigInt` и в чём его ограничения?",
+  "answer": "Когда целые числа выходят за `Number.MAX_SAFE_INTEGER` (2^53−1): идентификаторы из бэкенда, криптография, точные счётчики. Смешивать `BigInt` с `Number` в арифметике нельзя, дробей у него нет.",
+  "example": "```js\nNumber.MAX_SAFE_INTEGER;      // 9007199254740991\n9007199254740993;             // 9007199254740992 — тихо потеряли единицу\n\n9007199254740993n;            // точно\nBigInt('9007199254740993');   // из строки\n\n1n + 1;      // TypeError: Cannot mix BigInt and other types\n1n + BigInt(1); // 2n\n5n / 2n;     // 2n — дробная часть отбрасывается\n\n1n == 1;     // true\n1n === 1;    // false — разные типы\n\nJSON.stringify({ id: 1n }); // TypeError: не сериализуется\n```",
+  "explanation": "Самая частая практическая причина — id из базы (например, Twitter/Discord snowflake): в JSON они приходят строками именно потому, что `JSON.parse` испортил бы их как `Number`.\n\nЦена — скорость: `BigInt` заметно медленнее обычных чисел, и для счётчиков в горячем коде его брать не стоит."
+ },
+ {
+  "id": "js-date-pitfalls",
+  "topic": "js",
+  "subtopic": "дата и время",
+  "question": "Какие ловушки есть у встроенного `Date`?",
+  "answer": "Месяцы нумеруются с нуля, парсинг нестандартных строк зависит от движка, объект изменяемый, а вся арифметика идёт в часовом поясе браузера. Замена — `Temporal` (пока с полифилом) или библиотека.",
+  "example": "```js\nnew Date(2024, 0, 31);        // 31 января: месяцы с нуля\nnew Date(2024, 0, 32);        // 1 февраля — переполнение молча нормализуется\n\nnew Date('2024-01-15');       // полночь UTC\nnew Date('2024-01-15T00:00'); // полночь по местному времени — разные моменты!\n\nconst d = new Date();\nd.setDate(d.getDate() + 1);   // мутация: исходный объект изменён\n\nnew Date('15.01.2024');       // Invalid Date в одних движках, дата в других\n\n// сравнение — через числа\n+dateA === +dateB;\n```",
+  "explanation": "Строка вида `2024-01-15` разбирается как UTC, а `2024-01-15T00:00` — как местное время: из-за этого дата «съезжает на день» у пользователей с отрицательным смещением. Это одна из самых частых ошибок с датами.\n\nВ `Temporal` объекты неизменяемы, а тип явно говорит, есть ли у значения часовой пояс, — большинство этих ловушек там просто не выражаются."
+ },
+ {
+  "id": "js-intl",
+  "topic": "js",
+  "subtopic": "дата и время",
+  "question": "Что умеет `Intl` и почему это лучше ручного форматирования?",
+  "answer": "Форматирование дат, чисел, валют, списков, относительного времени и правил множественного числа по локали — включая падежи и разряды, которые вручную делают с ошибками.",
+  "example": "```js\nnew Intl.DateTimeFormat('ru-RU', { dateStyle: 'long' }).format(new Date());\n// '7 сентября 2026 г.'\n\nnew Intl.RelativeTimeFormat('ru', { numeric: 'auto' }).format(-1, 'day');\n// 'вчера'\n\nnew Intl.ListFormat('ru', { type: 'conjunction' }).format(['яблоки', 'груши', 'сливы']);\n// 'яблоки, груши и сливы'\n\n// множественное число: в русском три формы, а не две\nconst pr = new Intl.PluralRules('ru');\npr.select(1);  // 'one'   — 1 файл\npr.select(3);  // 'few'   — 3 файла\npr.select(5);  // 'many'  — 5 файлов\npr.select(21); // 'one'   — 21 файл\n```",
+  "explanation": "Правило «если оканчивается на 1 — единственное число» ломается на 11, и почти каждая самодельная функция склонения это повторяет. `Intl.PluralRules` знает правила CLDR для всех локалей.\n\nСоздание форматтера дороже вызова, поэтому его выносят из циклов и кэшируют по локали."
+ },
+ {
+  "id": "js-json-stringify",
+  "topic": "js",
+  "subtopic": "JSON",
+  "question": "Что теряется при `JSON.stringify`?",
+  "answer": "`undefined`, функции и символы: в объекте такие свойства пропадают, в массиве превращаются в `null`. `Date` становится строкой, `Map`, `Set` и `BigInt` не поддерживаются, циклическая ссылка бросает ошибку.",
+  "example": "```js\nJSON.stringify({ a: undefined, b: () => {}, c: Symbol() }); // '{}'\nJSON.stringify([undefined, () => {}]);                       // '[null,null]'\nJSON.stringify({ d: new Date() });    // строка ISO — тип не вернётся при parse\nJSON.stringify({ m: new Map([[1, 2]]) }); // '{\"m\":{}}'\nJSON.stringify({ n: 1n });            // TypeError\n\nconst obj = {}; obj.self = obj;\nJSON.stringify(obj);                   // TypeError: circular structure\n\n// управление выводом\nJSON.stringify(user, ['id', 'name'], 2);           // белый список ключей и отступ\nJSON.stringify(user, (k, v) => (k === 'password' ? undefined : v));\n\nclass Money { toJSON() { return this.kop / 100; } } // объект решает сам\n```",
+  "explanation": "`toJSON` — способ задать сериализацию, не трогая места вызова: именно так работает `Date`.\n\nОтсюда же правило про глубокое копирование: `JSON.parse(JSON.stringify(x))` тихо портит даты, `undefined` и `Map`. Для копий есть `structuredClone`."
+ },
+ {
+  "id": "js-regexp-flags",
+  "topic": "js",
+  "subtopic": "регулярные выражения",
+  "question": "Что делают флаги `g`, `i`, `m`, `s`, `u` и `y`?",
+  "answer": "`g` — искать все вхождения, `i` — без учёта регистра, `m` — `^` и `$` работают на каждой строке, `s` — точка совпадает и с переводом строки, `u` — корректная работа с кодовыми точками Unicode, `y` — искать строго с позиции `lastIndex`.",
+  "example": "```js\n'a\\nb'.match(/^b$/m);      // ['b'] — без m не нашлось бы\n/./s.test('\\n');           // true\n/./.test('\\n');            // false\n\n// без u эмодзи разрезается на суррогатные пары\n/^.$/u.test('🙂');         // true\n/^.$/.test('🙂');          // false\n\n// именованные группы читаются лучше номеров\nconst m = '2026-09-07'.match(/(?<year>\\d{4})-(?<month>\\d{2})/);\nm.groups.year;             // '2026'\n\n// экранирование данных перед вставкой в регулярку\nnew RegExp(userInput.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&'));\n```",
+  "explanation": "Флаг `u` (или `v` в новых движках) стоит ставить по умолчанию: без него любой символ вне BMP ломает и `.`, и классы символов.\n\nПользовательский ввод нельзя подставлять в регулярку без экранирования: это и ошибки разбора, и ReDoS — выражение с вложенными квантификаторами на специально подобранной строке считается экспоненциально долго."
+ },
+ {
+  "id": "js-regexp-lastindex",
+  "topic": "js",
+  "subtopic": "регулярные выражения",
+  "question": "Почему регулярка с флагом `g` даёт разный результат при повторных вызовах?",
+  "answer": "Объект регулярного выражения хранит состояние — `lastIndex`. С флагом `g` (и `y`) методы `test` и `exec` начинают поиск с этой позиции и сдвигают её, поэтому один и тот же вызов на той же строке чередует `true` и `false`.",
+  "example": "```js\nconst re = /a/g;\nre.test('a');   // true,  lastIndex стал 1\nre.test('a');   // false, искали с позиции 1 — и сбросили lastIndex в 0\nre.test('a');   // true снова\n\n// особенно коварно в общем модуле\nconst EMAIL = /\\S+@\\S+/g;\nexport const isEmail = (s) => EMAIL.test(s); // результат зависит от прошлых вызовов\n\n// лечится: создавать регулярку на месте или не ставить g\nconst isEmail2 = (s) => /\\S+@\\S+/.test(s);\n\n// для перебора всех совпадений есть matchAll — он состояние не портит\n[...'a1b2'.matchAll(/[a-z](\\d)/g)].map((m) => m[1]); // ['1', '2']\n```",
+  "explanation": "Правило простое: регулярка с `g`, вынесенная в константу и используемая через `test`/`exec`, — почти всегда ошибка.\n\n`matchAll` требует флаг `g` и бросает `TypeError` без него — как раз чтобы такой ошибки не случилось молча."
+ },
+ {
+  "id": "js-fetch-basics",
+  "topic": "js",
+  "subtopic": "сеть",
+  "question": "Почему `fetch` не бросает ошибку при ответе 404 или 500?",
+  "answer": "Промис `fetch` отклоняется только при сетевом сбое или прерывании. Любой полученный ответ — успех для транспорта, а код состояния нужно проверять самому через `response.ok`.",
+  "example": "```js\nconst res = await fetch('/api/items'); // 500 — промис успешно выполнен\nif (!res.ok) throw new Error(`HTTP ${res.status}`);\nconst data = await res.json();\n\n// тело читается один раз\nconst clone = res.clone(); // если нужно прочитать дважды\nawait res.text();\nawait res.text(); // TypeError: body stream already read\n\n// POST с JSON\nawait fetch('/api/items', {\n  method: 'POST',\n  headers: { 'Content-Type': 'application/json' },\n  body: JSON.stringify(item),\n  credentials: 'include', // куки для другого домена не отправляются по умолчанию\n});\n```",
+  "explanation": "Отсюда обёртки над `fetch` почти в каждом проекте: проверка `ok`, разбор тела, единая ошибка. `HttpClient` в Angular делает это за вас и отклоняет поток на любом коде 4xx/5xx.\n\nЕщё одно отличие от XHR: `fetch` по умолчанию не шлёт куки на кросс-доменные запросы — нужен `credentials: 'include'` и разрешение с сервера."
+ },
+ {
+  "id": "js-abort-controller",
+  "topic": "js",
+  "subtopic": "сеть",
+  "question": "Как отменить запрос или поставить ему таймаут?",
+  "answer": "Через `AbortController`: его `signal` передаётся в `fetch` (и в `addEventListener`), а `abort()` прерывает операцию. Для таймаута есть готовый `AbortSignal.timeout(ms)`.",
+  "example": "```js\nconst ctrl = new AbortController();\nconst promise = fetch('/api/slow', { signal: ctrl.signal });\nctrl.abort();          // промис отклонится с AbortError\n\ntry {\n  await fetch('/api/slow', { signal: AbortSignal.timeout(3000) });\n} catch (e) {\n  if (e.name === 'TimeoutError') retry();\n  else if (e.name === 'AbortError') return; // отмена — не ошибка, репортить не надо\n}\n\n// сигнал снимает и обработчики событий — удобно при уничтожении компонента\nwindow.addEventListener('resize', onResize, { signal: ctrl.signal });\nctrl.abort(); // отписались от всего сразу\n\nAbortSignal.any([userCancel.signal, AbortSignal.timeout(5000)]);\n```",
+  "explanation": "Отмена — про операцию, а не про промис: сам промис остаётся неотменяемым, просто источник перестаёт работать и отклоняет его.\n\nПодписка на события через `signal` — недооценённый приём: один контроллер снимает разом все слушатели, и `removeEventListener` со ссылками на функции не нужен."
+ },
+ {
+  "id": "js-cors",
+  "topic": "js",
+  "subtopic": "сеть",
+  "question": "Что такое CORS и почему предзапрос приходит методом OPTIONS?",
+  "answer": "Браузер запрещает читать ответ с другого источника, пока сервер явно не разрешит это заголовками `Access-Control-Allow-*`. Для «непростых» запросов браузер сначала спрашивает разрешение отдельным запросом OPTIONS — это preflight.",
+  "example": "```js\n// простой запрос: уходит сразу, ответ читается только с разрешения сервера\nfetch('https://api.example.com/items');\n\n// непростой: сначала OPTIONS, потом сам запрос\nfetch('https://api.example.com/items', {\n  method: 'PUT',                              // не GET/POST/HEAD\n  headers: { 'Content-Type': 'application/json' }, // и не «простой» тип\n});\n```\n\n```http\nAccess-Control-Allow-Origin: https://app.example.com\nAccess-Control-Allow-Methods: PUT, DELETE\nAccess-Control-Allow-Headers: Content-Type\nAccess-Control-Allow-Credentials: true\nAccess-Control-Max-Age: 600\n```",
+  "explanation": "Ограничение работает в браузере и защищает пользователя, а не сервер: запрос обычно доходит и выполняется, браузер лишь не отдаёт ответ скрипту. Поэтому CORS — не замена авторизации.\n\nС `credentials: 'include'` подстановка `Access-Control-Allow-Origin: *` не сработает — origin должен быть указан явно. Ошибку CORS в консоли часто путают с падением запроса: смотреть надо на вкладку «Сеть», там ответ виден."
+ },
+ {
+  "id": "js-storage",
+  "topic": "js",
+  "subtopic": "браузер",
+  "question": "Чем различаются `localStorage`, `sessionStorage`, куки и IndexedDB?",
+  "answer": "`localStorage` живёт до явной очистки, `sessionStorage` — до закрытия вкладки; оба синхронны, хранят строки и ограничены примерно 5 МБ. Куки маленькие и уходят на сервер с каждым запросом. IndexedDB асинхронна, хранит структурированные данные и десятки мегабайт.",
+  "example": "```js\nlocalStorage.setItem('theme', 'dark');       // только строки\nlocalStorage.setItem('user', JSON.stringify(user));\nJSON.parse(localStorage.getItem('user') ?? 'null');\n\n// синхронность — это блокировка главного потока\n// большой объём в localStorage бьёт по отзывчивости\n\ndocument.cookie = 'token=abc; Max-Age=3600; Secure; SameSite=Strict';\n\n// IndexedDB — для настоящих данных\nconst db = await openDB('app', 1, {\n  upgrade: (db) => db.createObjectStore('progress', { keyPath: 'cardId' }),\n});\nawait db.put('progress', { cardId: 'js-1', ease: 2.5 });\n```",
+  "explanation": "Токены доступа в `localStorage` уязвимы к XSS: любой выполнившийся на странице скрипт их прочитает. Кука с `HttpOnly` скрипту недоступна, поэтому для сессий обычно берут именно её.\n\nВ этом проекте прогресс лежит в IndexedDB — за интерфейсом `ProgressStorage`, чтобы в тестах подставлялся фейк, а не настоящая база."
+ },
+ {
+  "id": "js-reflow-repaint",
+  "topic": "js",
+  "subtopic": "браузер",
+  "question": "Что такое layout thrashing и как его избежать?",
+  "answer": "Чередование чтения геометрии и записи стилей в одном цикле: каждое чтение после записи заставляет браузер пересчитать layout заново. Лечится группировкой — сначала все чтения, потом все записи.",
+  "example": "```js\n// плохо: пересчёт layout на каждой итерации\nfor (const el of items) {\n  el.style.width = el.offsetWidth + 10 + 'px'; // чтение после записи\n}\n\n// хорошо: сначала прочитали всё, потом записали\nconst widths = items.map((el) => el.offsetWidth);\nitems.forEach((el, i) => (el.style.width = widths[i] + 10 + 'px'));\n\n// свойства, вызывающие принудительный пересчёт\nel.offsetWidth; el.getBoundingClientRect(); getComputedStyle(el);\n\n// анимировать лучше transform и opacity — они не трогают layout\nel.style.transform = 'translateX(10px)'; // вместо el.style.left\n```",
+  "explanation": "Порядок стадий: пересчёт стилей → layout → paint → composite. `transform` и `opacity` обрабатываются на последней стадии, поэтому анимация по ним идёт на видеокарте и не дёргает первые две.\n\nВ инструментах разработчика такие пересчёты видны в Performance как «Forced reflow» с указанием строки кода."
+ },
+ {
+  "id": "js-observers",
+  "topic": "js",
+  "subtopic": "браузер",
+  "question": "Для чего нужны `IntersectionObserver`, `ResizeObserver` и `MutationObserver`?",
+  "answer": "`IntersectionObserver` сообщает о попадании элемента в область видимости, `ResizeObserver` — об изменении его размеров, `MutationObserver` — об изменениях в DOM. Все трое работают асинхронно и не требуют опроса в обработчике прокрутки.",
+  "example": "```js\n// ленивая загрузка и бесконечный список\nconst io = new IntersectionObserver(\n  (entries) => entries.forEach((e) => e.isIntersecting && loadMore()),\n  { rootMargin: '200px' }, // сработает заранее, до фактического появления\n);\nio.observe(sentinel);\n\n// «медиазапросы» по размеру контейнера, а не окна\nnew ResizeObserver(([entry]) => {\n  card.classList.toggle('narrow', entry.contentRect.width < 320);\n}).observe(card);\n\n// реакция на чужие изменения DOM — крайняя мера\nnew MutationObserver((records) => sync(records)).observe(root, {\n  childList: true,\n  subtree: true,\n});\n```",
+  "explanation": "До появления `IntersectionObserver` то же самое делали на `scroll` + `getBoundingClientRect`, то есть с принудительным пересчётом layout десятки раз в секунду.\n\n`ResizeObserver` может бросить в консоль «loop completed with undelivered notifications» — это значит, что колбэк сам меняет размеры и вызывает себя же; так делать нельзя."
+ },
+ {
+  "id": "js-memory-leaks",
+  "topic": "js",
+  "subtopic": "память",
+  "question": "Какие утечки памяти типичны для фронтенда?",
+  "answer": "Неснятые обработчики и подписки, таймеры и интервалы, ссылки на удалённые узлы DOM, растущие кэши и замыкания, удерживающие большие объекты.",
+  "example": "```js\n// интервал живёт после ухода со страницы и держит компонент целиком\nsetInterval(() => this.refresh(), 1000);\n\n// обработчик на window переживёт компонент\nwindow.addEventListener('resize', this.onResize);\n\n// узел удалён из DOM, но жив: на него ссылается массив\nconst cache = [];\ncache.push(document.querySelector('.row'));\nrow.remove();\n\n// как правильно\nconst ctrl = new AbortController();\nwindow.addEventListener('resize', onResize, { signal: ctrl.signal });\nconst id = setInterval(tick, 1000);\n\nonDestroy(() => {\n  ctrl.abort();\n  clearInterval(id);\n});\n\nconst weakCache = new WeakMap(); // ключи-объекты не удерживаются\n```",
+  "explanation": "Сборщик мусора удаляет то, до чего нельзя добраться от корней (глобальные объекты, стек, живые обработчики). Утечка — это всегда живая ссылка, а не «забытая память».\n\nИщут их в DevTools: снять heap snapshot, выполнить сценарий, снять второй и сравнить по Detached HTMLElement — так находятся именно оторванные, но удерживаемые узлы."
+ },
+ {
+  "id": "js-web-workers",
+  "topic": "js",
+  "subtopic": "производительность",
+  "question": "Что умеет Web Worker и чего в нём нет?",
+  "answer": "Он выполняет JS в отдельном потоке, не блокируя интерфейс. У него нет DOM, `window` и прямого доступа к переменным страницы — общение только сообщениями, а данные копируются структурированным клонированием.",
+  "example": "```js\n// main.js\nconst worker = new Worker(new URL('./heavy.js', import.meta.url), { type: 'module' });\nworker.postMessage({ items });\nworker.onmessage = (e) => render(e.data);\n\nconst timeout = setTimeout(() => worker.terminate(), 3000); // зависший код не убить иначе\n\n// heavy.js\nself.onmessage = (e) => {\n  const result = compute(e.data.items); // главный поток свободен\n  self.postMessage(result);\n};\n```\n\n```js\n// большие буферы можно передать без копирования\nworker.postMessage(buffer, [buffer]); // после передачи buffer в главном потоке пуст\n```",
+  "explanation": "Именно так в этом проекте выполняется код задач: `while (true) {}` — типичная ошибка в вопросах про event loop, и на главном потоке она подвесила бы вкладку. Воркер по таймауту убивается `terminate()`.\n\nЦена воркера — копирование данных при каждом сообщении: на мелких частых сообщениях выигрыш легко съедается. Для больших массивов есть передача владения буфером и `SharedArrayBuffer`."
  }
 ]
