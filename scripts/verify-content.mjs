@@ -29,6 +29,9 @@ const TRACKS = {
 };
 const TOPICS = new Set(Object.values(TRACKS).flat());
 
+/** Уровни матрицы компетенций — держать синхронно с `src/app/domain/models.ts`. */
+const LEVELS = new Set(['L1', 'L2', 'L3', 'L4']);
+
 /** Языки корпуса — держать синхронно с `src/app/domain/languages.ts`. */
 const LANGS = ['ru', 'en'];
 /**
@@ -130,6 +133,11 @@ for (const [lang, set] of corpus) {
     if (!TOPICS.has(card.topic)) {
       problems.push(`${where}: неизвестная тема «${card.topic}»`);
     }
+    // Уровень необязателен — он есть только у карточек из матрицы компетенций,
+    // — но если он указан, то одним из четырёх известных значений.
+    if (card.level !== undefined && !LEVELS.has(card.level)) {
+      problems.push(`${where}: неизвестный уровень «${card.level}»`);
+    }
     if (seen.has(card.id)) {
       problems.push(`${where}: повторяющийся id — прогресс двух карточек слился бы в один`);
     }
@@ -181,6 +189,7 @@ for (const [lang, set] of corpus) {
 // только здесь.
 const originIds = corpus.get(ORIGIN).ids;
 const originNumbers = new Map(corpus.get(ORIGIN).cards.map((card) => [card.id, card.number]));
+const originLevels = new Map(corpus.get(ORIGIN).cards.map((card) => [card.id, card.level]));
 for (const [lang, set] of corpus) {
   if (lang === ORIGIN) {
     continue;
@@ -198,6 +207,14 @@ for (const [lang, set] of corpus) {
     if (origin !== undefined && origin !== card.number) {
       problems.push(
         `перевод [${lang}]: у карточки «${card.id}» номер ${card.number}, а в оригинале ${origin}`,
+      );
+    }
+    // Уровень не переводится: «L2» одинаково выглядит на всех языках,
+    // поэтому расхождение здесь означает опечатку, а не решение переводчика.
+    const level = originLevels.get(card.id);
+    if (set.ids.has(card.id) && level !== card.level) {
+      problems.push(
+        `перевод [${lang}]: у карточки «${card.id}» уровень «${card.level}», а в оригинале «${level}»`,
       );
     }
   }

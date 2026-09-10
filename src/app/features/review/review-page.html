@@ -12,7 +12,12 @@
 @if (current(); as card) {
   <mat-card appearance="outlined" class="card">
     <mat-card-content>
-      <div class="subtopic">{{ card.subtopic }}</div>
+      <div class="subtopic">
+        {{ card.subtopic }}
+        @if (card.level) {
+          <span class="level">{{ card.level }}</span>
+        }
+      </div>
       <div class="question md" [innerHTML]="card.question | md"></div>
 
       @if (revealed()) {

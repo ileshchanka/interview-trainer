@@ -26,6 +26,16 @@ export type Grade = 'again' | 'hard' | 'good' | 'easy';
 
 export const GRADES: readonly Grade[] = ['again', 'hard', 'good', 'easy'] as const;
 
+/**
+ * Уровень темы во внешней матрице компетенций: L1 — база, L4 — глубина.
+ *
+ * Поле необязательное: уровень есть только у карточек, пришедших из матрицы,
+ * и даже там он проставлен не везде — у продуктовых навыков его нет.
+ */
+export type Level = 'L1' | 'L2' | 'L3' | 'L4';
+
+export const LEVELS: readonly Level[] = ['L1', 'L2', 'L3', 'L4'] as const;
+
 export interface Card {
   readonly id: string;
   /**
@@ -41,6 +51,8 @@ export interface Card {
   readonly topic: Topic;
   /** Подтема — по ней группируется статистика и слабые места. */
   readonly subtopic: string;
+  /** Уровень из матрицы компетенций, если карточка пришла оттуда. */
+  readonly level?: Level;
   /** Вопрос в Markdown. */
   readonly question: string;
   /** Короткий ответ в Markdown — то, что нужно вспомнить. */

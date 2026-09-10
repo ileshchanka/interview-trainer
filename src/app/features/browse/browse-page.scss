@@ -50,6 +50,17 @@
   margin-bottom: 10px;
 }
 
+// Уровень из матрицы компетенций — приглушённой плашкой рядом с категорией:
+// это справочная пометка, а не название темы, и перетягивать взгляд она не должна.
+.level {
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--mat-sys-surface-container-highest);
+  color: var(--mat-sys-on-surface-variant);
+  letter-spacing: 0.04em;
+}
+
 .question {
   font-size: 1.15rem;
 }
