@@ -43,6 +43,7 @@ const ru = {
     js: 'JavaScript',
     ts: 'TypeScript',
     angular: 'Angular',
+    interview: 'Темы собеседования',
     kotlin: 'Kotlin',
     android: 'Android SDK',
     compose: 'Compose',
@@ -51,7 +52,7 @@ const ru = {
 
   tracks: {
     subtitle: {
-      web: 'JavaScript · TypeScript · Angular',
+      web: 'JavaScript · TypeScript · Angular · темы собеседования',
       android: 'Kotlin · Android SDK · Compose · корутины',
     } as Record<Track, string>,
     tasksBlurb: {
@@ -223,6 +224,7 @@ const en: Messages = {
     js: 'JavaScript',
     ts: 'TypeScript',
     angular: 'Angular',
+    interview: 'Interview topics',
     kotlin: 'Kotlin',
     android: 'Android SDK',
     compose: 'Compose',
@@ -231,7 +233,7 @@ const en: Messages = {
 
   tracks: {
     subtitle: {
-      web: 'JavaScript · TypeScript · Angular',
+      web: 'JavaScript · TypeScript · Angular · interview topics',
       android: 'Kotlin · Android SDK · Compose · coroutines',
     },
     tasksBlurb: {

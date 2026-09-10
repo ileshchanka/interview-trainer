@@ -22,7 +22,7 @@ export const TRACK_TITLES: Record<Track, string> = {
 };
 
 export const TOPICS_BY_TRACK: Record<Track, readonly Topic[]> = {
-  web: ['js', 'ts', 'angular'],
+  web: ['js', 'ts', 'angular', 'interview'],
   android: ['kotlin', 'android', 'compose', 'coroutines'],
 };
 

@@ -24,7 +24,7 @@ const exists = (name) => existsSync(content(name));
 
 /** Темы по трекам — держать синхронно с `src/app/domain/tracks.ts`. */
 const TRACKS = {
-  web: ['js', 'ts', 'angular'],
+  web: ['js', 'ts', 'angular', 'interview'],
   android: ['kotlin', 'android', 'compose', 'coroutines'],
 };
 const TOPICS = new Set(Object.values(TRACKS).flat());

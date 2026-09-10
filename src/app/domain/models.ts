@@ -6,13 +6,15 @@
  * переформулировка вопроса не сбрасывает накопленный прогресс.
  */
 
-export type Topic = 'js' | 'ts' | 'angular' | 'kotlin' | 'android' | 'compose' | 'coroutines';
+export type Topic =
+  'js' | 'ts' | 'angular' | 'interview' | 'kotlin' | 'android' | 'compose' | 'coroutines';
 
 /** Все темы разом. Разбиение по трекам живёт в `tracks.ts`. */
 export const TOPICS: readonly Topic[] = [
   'js',
   'ts',
   'angular',
+  'interview',
   'kotlin',
   'android',
   'compose',
